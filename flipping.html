@@ -3,40 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>翻牌工具</title>
+    <title>翻牌路徑紀錄器 - 完整版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .theme-default { --primary: #3b82f6; }
-        .theme-christmas { --primary: #dc2626; }
-        body { transition: 0.3s; }
+        /* 引入你原本的 CSS 核心樣式 */
+        .card-slot { border: 2px dashed #ccc; border-radius: 8px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #fff; transition: all 0.2s; position: relative; }
+        .card-slot:hover { border-color: #3b82f6; background: #f0f7ff; }
+        .card-slot img { max-width: 85%; max-height: 85%; pointer-events: none; }
+        .selected-btn { border: 3px solid #3b82f6 !important; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+        .grid-label { font-size: 12px; font-weight: bold; color: #94a3b8; margin-bottom: 8px; letter-spacing: 0.1em; }
     </style>
 </head>
-<body class="p-4 bg-slate-50">
-    <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-black text-slate-800">🃏 翻牌路徑紀錄</h1>
-            <button onclick="location.href='portal.html'" class="bg-white px-4 py-2 rounded-xl shadow-sm text-sm">返回選單</button>
+<body class="bg-slate-100 min-h-screen pb-20">
+
+    <div id="auth-guard" class="fixed inset-0 bg-white z-50 flex items-center justify-center font-bold text-slate-400">系統驗證中...</div>
+
+    <div class="max-w-[1400px] mx-auto p-4">
+        <div class="flex flex-wrap justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm gap-4">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">🃏</span>
+                <h1 class="text-xl font-black text-slate-800">翻牌路徑紀錄器 <span id="user-display" class="text-sm font-normal text-blue-500 ml-2"></span></h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="undoButton" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition">上一步</button>
+                <button id="redoButton" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition">下一步</button>
+                <div class="w-px h-6 bg-slate-200 mx-2"></div>
+                <button onclick="location.href='portal.html'" class="bg-slate-900 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-black shadow-lg transition">返回選單</button>
+            </div>
         </div>
 
-        <div class="bg-white p-8 rounded-3xl shadow-xl min-h-[400px] flex items-center justify-center">
-            <div class="text-center">
-                <p class="text-slate-400">遊戲資源載入中...</p>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-3 space-y-4">
+                <div class="bg-white p-6 rounded-3xl shadow-sm sticky top-4">
+                    <h3 class="font-bold text-slate-700 mb-4 flex justify-between items-center">
+                        選取卡片 
+                        <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-400">共 <span id="cardCount">0</span> 種</span>
+                    </h3>
+                    
+                    <div id="cardContainer" class="grid grid-cols-3 gap-3 mb-6">
+                        </div>
+
+                    <button id="clearAllButton" class="w-full bg-red-50 text-red-500 py-4 rounded-2xl font-bold hover:bg-red-100 transition flex items-center justify-center gap-2">
+                        <span>🗑️</span> 一鍵清除所有紀錄
+                    </button>
                 </div>
+            </div>
+
+            <div class="lg:col-span-9 bg-white p-8 rounded-[2rem] shadow-sm space-y-10">
+                <section>
+                    <p class="grid-label uppercase">3 x 2 模式 (6格)</p>
+                    <div id="grid3x2" class="grid grid-cols-3 gap-4"></div>
+                </section>
+
+                <section>
+                    <p class="grid-label uppercase">4 x 3 模式 (12格)</p>
+                    <div id="grid4x3" class="grid grid-cols-4 gap-4"></div>
+                </section>
+
+                <section>
+                    <p class="grid-label uppercase">4 x 4 模式 (16格)</p>
+                    <div id="grid4x4" class="grid grid-cols-4 gap-4"></div>
+                </section>
+
+                <section>
+                    <p class="grid-label uppercase">5 x 4 模式 (20格)</p>
+                    <div id="grid5x4" class="grid grid-cols-5 gap-4"></div>
+                </section>
+            </div>
         </div>
     </div>
 
     <script>
+        // --- 1. 圖片資料區：請在此補齊你的圖片 URL ---
+        const cardData = [
+          { name: "紫玉", url: "https://i.postimg.cc/RhYxh9M7/zi-yu.jpg" },
+            { name: "堇書", url: "https://i.postimg.cc/rsH2sc8t/jin-shu.jpg" },
+            { name: "捉鬼師", url: "https://i.postimg.cc/Y00wtjww/zhuo-gui-shi.jpg" },
+            { name: "小師妹", url: "https://i.postimg.cc/cJ7WmVm4/xiao-shi-mei.jpg" },
+            { name: "馬湘蘭", url: "https://i.postimg.cc/T1sv1GR1/ma-xiang-lan.jpg" },
+            { name: "牛郎", url: "https://i.postimg.cc/9MWhNJ8r/niu-lang.jpg" },
+            { name: "花郎", url: "https://i.postimg.cc/85tS8M9w/hua-lang.jpg" },
+            { name: "采詩官", url: "https://i.postimg.cc/3NNH3WQb/cai-shi-guan.jpg" },
+            { name: "董小宛", url: "https://i.postimg.cc/SQ1hDLWN/dong-xiao-wan.jpg" },
+            { name: "精衛", url: "https://i.postimg.cc/ZYsSVPrd/jing-wei.jpg" },
+            { name: "織女", url: "https://i.postimg.cc/SQ1hDLW9/zhi-nu.jpg" },
+            { name: "花藝師", url: "https://i.postimg.cc/fLBN4mp6/hua-yi-shi.jpg" },
+            { name: "李香君", url: "https://i.postimg.cc/hjSB3pyb/li-xiang-jun.jpg" },
+            { name: "小蝴蝶", url: "https://i.postimg.cc/mDbs68XB/xiao-hu-die.jpg" },
+            { name: "手工少女", url: "https://i.postimg.cc/HxpgPBZW/shou-gong-shao-nu.jpg" },
+            { name: "卞玉京", url: "https://i.postimg.cc/PxtjF23d/bian-yu-jing.jpg" },
+            { name: "王后婦好", url: "https://i.postimg.cc/B6q0wMYP/wang-hou-fu-hao.jpg" },
+            { name: "小鹿女", url: "https://i.postimg.cc/qRkTZjbr/xiao-lu-nu.jpg" },
+            { name: "嫦娥", url: "https://i.postimg.cc/y6pHvhFg/chang-e.jpg" },
+            { name: "新娘之妹", url: "https://i.postimg.cc/FFC4DbjN/xin-niang-zhi-mei.jpg" },
+            { name: "狐妖掌櫃", url: "https://i.postimg.cc/fLBN4mpt/hu-yao-zhang-gui.jpg" },
+            { name: "女魃", url: "https://i.postimg.cc/43vG5r5f/nu-ba.jpg" },
+            { name: "新娘", url: "https://i.postimg.cc/PJ7nJhty/xin-niang.jpg" },
+            { name: "靈夜貓女", url: "https://i.postimg.cc/NfywVy4M/ling-ye-mao-nu.jpg" },
+            { name: "塗山氏", url: "https://i.postimg.cc/mknWkRbS/tu-shan-shi.jpg" },
+            { name: "寇白門", url: "https://i.postimg.cc/6qPxqw9R/kou-bai-men.jpg" },
+            { name: "苗疆聖女", url: "https://i.postimg.cc/4yyTXnRD/miao-jiang-sheng-nu.jpg" },
+            { name: "馴鷹少女", url: "https://i.postimg.cc/WpYvXmMD/xun-ying-shao-nu.jpg" },
+            { name: "小木匠", url: "https://i.postimg.cc/LskSTrTH/xiao-mu-jiang.jpg" },
+            { name: "馴馬師", url: "https://i.postimg.cc/wx4p05h3/xun-ma-shi.jpg" },
+            { name: "驛使", url: "https://i.postimg.cc/7Ptkm1g0/yi-shi.jpg" },
+            { name: "捕快", url: "https://i.postimg.cc/L55MmhM9/bu-kuai.jpg" },
+            { name: "西湖船孃", url: "https://i.postimg.cc/4dJgFBLc/xi-hu-chuan-niang.jpg" },
+            { name: "荒野鈴蘭", url: "https://i.postimg.cc/MHLJHxWK/huang-ye-ling-lan.jpg" },
+            { name: "古國公主", url: "https://i.postimg.cc/vBQsS3qV/gu-guo-gong-zhu.jpg" }
+
+        ];
+
+        let selectedCardUrl = null;
+        let history = [];
+        let historyIndex = -1;
+
+        // --- 2. 初始化與權限檢查 ---
         window.onload = function() {
             const sessionRaw = sessionStorage.getItem('gameData');
-            if (!sessionRaw) {
-                location.href = "index.html";
-                return;
-            }
-            const gameData = JSON.parse(sessionRaw);
-            document.body.className = "theme-" + (gameData.config.CurrentTheme || 'default');
+            if (!sessionRaw) { location.href = "index.html"; return; }
+            const data = JSON.parse(sessionRaw);
+            document.getElementById('user-display').innerText = `@${data.user.name}`;
+            document.getElementById('auth-guard').style.display = 'none';
+
+            initGame();
+        };
+
+        function initGame() {
+            document.getElementById('cardCount').textContent = cardData.length;
             
-            // 這裡初始化你的翻牌邏輯
-            console.log("驗證成功，使用者：" + gameData.user.name);
+            // 生成選擇按鈕
+            const container = document.getElementById('cardContainer');
+            cardData.forEach(card => {
+                const div = document.createElement('div');
+                div.className = "card-slot p-1 border-2";
+                div.innerHTML = `<img src="${card.url}" title="${card.name}">`;
+                div.onclick = () => {
+                    selectedCardUrl = card.url;
+                    container.querySelectorAll('.card-slot').forEach(el => el.classList.remove('selected-btn'));
+                    div.classList.add('selected-btn');
+                };
+                container.appendChild(div);
+            });
+
+            // 生成各個宮格
+            createGrid('grid3x2', 6);
+            createGrid('grid4x3', 12);
+            createGrid('grid4x4', 16);
+            createGrid('grid5x4', 20);
+
+            saveState(); // 初始狀態
+        }
+
+        function createGrid(elementId, count) {
+            const grid = document.getElementById(elementId);
+            for (let i = 0; i < count; i++) {
+                const slot = document.createElement('div');
+                slot.className = "card-slot";
+                slot.onclick = () => {
+                    if (selectedCardUrl) {
+                        slot.innerHTML = `<img src="${selectedCardUrl}">`;
+                    } else {
+                        slot.innerHTML = "";
+                    }
+                    saveState();
+                };
+                grid.appendChild(slot);
+            }
+        }
+
+        // --- 3. 核心邏輯：上一步/下一步/清除 ---
+        function saveState() {
+            const state = [];
+            document.querySelectorAll('.lg:col-span-9 .card-slot').forEach(slot => {
+                state.push(slot.innerHTML);
+            });
+            
+            // 砍掉當前索引之後的紀錄（處理在回溯時又畫新圖的情況）
+            history = history.slice(0, historyIndex + 1);
+            history.push(state);
+            historyIndex++;
+        }
+
+        document.getElementById('undoButton').onclick = () => {
+            if (historyIndex > 0) {
+                historyIndex--;
+                applyState(history[historyIndex]);
+            }
+        };
+
+        document.getElementById('redoButton').onclick = () => {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                applyState(history[historyIndex]);
+            }
+        };
+
+        function applyState(state) {
+            const slots = document.querySelectorAll('.lg:col-span-9 .card-slot');
+            state.forEach((html, i) => {
+                slots[i].innerHTML = html;
+            });
+        }
+
+        document.getElementById('clearAllButton').onclick = () => {
+            if (confirm("確定要清空所有宮格紀錄嗎？")) {
+                document.querySelectorAll('.lg:col-span-9 .card-slot').forEach(slot => slot.innerHTML = "");
+                saveState();
+            }
         };
     </script>
 </body>
