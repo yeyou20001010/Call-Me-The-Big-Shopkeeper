@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; margin: 20px; background-color: #f4f4f4; transition: 0.3s; }
+        .theme-christmas { background-color: #fef2f2; }
+        .theme-dark { background-color: #1a1a1a; color: #eee; }
+        .container { max-width: 950px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        select, input, button { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; cursor: pointer; border: none; font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>⚡ Stamina Tracker</h2>
+        <label>Select Activity:</label>
+        <select id="activitySelect"></select>
+        <button onclick="location.href='index.html'" style="background-color: #6c757d;">Back to Menu</button>
+        <div id="content-area">
+            </div>
+    </div>
+
+    <script>
+        let allActivities = [];
+
+        function initialize() {
+            // Check Gateway Auth
+            const sessionRaw = sessionStorage.getItem('gameData');
+            if (!sessionRaw) {
+                alert("Unauthorized access. Redirecting to login...");
+                location.href = "index.html";
+                return;
+            }
+
+            const gameData = JSON.parse(sessionRaw);
+            allActivities = gameData.activities;
+            document.body.className = "theme-" + (gameData.config.CurrentTheme || 'default');
+
+            const select = document.getElementById('activitySelect');
+            select.innerHTML = '';
+
+            if (allActivities && allActivities.length > 0) {
+                allActivities.forEach((act, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = idx;
+                    opt.textContent = act.name;
+                    select.appendChild(opt);
+                });
+                select.dispatchEvent(new Event('change'));
+            }
+
+            // Call your original calculation functions
+            if (typeof loadAllMonitorData === "function") loadAllMonitorData();
+        }
+
+        window.onload = initialize;
+    </script>
+</body>
+</html>

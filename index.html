@@ -1,175 +1,82 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>產物投資決策系統</title>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://script.google.com/macros/s/AKfycbz4iCmRO3GYw7ed18GMLlsuPMMuDbcf5NVJa68hqnEYuHBjfjjQqAbxKVGGOA0pvveu/exec"></script>
     <style>
-        body { background-color: #F8FAFC; font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif; }
-        [v-cloak] { display: none; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .input-aligned {
-            width: 100%; max-width: 100px; background-color: white; border: 1px solid #cbd5e1;
-            border-radius: 0.375rem; padding: 0.25rem; text-align: right; margin-left: auto; display: block;
-        }
+        .theme-default { --bg: #f8fafc; --card: #ffffff; --primary: #4f46e5; }
+        .theme-christmas { --bg: #fef2f2; --card: #ffffff; --primary: #dc2626; }
+        body { background-color: var(--bg); transition: 0.3s; }
     </style>
 </head>
-<body class="p-3 md:p-8 text-slate-700">
-    <div id="app" v-cloak class="max-w-7xl mx-auto">
-        <div v-if="isAuthorized">
-            <h1 class="text-2xl md:text-4xl font-black mb-8 text-center tracking-widest text-slate-800">產物投資利潤決策工具</h1>
+<body>
+    <div id="app" class="min-h-screen flex flex-col items-center p-6">
+        <div id="login-ui" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md mt-20">
+            <h1 class="text-2xl font-black mb-6 text-center">GATEWAY</h1>
+            <input id="userId" type="password" placeholder="Enter ID" class="w-full border p-3 rounded-lg mb-4 text-black outline-none">
+            <button onclick="doLogin()" id="loginBtn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold">LOGIN</button>
+        </div>
 
-            <div class="bg-[#B9C9D6] border-2 border-slate-300 rounded-[1.5rem] md:rounded-[2.5rem] p-4 md:p-10 mb-8 shadow-lg overflow-hidden">
-                <div class="inline-block bg-slate-800 text-white px-5 py-1 rounded-full text-sm font-bold mb-6">表 0：各產物行情比價</div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                    <div v-for="(p, key) in products" :key="key" class="bg-white/90 rounded-2xl p-5 md:p-6 shadow-md border-b-4 border-slate-300 flex flex-col">
-                        <h3 class="text-xl font-black mb-4 pb-2 border-b-2 border-slate-100" :class="key === 'special' ? 'text-rose-600' : 'text-slate-700'">{{ p.name }}</h3>
-                        <div class="space-y-3 flex-1">
-                            <div v-for="label in productLabels" :key="label.key" class="flex items-center w-full">
-                                <span class="w-24 md:w-28 font-bold text-gray-600 text-sm md:text-base flex-shrink-0">{{ label.name }}</span>
-                                <input type="number" v-model.number="p[label.key]" class="flex-1 min-w-0 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-right font-black text-slate-900 focus:ring-2 focus:ring-blue-400 outline-none">
-                            </div>
-                        </div>
-                        <div class="mt-6 pt-4 border-t border-slate-200 bg-slate-50/50 rounded-xl p-3">
-                            <div class="flex justify-between font-bold text-sm text-slate-500"><span>毛利</span><span class="text-rose-500">{{ calcMargin(p).toFixed(2) }}</span></div>
-                            <div class="flex justify-between font-black text-lg"><span>淨利</span><span class="text-emerald-700">{{ formatMoney(calcNet(p)) }}</span></div>
-                        </div>
-                    </div>
+        <div id="main-ui" class="hidden w-full max-w-4xl">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <div id="user-welcome" class="text-xl font-bold"></div>
+                    <div id="user-role" class="text-xs opacity-60"></div>
                 </div>
+                <button onclick="location.reload()" class="text-sm bg-gray-200 px-3 py-1 rounded">Logout</button>
             </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div class="bg-[#E2D1D1] border-2 border-slate-300 rounded-[2rem] p-6 md:p-8 shadow-lg">
-                    <h2 class="text-xl font-bold mb-6 text-center text-slate-800">表 1：買空特產搭配方案</h2>
-                    <div class="space-y-3 mb-8 max-w-sm mx-auto">
-                        <div class="flex items-center"><span class="w-24 md:w-28 font-bold">初始資金</span><input type="number" v-model.number="table1.initMoney" class="flex-1 min-w-0 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-right font-black"></div>
-                        <div class="flex items-center"><span class="w-24 md:w-28 font-bold">扣除金額</span><input type="number" v-model.number="table1.deduct" class="flex-1 min-w-0 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-right font-black"></div>
-                    </div>
-                    <div class="overflow-hidden bg-white/60 rounded-2xl p-4 shadow-inner">
-                        <table class="w-full text-sm md:text-base font-bold mb-1">
-                            <thead class="border-b border-slate-300 text-slate-500">
-                                <tr><th class="py-2 text-left">副產分配</th><th class="text-right w-[35%]">副產 1</th><th class="text-right w-[35%]">副產 2</th></tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr><td class="py-3">該地售價</td><td><input type="number" v-model.number="table1.sell1" class="input-aligned"></td><td><input type="number" v-model.number="table1.sell2" class="input-aligned"></td></tr>
-                                <tr><td class="py-3">該地漲跌%</td><td><input type="number" v-model.number="table1.chg1" class="input-aligned"></td><td><input type="number" v-model.number="table1.chg2" class="input-aligned"></td></tr>
-                            </tbody>
-                        </table>
-                        <div class="flex items-center text-[#ff7f50] bg-[#fffff0] rounded-xl px-2 py-3 font-bold mt-2">
-                            <span class="text-left flex-1 pl-1 text-sm md:text-base">預估淨利</span>
-                            <div class="flex w-[75%] justify-end">
-                                <span class="w-1/2 text-right pr-2 md:pr-4 text-xs md:text-base break-all">{{ formatMoney(t1_net1) }}</span>
-                                <span class="w-1/2 text-right pr-1 text-xs md:text-base break-all">{{ formatMoney(t1_net2) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-[#D4DFD7] border-2 border-slate-300 rounded-[2rem] p-6 md:p-8 shadow-lg">
-                    <h2 class="text-xl font-bold mb-6 text-center text-slate-800">表 2：特產不足方案</h2>
-                    <div class="space-y-3 mb-8 max-w-sm mx-auto">
-                        <div class="flex items-center"><span class="w-24 md:w-28 font-bold">初始資金</span><input type="number" v-model.number="table2.initMoney" class="flex-1 min-w-0 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-right font-black"></div>
-                        <div class="flex items-center"><span class="w-24 md:w-28 font-bold">扣除金額</span><input type="number" v-model.number="table2.deduct" class="flex-1 min-w-0 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-right font-black"></div>
-                    </div>
-                    <div class="overflow-hidden bg-white/60 rounded-2xl p-4 shadow-inner">
-                        <table class="w-full text-sm md:text-base font-bold mb-1">
-                            <thead class="border-b border-slate-300 text-slate-500">
-                                <tr><th class="py-2 text-left">剩餘分配</th><th class="text-right w-[35%] text-xs md:text-base">特產</th><th class="text-right w-[35%] text-xs md:text-base">副產 N</th></tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr><td class="py-3">該地售價</td><td><input type="number" v-model.number="table2.sell1" class="input-aligned"></td><td><input type="number" v-model.number="table2.sell2" class="input-aligned"></td></tr>
-                                <tr><td class="py-3">該地漲跌%</td><td><input type="number" v-model.number="table2.chg1" class="input-aligned"></td><td><input type="number" v-model.number="table2.chg2" class="input-aligned"></td></tr>
-                            </tbody>
-                        </table>
-                        <div class="flex items-center text-[#ff7f50] bg-[#fffff0] rounded-xl px-2 py-3 font-bold mt-2">
-                            <span class="text-left flex-1 pl-1 text-sm md:text-base">預估淨利</span>
-                            <div class="flex w-[75%] justify-end">
-                                <span class="w-1/2 text-right pr-2 md:pr-4 text-xs md:text-base break-all">{{ formatMoney(t2_net1) }}</span>
-                                <span class="w-1/2 text-right pr-1 text-xs md:text-base break-all">{{ formatMoney(t2_net2) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div id="announce-bar" class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-8 text-sm hidden"></div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <button onclick="location.href='flipping.html'" class="bg-white p-6 rounded-xl shadow-sm text-left">🃏 flipping</button>
+                <button onclick="location.href='stamina.html'" class="bg-white p-6 rounded-xl shadow-sm text-left">⚡ stamina</button>
+                <button onclick="location.href='voyage.html'" class="bg-white p-6 rounded-xl shadow-sm text-left">🚢 voyage</button>
             </div>
-
-            <div class="bg-[#1E293B] rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 text-white shadow-2xl">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div class="text-center md:text-left">
-                        <p class="text-slate-400 text-sm mb-1">表 0 最佳推薦：</p>
-                        <p class="text-xl md:text-3xl font-black text-yellow-400">{{ bestByNet0.name }} (淨利最高)</p>
-                    </div>
-                    <div class="text-center md:text-right border-t md:border-t-0 border-slate-700 pt-6 md:pt-0 w-full md:w-auto">
-                        <p class="text-slate-400 text-sm mb-1">推薦投資策略：</p>
-                        <p class="text-2xl md:text-4xl font-black text-emerald-400 mb-2">{{ finalRecommendation.msg }}</p>
-                        <p class="text-xs text-slate-400 italic">{{ finalRecommendation.reason }}</p>
-                    </div>
+            <div id="admin-section" class="hidden mt-12 pt-8 border-t border-slate-300">
+                <h2 class="text-lg font-bold mb-4">ADMIN PANEL</h2>
+                <div class="flex gap-4">
+                    <button class="bg-emerald-600 text-white px-4 py-2 rounded text-sm">Activities Maintenance</button>
+                    <button id="super-admin-btn" class="hidden bg-amber-600 text-white px-4 py-2 rounded text-sm">User Management</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const CORRECT_PASSWORD = 'umbd';
-        const { createApp } = Vue;
-        createApp({
-            data() {
-                return {
-                    isAuthorized: false,
-                    productLabels: [{ name: '成本', key: 'cost' }, { name: '買入漲跌(%)', key: 'buyChg' }, { name: '庫存數量', key: 'qty' }, { name: '售價', key: 'sellPrice' }, { name: '賣出漲跌(%)', key: 'sellChg' }],
-                    products: {
-                        special: { name: '特產', cost: 100, buyChg: -10, qty: 200, sellPrice: 170, sellChg: 20 },
-                        sub1:    { name: '副產 1', cost: 182, buyChg: -9, qty: 100, sellPrice: 350, sellChg: 19 },
-                        sub2:    { name: '副產 2', cost: 93, buyChg: -7, qty: 400, sellPrice: 200, sellChg: 16 }
-                    },
-                    table1: { initMoney: 1824000, deduct: 73010, sell1: 202, sell2: 199, chg1: 1, chg2: -1 },
-                    table2: { initMoney: 0, deduct: 0, sell1: 0, sell2: 0, chg1: 0, chg2: 0 }
-                }
-            },
-            mounted() { this.checkAuth(); },
-            computed: {
-                t1_remain() { return this.table1.initMoney - this.table1.deduct; },
-                t1_net1() { return Math.max(0, (this.table1.sell1 - this.products.sub1.cost) * (this.table1.chg1 - this.products.sub1.buyChg) * Math.floor(this.t1_remain/this.products.sub1.cost)); },
-                t1_net2() { return Math.max(0, (this.table1.sell2 - this.products.sub2.cost) * (this.table1.chg2 - this.products.sub2.buyChg) * Math.floor(this.t1_remain/this.products.sub2.cost)); },
-                t2_remain() { return this.table2.initMoney - this.table2.deduct; },
-                t2_net1() { return Math.max(0, (this.table2.sell1 - this.products.special.cost) * (this.table2.chg1 - this.products.special.buyChg) * Math.floor(this.t2_remain/this.products.special.cost)); },
-                t2_net2() { return Math.max(0, (this.table2.sell2 - this.products.sub2.cost) * (this.table2.chg2 - this.products.sub2.buyChg) * Math.floor(this.t2_remain/this.products.sub2.cost)); },
-                bestByNet0() {
-                    const list = Object.keys(this.products).map(k => ({ key: k, name: this.products[k].name, net: this.calcNet(this.products[k]) }));
-                    return list.sort((a, b) => b.net - a.net)[0];
-                },
-                finalRecommendation() {
-                    const capitalNeeded = this.products.special.cost * this.products.special.qty;
-                    if (this.table1.initMoney <= capitalNeeded && this.table1.initMoney > 0) return { msg: `單買：${this.bestByNet0.name}`, reason: "資金未達買空特產門檻" };
-                    if (this.bestByNet0.name === '特產') return { msg: "方案一：買空特產+副產", reason: "特產基礎利潤優於其他副產" };
-                    return { msg: "擇優方案：單買副產 2", reason: "依據總淨利最大化判斷" };
-                }
-            },
-            methods: {
-                formatMoney(val) {
-                    if (!val || val === 0) return '0';
-                    const absVal = Math.abs(val);
-                    const sign = val < 0 ? '-' : '';
+        function doLogin() {
+            const id = document.getElementById('userId').value;
+            const btn = document.getElementById('loginBtn');
+            btn.innerText = "Checking...";
+            btn.disabled = true;
 
-                    if (absVal >= 100000000) {
-                        return sign + (absVal / 100000000).toFixed(2) + ' 億';
-                    } else if (absVal >= 10000) {
-                        return sign + (absVal / 10000).toFixed(2) + ' 萬';
-                    } else {
-                        return sign + absVal.toLocaleString();
-                    }
-                },
-                checkAuth() {
-                    if (sessionStorage.getItem('isAuthorized') === 'true') { this.isAuthorized = true; return; }
-                    let pwd = prompt('請輸入存取密碼：');
-                    if (pwd === CORRECT_PASSWORD) { this.isAuthorized = true; sessionStorage.setItem('isAuthorized', 'true'); }
-                    else { alert('密碼錯誤！'); location.reload(); }
-                },
-                calcMargin(p) { return (p.sellPrice - p.cost) * (p.sellChg - p.buyChg); },
-                calcNet(p) { return this.calcMargin(p) * p.qty; }
+            // 重要：呼叫 GAS 內的函數
+            google.script.run.withSuccessHandler(res => {
+                if(res.success) {
+                    sessionStorage.setItem('gameData', JSON.stringify(res));
+                    renderUI(res);
+                } else {
+                    alert(res.msg);
+                    btn.innerText = "LOGIN";
+                    btn.disabled = false;
+                }
+            }).getInitialData(id);
+        }
+
+        function renderUI(data) {
+            document.getElementById('login-ui').classList.add('hidden');
+            document.getElementById('main-ui').classList.remove('hidden');
+            document.getElementById('user-welcome').innerText = "Hello, " + data.user.name;
+            document.getElementById('user-role').innerText = "Role: " + data.user.role;
+            document.body.className = "theme-" + (data.config.CurrentTheme || 'default');
+            if(data.config.AnnounceText) {
+                const bar = document.getElementById('announce-bar');
+                bar.innerText = "📢 " + data.config.AnnounceText;
+                bar.classList.remove('hidden');
             }
-        }).mount('#app');
+            if(data.user.level >= 10) {
+                document.getElementById('admin-section').classList.remove('hidden');
+                if(data.user.level === 99) document.getElementById('super-admin-btn').classList.remove('hidden');
+            }
+        }
     </script>
 </body>
 </html>
