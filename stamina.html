@@ -3,77 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>體力計算器</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <title>體力監測系統 - 活動工具箱</title>
     <style>
-        .theme-default { --bg: #f1f5f9; --card: #ffffff; --text: #1e293b; }
-        .theme-christmas { --bg: #fef2f2; --card: #ffffff; --text: #991b1b; }
-        .theme-dark { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
-        body { background-color: var(--bg); color: var(--text); transition: 0.3s; font-family: sans-serif; }
+        .progress-ring { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .live-tag { animation: pulse-soft 2s infinite; }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-2xl mx-auto bg-white p-6 rounded-3xl shadow-xl text-slate-800">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold">⚡ 體力紀錄與計算</h2>
-            <button onclick="location.href='portal.html'" class="text-sm bg-gray-100 px-3 py-1 rounded-lg">回主選單</button>
-        </div>
-        
-        <div class="space-y-4">
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-6 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
             <div>
-                <label class="block text-sm font-bold mb-1">選擇活動：</label>
-                <select id="activitySelect" class="w-full p-3 border-2 rounded-xl focus:border-blue-500 outline-none transition"></select>
+                <h2 class="text-2xl font-black text-slate-800">⚡ 體力實時監測</h2>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Stamina Live Monitor</p>
+            </div>
+            <button onclick="location.href='portal.html'" class="bg-slate-100 px-6 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-200 transition">返回選單</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="md:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+                <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">當前活動配置</label>
+                <select id="activitySelect" class="w-full p-3 bg-slate-50 border-2 border-slate-50 rounded-xl font-bold outline-none focus:border-blue-500 transition-all"></select>
+                <div id="activityInfo" class="mt-3 flex gap-4 text-xs font-bold text-blue-600">
+                    <span id="rateInfo">-- 分/點</span>
+                    <span id="maxInfo">上限: --</span>
+                </div>
+            </div>
+            <div class="bg-indigo-600 p-6 rounded-[2rem] shadow-lg shadow-indigo-100 flex flex-col justify-center">
+                <button onclick="openAddModal()" class="w-full bg-white/20 hover:bg-white/30 text-white py-3 rounded-xl font-bold transition">＋ 新增監測人物</button>
+            </div>
+        </div>
+
+        <div id="characterList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             </div>
 
-            <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl">
-                <div>
-                    <p class="text-xs text-slate-400">回復速度 (分鐘/點)</p>
-                    <p id="minDisplay" class="text-xl font-black">--</p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-400">體力上限</p>
-                    <p id="maxDisplay" class="text-xl font-black">--</p>
-                </div>
-            </div>
+        <div id="emptyState" class="hidden text-center py-20">
+            <div class="text-6xl mb-4">📭</div>
+            <p class="text-slate-400 font-bold">目前沒有監測中的人物，請點擊新增</p>
+        </div>
+    </div>
 
-            <div class="pt-4 border-t border-dashed">
-                <p class="text-center text-slate-400 text-sm italic">預留計算公式區塊...</p>
+    <div id="addModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative">
+            <button onclick="closeAddModal()" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600 text-2xl">✕</button>
+            <h3 class="text-2xl font-black mb-6 text-slate-800">新增監測對象</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase">人物/群組名稱</label>
+                    <input id="newName" type="text" placeholder="例如：本尊 - 戰士" class="w-full border-2 border-slate-100 rounded-xl p-3 text-sm outline-none focus:border-indigo-500 bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase">當前體力數值</label>
+                    <input id="newStamina" type="number" placeholder="0" class="w-full border-2 border-slate-100 rounded-xl p-3 text-sm outline-none focus:border-indigo-500 bg-slate-50">
+                </div>
             </div>
+            <button onclick="addCharacter()" class="w-full mt-8 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100">開始監測</button>
         </div>
     </div>
 
     <script>
-        let allActivities = [];
+        let activities = [];
+        let characters = JSON.parse(localStorage.getItem('stamina_chars') || '[]');
+        let currentActivityIndex = 0;
 
         window.onload = function() {
-            const sessionRaw = sessionStorage.getItem('gameData');
-            if (!sessionRaw) {
-                alert("尚未登入，請先從入口進入。");
-                location.href = "index.html";
-                return;
-            }
-
-            const gameData = JSON.parse(sessionRaw);
-            allActivities = gameData.activities;
-            document.body.className = "theme-" + (gameData.config.CurrentTheme || 'default');
+            const data = JSON.parse(sessionStorage.getItem('gameData'));
+            if(!data) return location.href = "index.html";
+            activities = data.activities;
 
             const select = document.getElementById('activitySelect');
-            if (allActivities.length > 0) {
-                allActivities.forEach((act, idx) => {
-                    const opt = document.createElement('option');
-                    opt.value = idx;
-                    opt.textContent = act.name;
-                    select.appendChild(opt);
-                });
+            activities.forEach((act, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = act.name;
+                select.appendChild(opt);
+            });
 
-                select.addEventListener('change', function() {
-                    const act = allActivities[this.value];
-                    document.getElementById('minDisplay').innerText = act.minPerStamina + " 分";
-                    document.getElementById('maxDisplay').innerText = act.maxStamina + " 點";
-                });
-                select.dispatchEvent(new Event('change'));
-            }
+            select.onchange = function() {
+                currentActivityIndex = this.value;
+                updateActivityUI();
+                renderCharacters();
+            };
+
+            updateActivityUI();
+            renderCharacters();
+            
+            // 每秒鐘更新一次即時時間
+            setInterval(renderCharacters, 1000);
         };
+
+        function updateActivityUI() {
+            const act = activities[currentActivityIndex];
+            document.getElementById('rateInfo').innerText = `每 ${act.minPerStamina} 分鐘回 1 點`;
+            document.getElementById('maxInfo').innerText = `體力上限: ${act.maxStamina}`;
+        }
+
+        function renderCharacters() {
+            const list = document.getElementById('characterList');
+            const empty = document.getElementById('emptyState');
+            const act = activities[currentActivityIndex];
+            
+            if(characters.length === 0) {
+                list.innerHTML = "";
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            
+            const now = new Date().getTime();
+
+            list.innerHTML = characters.map((char, index) => {
+                // --- 核心計算邏輯 ---
+                const msPassed = now - char.lastUpdate;
+                const minutesPassed = msPassed / (1000 * 60);
+                const recovered = Math.floor(minutesPassed / act.minPerStamina);
+                const currentStamina = Math.min(act.maxStamina, char.initialStamina + recovered);
+                
+                const isFull = currentStamina >= act.maxStamina;
+                const percent = (currentStamina / act.maxStamina) * 100;
+                
+                // 計算回滿所需時間
+                let fullTimeText = "已回滿";
+                let countdownText = "FULL";
+                
+                if(!isFull) {
+                    const staminaNeeded = act.maxStamina - currentStamina;
+                    const minsToFull = (staminaNeeded * act.minPerStamina) - (minutesPassed % act.minPerStamina);
+                    const fullAt = new Date(now + minsToFull * 60000);
+                    fullTimeText = `預計 ${fullAt.getHours().toString().padStart(2,'0')}:${fullAt.getMinutes().toString().padStart(2,'0')} 回滿`;
+                    
+                    const h = Math.floor(minsToFull / 60);
+                    const m = Math.floor(minsToFull % 60);
+                    const s = Math.floor((minsToFull * 60) % 60);
+                    countdownText = `${h}h ${m}m ${s}s`;
+                }
+
+                return `
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="font-black text-slate-700 text-lg">${char.name}</h4>
+                            <p class="text-[10px] font-bold ${isFull ? 'text-green-500' : 'text-blue-500'} uppercase tracking-widest live-tag">
+                                ● ${isFull ? 'Completed' : 'Recovering'}
+                            </p>
+                        </div>
+                        <button onclick="removeCharacter(${index})" class="text-slate-300 hover:text-red-500">✕</button>
+                    </div>
+
+                    <div class="flex items-center gap-6">
+                        <div class="relative w-20 h-20">
+                            <svg class="w-20 h-20">
+                                <circle class="text-slate-100" stroke-width="8" stroke="currentColor" fill="transparent" r="30" cx="40" cy="40"/>
+                                <circle class="${isFull ? 'text-green-500' : 'text-blue-500'}" stroke-width="8" stroke-dasharray="188.4" stroke-dashoffset="${188.4 - (188.4 * percent / 100)}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="30" cx="40" cy="40" style="transition: stroke-dashoffset 1s linear;"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center font-black text-slate-700">
+                                ${currentStamina}
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-2xl font-black text-slate-800">${countdownText}</p>
+                            <p class="text-xs font-bold text-slate-400">${fullTimeText}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-slate-50 flex gap-2">
+                        <button onclick="updateStaminaPrompt(${index})" class="flex-1 py-2 bg-slate-50 rounded-xl text-[10px] font-bold text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition">更新當前體力</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- 功能函式 ---
+        function openAddModal() { document.getElementById('addModal').classList.replace('hidden', 'flex'); }
+        function closeAddModal() { document.getElementById('addModal').classList.replace('flex', 'hidden'); }
+
+        function addCharacter() {
+            const name = document.getElementById('newName').value;
+            const stamina = parseInt(document.getElementById('newStamina').value);
+            if(!name || isNaN(stamina)) return alert("請完整填寫內容");
+
+            characters.push({
+                name: name,
+                initialStamina: stamina,
+                lastUpdate: new Date().getTime()
+            });
+            saveAndRefresh();
+            closeAddModal();
+            document.getElementById('newName').value = "";
+            document.getElementById('newStamina').value = "";
+        }
+
+        function removeCharacter(index) {
+            if(confirm("確定刪除此監測對象？")) {
+                characters.splice(index, 1);
+                saveAndRefresh();
+            }
+        }
+
+        function updateStaminaPrompt(index) {
+            const val = prompt("請輸入該角色目前的實際體力：", characters[index].initialStamina);
+            if (val !== null) {
+                characters[index].initialStamina = parseInt(val);
+                characters[index].lastUpdate = new Date().getTime();
+                saveAndRefresh();
+            }
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('stamina_chars', JSON.stringify(characters));
+            renderCharacters();
+        }
     </script>
 </body>
 </html>
