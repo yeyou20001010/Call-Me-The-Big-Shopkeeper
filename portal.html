@@ -6,116 +6,156 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <title>活動工具箱 - 主選單</title>
 </head>
-<body class="bg-slate-50 p-4 md:p-12 transition-colors duration-300" id="mainBody">
+<body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-colors duration-300" id="mainBody">
     <div class="max-w-4xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm gap-4">
             <div>
-                <h1 id="userName" class="text-3xl font-black text-slate-800">載入中...</h1>
-                <p id="userRole" class="text-blue-600 font-bold text-sm uppercase tracking-widest"></p>
+                <p class="text-xs font-bold text-blue-500 uppercase tracking-[0.2em] mb-1">Authenticated Access</p>
+                <h1 id="userName" class="text-3xl font-black text-slate-800 italic">載入中...</h1>
+                <p id="userRole" class="text-slate-400 font-bold text-sm mt-1"></p>
             </div>
-            <button onclick="logout()" class="bg-white px-6 py-2 rounded-xl shadow-sm text-slate-500 font-bold hover:bg-red-50 hover:text-red-500 transition">登出</button>
+            <button onclick="logout()" class="bg-slate-50 px-6 py-2 rounded-xl text-slate-400 font-bold hover:bg-red-50 hover:text-red-500 transition-all">登出</button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-            <button onclick="location.href='stamina.html'" class="bg-white p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-xl transition text-left border-b-8 border-blue-500">
-                <span class="text-3xl">⚡</span><h3 class="font-bold mt-2">體力紀錄</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <button onclick="location.href='stamina.html'" class="bg-white p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all text-left border-b-8 border-blue-500 group">
+                <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">⚡</div>
+                <h3 class="font-bold text-slate-700 text-lg">體力紀錄</h3>
+                <p class="text-slate-400 text-xs mt-1">計算回復時間與上限</p>
             </button>
-            <button onclick="location.href='flipping.html'" class="bg-white p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-xl transition text-left border-b-8 border-red-500">
-                <span class="text-3xl">🃏</span><h3 class="font-bold mt-2">翻牌工具</h3>
+
+            <button onclick="location.href='flipping.html'" class="bg-white p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all text-left border-b-8 border-red-500 group">
+                <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">🃏</div>
+                <h3 class="font-bold text-slate-700 text-lg">翻牌工具</h3>
+                <p class="text-slate-400 text-xs mt-1">路徑紀錄與宮格模擬</p>
             </button>
-            <button onclick="location.href='voyage.html'" class="bg-white p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-xl transition text-left border-b-8 border-amber-500">
-                <span class="text-3xl">🚢</span><h3 class="font-bold mt-2">偉大航線</h3>
+
+            <button onclick="location.href='voyage.html'" class="bg-white p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all text-left border-b-8 border-amber-500 group">
+                <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">🚢</div>
+                <h3 class="font-bold text-slate-700 text-lg">偉大航線</h3>
+                <p class="text-slate-400 text-xs mt-1">航程規劃與資源分析</p>
             </button>
         </div>
 
-        <div id="adminPanel" class="hidden mt-10 p-6 md:p-8 bg-slate-900 rounded-[2rem] text-white shadow-2xl">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">管理員控制台</h2>
-                <span class="bg-indigo-500 text-[10px] px-2 py-1 rounded">ADMIN ONLY</span>
+        <div id="adminPanel" class="hidden mt-12 p-8 bg-slate-900 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="flex items-center gap-2 mb-6">
+                    <div class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">管理員控制中心</h2>
+                </div>
+                <div class="flex flex-wrap gap-4">
+                    <button onclick="openConfigModal()" class="bg-indigo-600 hover:bg-indigo-500 px-8 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-indigo-900/50">修改系統配置 (公告/主題)</button>
+                    <button id="superAdminBtn" class="hidden bg-slate-700 hover:bg-slate-600 px-8 py-3 rounded-2xl text-sm font-bold transition-all">用戶權限管理</button>
+                </div>
             </div>
-            <div class="flex flex-wrap gap-3">
-                <button onclick="openConfigModal()" class="bg-indigo-600 px-6 py-3 rounded-xl text-sm font-bold hover:bg-indigo-500 transition">修改系統配置 (公告/主題)</button>
-                <button id="superAdminBtn" class="hidden bg-amber-600 px-6 py-3 rounded-xl text-sm font-bold hover:bg-amber-500 transition">使用者權限管理</button>
-            </div>
+            <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl"></div>
         </div>
     </div>
 
-    <div id="configModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl">
-            <h3 class="text-xl font-black mb-6">系統配置修改</h3>
-            <div class="space-y-4">
+    <div id="configModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl scale-95 transition-all" id="modalContent">
+            <h3 class="text-2xl font-black mb-6 text-slate-800">系統配置修改</h3>
+            <div class="space-y-5">
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-2">全站公告內容</label>
-                    <textarea id="announceInput" class="w-full border-2 border-slate-100 rounded-xl p-3 text-sm focus:border-indigo-500 outline-none" rows="3"></textarea>
+                    <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">全站公告內容</label>
+                    <textarea id="announceInput" class="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm focus:border-indigo-500 outline-none transition-all bg-slate-50" rows="3" placeholder="輸入要顯示給所有人的訊息..."></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-2">切換佈景主題</label>
-                    <select id="themeInput" class="w-full border-2 border-slate-100 rounded-xl p-3 text-sm">
-                        <option value="default">預設藍白</option>
-                        <option value="christmas">聖誕紅 (Christmas)</option>
-                        <option value="dark">深色模式 (Dark)</option>
+                    <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">系統佈景主題</label>
+                    <select id="themeInput" class="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm font-bold bg-slate-50 outline-none focus:border-indigo-500 transition-all">
+                        <option value="default">預設藍白 (Default)</option>
+                        <option value="christmas">聖誕限定 (Christmas)</option>
+                        <option value="dark">極致深黑 (Dark Mode)</option>
                     </select>
                 </div>
             </div>
-            <div class="flex gap-3 mt-8">
-                <button onclick="closeConfigModal()" class="flex-1 py-3 text-slate-400 font-bold text-sm">取消</button>
-                <button onclick="saveConfig()" class="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-200">儲存並套用</button>
+            <div class="flex gap-4 mt-10">
+                <button onclick="closeConfigModal()" class="flex-1 py-4 text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors">取消修改</button>
+                <button onclick="saveConfig()" id="saveBtn" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">儲存並同步</button>
             </div>
         </div>
     </div>
 
     <script>
-        let userData = null;
+        // --- 設定區 ---
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec";
+        let cachedData = null;
 
         window.onload = function() {
             const data = JSON.parse(sessionStorage.getItem('gameData'));
             if(!data) return location.href = "index.html";
-            userData = data;
+            cachedData = data;
 
-            // 顯示個人資訊
+            // 1. 顯示使用者資訊
             document.getElementById('userName').innerText = "您好, " + data.user.name;
-            document.getElementById('userRole').innerText = "權限: " + data.user.role;
+            document.getElementById('userRole').innerText = "權限等級: " + data.user.role;
             
-            // 權限分級顯示
+            // 2. 權限分級顯示面板
             if(data.user.level >= 10) {
                 document.getElementById('adminPanel').classList.remove('hidden');
                 if(data.user.level === 99) document.getElementById('superAdminBtn').classList.remove('hidden');
             }
 
-            // 套用公告與主題
+            // 3. 初始主題應用
             if(data.config.CurrentTheme) applyTheme(data.config.CurrentTheme);
         };
 
-        function applyTheme(theme) {
-            const body = document.getElementById('mainBody');
-            if(theme === 'christmas') body.classList.add('bg-red-50');
-            else if(theme === 'dark') body.classList.add('bg-slate-900', 'text-white');
-        }
-
+        // 開啟管理視窗
         function openConfigModal() {
-            document.getElementById('announceInput').value = userData.config.AnnounceText || "";
-            document.getElementById('themeInput').value = userData.config.CurrentTheme || "default";
-            document.getElementById('configModal').classList.replace('hidden', 'flex');
+            document.getElementById('announceInput').value = cachedData.config.AnnounceText || "";
+            document.getElementById('themeInput').value = cachedData.config.CurrentTheme || "default";
+            const modal = document.getElementById('configModal');
+            modal.classList.replace('hidden', 'flex');
         }
 
         function closeConfigModal() {
             document.getElementById('configModal').classList.replace('flex', 'hidden');
         }
 
+        // --- 核心儲存功能：透過 POST 回傳給 GAS ---
         function saveConfig() {
+            const btn = document.getElementById('saveBtn');
             const newAnnounce = document.getElementById('announceInput').value;
             const newTheme = document.getElementById('themeInput').value;
-            alert("正在保存至試算表...\n(此處需實作 GAS 回傳 API，目前僅先更新本地顯示)");
-            
-            // 更新本地快取
-            userData.config.AnnounceText = newAnnounce;
-            userData.config.CurrentTheme = newTheme;
-            sessionStorage.setItem('gameData', JSON.stringify(userData));
-            
-            location.reload(); // 重新整理看效果
+
+            btn.innerText = "同步中...";
+            btn.disabled = true;
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', // 處理 GAS 跨網域跳轉
+                body: JSON.stringify({
+                    announce: newAnnounce,
+                    theme: newTheme
+                })
+            })
+            .then(() => {
+                // 更新本地緩存資料
+                cachedData.config.AnnounceText = newAnnounce;
+                cachedData.config.CurrentTheme = newTheme;
+                sessionStorage.setItem('gameData', JSON.stringify(cachedData));
+                
+                alert("配置已成功存入雲端試算表！");
+                location.reload(); 
+            })
+            .catch(err => {
+                console.error(err);
+                alert("儲存失敗，請檢查網路或 GAS 權限設定。");
+                btn.innerText = "儲存並同步";
+                btn.disabled = false;
+            });
         }
 
-        function logout() { sessionStorage.clear(); location.href = "index.html"; }
+        function applyTheme(theme) {
+            const body = document.getElementById('mainBody');
+            if(theme === 'christmas') body.classList.add('bg-red-50');
+            if(theme === 'dark') body.classList.add('bg-slate-900');
+        }
+
+        function logout() { 
+            sessionStorage.clear(); 
+            location.href = "index.html"; 
+        }
     </script>
 </body>
 </html>
