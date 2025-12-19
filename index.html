@@ -1,88 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <script src="https://script.google.com/macros/s/AKfycbz4iCmRO3GYw7ed18GMLlsuPMMuDbcf5NVJa68hqnEYuHBjfjjQqAbxKVGGOA0pvveu/exec"></script>
-    <style>
-        .theme-default { --bg: #f1f5f9; --card: #ffffff; }
-        .theme-christmas { --bg: #fef2f2; --card: #ffffff; }
-        body { background-color: var(--bg); transition: 0.4s; font-family: sans-serif; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>系統登入</title>
 </head>
-<body class="flex items-center justify-center min-h-screen p-6">
-
-    <div id="login-section" class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
-        <h2 class="text-2xl font-black mb-6 tracking-tighter">GATEWAY AUTH</h2>
-        <input id="userId" type="text" placeholder="ENTER ID" class="w-full border-2 p-3 rounded-lg mb-4 text-center text-lg font-bold outline-none focus:border-indigo-500">
-        <button onclick="login()" id="btn-text" class="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-700 transition">SIGN IN</button>
-    </div>
-
-    <div id="portal-section" class="hidden w-full max-w-4xl animate-fade-in">
-        <div class="flex justify-between items-end mb-10">
-            <div>
-                <h1 id="greet" class="text-3xl font-black uppercase"></h1>
-                <p id="role-tag" class="text-xs font-mono opacity-50"></p>
-            </div>
-            <button onclick="location.reload()" class="text-xs underline opacity-50">Logout</button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div onclick="location.href='stamina.html'" class="bg-white p-8 rounded-2xl shadow-sm cursor-pointer hover:shadow-xl transition border-b-4 border-indigo-500">
-                <span class="text-4xl">⚡</span><h3 class="font-black mt-4">STAMINA</h3>
-            </div>
-            <div onclick="location.href='flipping.html'" class="bg-white p-8 rounded-2xl shadow-sm cursor-pointer hover:shadow-xl transition border-b-4 border-emerald-500">
-                <span class="text-4xl">🃏</span><h3 class="font-black mt-4">FLIPPING</h3>
-            </div>
-            <div onclick="location.href='voyage.html'" class="bg-white p-8 rounded-2xl shadow-sm cursor-pointer hover:shadow-xl transition border-b-4 border-amber-500">
-                <span class="text-4xl">🚢</span><h3 class="font-black mt-4">VOYAGE</h3>
-            </div>
-        </div>
-
-        <div id="admin-area" class="hidden mt-12 p-6 border-2 border-dashed border-slate-300 rounded-2xl">
-            <p class="text-sm font-bold text-slate-400 mb-4">ADMINISTRATOR CONTROL</p>
-            <button class="bg-indigo-600 text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest">Edit Activities</button>
-        </div>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-sm text-center">
+        <div class="text-5xl mb-6">🔐</div>
+        <h1 class="text-2xl font-bold mb-8 text-slate-800 tracking-wider">活動工具箱登入</h1>
+        <input id="userId" type="password" placeholder="請輸入使用者 ID" class="w-full border-2 border-slate-200 p-4 rounded-xl mb-6 text-center text-lg focus:border-blue-500 outline-none transition">
+        <button onclick="login()" id="btnText" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition shadow-lg">登入系統</button>
     </div>
 
     <script>
         function login() {
-    const id = document.getElementById('userId').value;
-    if(!id) return;
-    document.getElementById('btn-text').innerText = "VERIFYING...";
-
-    // 1. 這裡填入你部署後的「網頁應用程式網址」
-    const scriptUrl = "https://script.google.com/macros/s/XXXXXXXXX/exec"; 
-
-    // 2. 使用 fetch 發送請求 (因為你在 GitHub)
-    fetch(`${scriptUrl}?userId=${id}`)
-        .then(response => response.json())
-        .then(res => {
-            if(res.success) {
-                sessionStorage.setItem('gameData', JSON.stringify(res));
-                showPortal(res);
-            } else {
-                alert("Access Denied: " + res.msg);
-                document.getElementById('btn-text').innerText = "SIGN IN";
+            const id = document.getElementById('userId').value;
+            if(!id) {
+                alert("請輸入 ID");
+                return;
             }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Connection Error. Check GAS deployment.");
-        });
-}
+            const btn = document.getElementById('btnText');
+            btn.innerText = "驗證中...";
+            btn.disabled = true;
 
-        function showPortal(data) {
-            document.getElementById('login-section').classList.add('hidden');
-            document.body.className = "theme-" + (data.config.CurrentTheme || 'default');
-            const portal = document.getElementById('portal-section');
-            portal.classList.remove('hidden');
-            
-            document.getElementById('greet').innerText = "Welcome, " + data.user.name;
-            document.getElementById('role-tag').innerText = "Access Level: " + data.user.role;
+            // 請更換為你的 GAS Web App URL
+            const scriptUrl = "https://script.google.com/macros/s/你的ID/exec"; 
 
-            if(data.user.level >= 10) {
-                document.getElementById('admin-area').classList.remove('hidden');
-            }
+            fetch(`${scriptUrl}?userId=${id}`)
+                .then(response => response.json())
+                .then(res => {
+                    if(res.success) {
+                        sessionStorage.setItem('gameData', JSON.stringify(res));
+                        location.href = "portal.html"; 
+                    } else {
+                        alert("登入失敗：" + res.msg);
+                        btn.innerText = "登入系統";
+                        btn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    alert("連線錯誤，請檢查網路或 GAS 部署設定");
+                    btn.innerText = "登入系統";
+                    btn.disabled = false;
+                });
         }
     </script>
 </body>

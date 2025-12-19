@@ -1,24 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Voyage System</title>
+    <title>偉大航線</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         [v-cloak] { display: none; }
         .theme-christmas { background-color: #fef2f2; }
+        body { transition: 0.3s; background-color: #f8fafc; }
     </style>
 </head>
-<body class="p-6">
-    <div id="app" v-cloak class="max-w-5xl mx-auto">
+<body class="p-4 md:p-10">
+    <div id="app" v-cloak class="max-w-6xl mx-auto">
         <div class="flex justify-between items-center mb-8">
-            <h1 class="text-4xl font-black italic">🚢 VOYAGE</h1>
-            <button @click="back" class="bg-slate-800 text-white px-6 py-2 rounded-full">EXIT</button>
+            <h1 class="text-3xl font-black italic text-slate-900">🚢 VOYAGE SYSTEM</h1>
+            <button @click="goHome" class="bg-slate-800 text-white px-6 py-2 rounded-full font-bold shadow-lg">離開</button>
         </div>
 
-        <div class="bg-white p-8 rounded-3xl shadow-xl">
-            <p class="text-slate-500">Welcome, {{ userName }}. System is ready.</p>
+        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl">
+            <div class="mb-6 pb-6 border-b border-slate-100">
+                <p class="text-blue-600 font-bold">歡迎回來, {{ userName }}</p>
+                <h2 class="text-slate-400 text-sm">系統已就緒，請開始規劃航線</h2>
+            </div>
+            
+            <div class="py-20 text-center border-4 border-dashed border-slate-100 rounded-3xl">
+                <p class="text-slate-300">航線地圖與資源數據區塊</p>
+            </div>
         </div>
     </div>
 
@@ -28,7 +36,7 @@
             data() {
                 return {
                     userName: '',
-                    config: {}
+                    gameData: null
                 }
             },
             mounted() {
@@ -39,11 +47,13 @@
                 }
                 const data = JSON.parse(sessionRaw);
                 this.userName = data.user.name;
-                this.config = data.config;
+                this.gameData = data;
                 document.body.className = "theme-" + (data.config.CurrentTheme || 'default');
             },
             methods: {
-                back() { location.href = 'index.html'; }
+                goHome() {
+                    location.href = 'portal.html';
+                }
             }
         }).mount('#app');
     </script>

@@ -1,25 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Flipping Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>翻牌工具</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .theme-default { --primary: #3b82f6; }
         .theme-christmas { --primary: #dc2626; }
         body { transition: 0.3s; }
-        .card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
     </style>
 </head>
-<body class="p-6">
+<body class="p-4 bg-slate-50">
     <div class="max-w-4xl mx-auto">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-black">🃏 Flipping Tool</h1>
-            <button onclick="location.href='index.html'" class="bg-gray-200 px-4 py-1 rounded">Back</button>
+            <h1 class="text-2xl font-black text-slate-800">🃏 翻牌路徑紀錄</h1>
+            <button onclick="location.href='portal.html'" class="bg-white px-4 py-2 rounded-xl shadow-sm text-sm">返回選單</button>
         </div>
 
-        <div id="gameContent" class="bg-white p-6 rounded-2xl shadow">
-            <p class="text-center text-gray-400">Loading Game Assets...</p>
+        <div class="bg-white p-8 rounded-3xl shadow-xl min-h-[400px] flex items-center justify-center">
+            <div class="text-center">
+                <p class="text-slate-400">遊戲資源載入中...</p>
+                </div>
         </div>
     </div>
 
@@ -33,8 +35,8 @@
             const gameData = JSON.parse(sessionRaw);
             document.body.className = "theme-" + (gameData.config.CurrentTheme || 'default');
             
-            // 初始化你的翻牌邏輯...
-            console.log("Game Authorized for: " + gameData.user.name);
+            // 這裡初始化你的翻牌邏輯
+            console.log("驗證成功，使用者：" + gameData.user.name);
         };
     </script>
 </body>
