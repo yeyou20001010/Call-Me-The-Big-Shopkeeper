@@ -2,46 +2,51 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stamina Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; margin: 20px; background-color: #f4f4f4; transition: 0.3s; }
-        .theme-christmas { background-color: #fef2f2; }
-        .theme-dark { background-color: #1a1a1a; color: #eee; }
-        .container { max-width: 950px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        select, input, button { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #007bff; color: white; cursor: pointer; border: none; font-weight: bold; }
-        .hidden { display: none; }
+        .theme-default { --bg: #f3f4f6; --text: #1f2937; }
+        .theme-christmas { --bg: #fef2f2; --text: #991b1b; }
+        .theme-dark { --bg: #111827; --text: #f9fafb; }
+        body { background-color: var(--bg); color: var(--text); transition: 0.3s; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h2>⚡ Stamina Tracker</h2>
-        <label>Select Activity:</label>
-        <select id="activitySelect"></select>
-        <button onclick="location.href='index.html'" style="background-color: #6c757d;">Back to Menu</button>
-        <div id="content-area">
-            </div>
+<body class="p-4">
+    <div class="max-w-xl mx-auto bg-white p-6 rounded-xl shadow-md theme-card">
+        <h2 class="text-2xl font-bold mb-4">⚡ Stamina Tracker</h2>
+        
+        <label class="block mb-2 font-bold">Select Activity:</label>
+        <select id="activitySelect" class="w-full p-2 border rounded mb-4 text-black"></select>
+        
+        <div id="displayArea" class="space-y-4">
+            <p>Minutes per Stamina: <span id="minPerStamina" class="font-mono">--</span></p>
+            <p>Max Stamina: <span id="maxStamina" class="font-mono">--</span></p>
+        </div>
+
+        <button onclick="location.href='index.html'" class="mt-6 w-full bg-gray-500 text-white py-2 rounded">Back to Menu</button>
     </div>
 
     <script>
         let allActivities = [];
 
         function initialize() {
-            // Check Gateway Auth
             const sessionRaw = sessionStorage.getItem('gameData');
             if (!sessionRaw) {
-                alert("Unauthorized access. Redirecting to login...");
+                alert("Please login via gateway.");
                 location.href = "index.html";
                 return;
             }
 
             const gameData = JSON.parse(sessionRaw);
             allActivities = gameData.activities;
+            
+            // 套用主題
             document.body.className = "theme-" + (gameData.config.CurrentTheme || 'default');
 
             const select = document.getElementById('activitySelect');
             select.innerHTML = '';
-
+            
             if (allActivities && allActivities.length > 0) {
                 allActivities.forEach((act, idx) => {
                     const opt = document.createElement('option');
@@ -49,11 +54,16 @@
                     opt.textContent = act.name;
                     select.appendChild(opt);
                 });
+
+                select.addEventListener('change', function() {
+                    const act = allActivities[this.value];
+                    document.getElementById('minPerStamina').innerText = act.minPerStamina;
+                    document.getElementById('maxStamina').innerText = act.maxStamina;
+                    // 這裡可以觸發你原本的計時器邏輯
+                });
+
                 select.dispatchEvent(new Event('change'));
             }
-
-            // Call your original calculation functions
-            if (typeof loadAllMonitorData === "function") loadAllMonitorData();
         }
 
         window.onload = initialize;

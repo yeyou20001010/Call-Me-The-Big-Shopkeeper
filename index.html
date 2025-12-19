@@ -4,77 +4,84 @@
     <meta charset="UTF-8">
     <script src="https://script.google.com/macros/s/AKfycbz4iCmRO3GYw7ed18GMLlsuPMMuDbcf5NVJa68hqnEYuHBjfjjQqAbxKVGGOA0pvveu/exec"></script>
     <style>
-        .theme-default { --bg: #f8fafc; --card: #ffffff; --primary: #4f46e5; }
-        .theme-christmas { --bg: #fef2f2; --card: #ffffff; --primary: #dc2626; }
-        body { background-color: var(--bg); transition: 0.3s; }
+        .theme-default { --bg: #f1f5f9; --card: #ffffff; }
+        .theme-christmas { --bg: #fef2f2; --card: #ffffff; }
+        body { background-color: var(--bg); transition: 0.4s; font-family: sans-serif; }
     </style>
 </head>
-<body>
-    <div id="app" class="min-h-screen flex flex-col items-center p-6">
-        <div id="login-ui" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md mt-20">
-            <h1 class="text-2xl font-black mb-6 text-center">GATEWAY</h1>
-            <input id="userId" type="password" placeholder="Enter ID" class="w-full border p-3 rounded-lg mb-4 text-black outline-none">
-            <button onclick="doLogin()" id="loginBtn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold">LOGIN</button>
+<body class="flex items-center justify-center min-h-screen p-6">
+
+    <div id="login-section" class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+        <h2 class="text-2xl font-black mb-6 tracking-tighter">GATEWAY AUTH</h2>
+        <input id="userId" type="text" placeholder="ENTER ID" class="w-full border-2 p-3 rounded-lg mb-4 text-center text-lg font-bold outline-none focus:border-indigo-500">
+        <button onclick="login()" id="btn-text" class="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-700 transition">SIGN IN</button>
+    </div>
+
+    <div id="portal-section" class="hidden w-full max-w-4xl animate-fade-in">
+        <div class="flex justify-between items-end mb-10">
+            <div>
+                <h1 id="greet" class="text-3xl font-black uppercase"></h1>
+                <p id="role-tag" class="text-xs font-mono opacity-50"></p>
+            </div>
+            <button onclick="location.reload()" class="text-xs underline opacity-50">Logout</button>
         </div>
 
-        <div id="main-ui" class="hidden w-full max-w-4xl">
-            <div class="flex justify-between items-center mb-8">
-                <div>
-                    <div id="user-welcome" class="text-xl font-bold"></div>
-                    <div id="user-role" class="text-xs opacity-60"></div>
-                </div>
-                <button onclick="location.reload()" class="text-sm bg-gray-200 px-3 py-1 rounded">Logout</button>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div onclick="location.href='stamina.html'" class="bg-white p-8 rounded-2xl shadow-sm cursor-pointer hover:shadow-xl transition border-b-4 border-indigo-500">
+                <span class="text-4xl">⚡</span><h3 class="font-black mt-4">STAMINA</h3>
             </div>
-            <div id="announce-bar" class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-8 text-sm hidden"></div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <button onclick="location.href='flipping.html'" class="bg-white p-6 rounded-xl shadow-sm text-left">🃏 flipping</button>
-                <button onclick="location.href='stamina.html'" class="bg-white p-6 rounded-xl shadow-sm text-left">⚡ stamina</button>
-                <button onclick="location.href='voyage.html'" class="bg-white p-6 rounded-xl shadow-sm text-left">🚢 voyage</button>
+            <div onclick="location.href='flipping.html'" class="bg-white p-8 rounded-2xl shadow-sm cursor-pointer hover:shadow-xl transition border-b-4 border-emerald-500">
+                <span class="text-4xl">🃏</span><h3 class="font-black mt-4">FLIPPING</h3>
             </div>
-            <div id="admin-section" class="hidden mt-12 pt-8 border-t border-slate-300">
-                <h2 class="text-lg font-bold mb-4">ADMIN PANEL</h2>
-                <div class="flex gap-4">
-                    <button class="bg-emerald-600 text-white px-4 py-2 rounded text-sm">Activities Maintenance</button>
-                    <button id="super-admin-btn" class="hidden bg-amber-600 text-white px-4 py-2 rounded text-sm">User Management</button>
-                </div>
+            <div onclick="location.href='voyage.html'" class="bg-white p-8 rounded-2xl shadow-sm cursor-pointer hover:shadow-xl transition border-b-4 border-amber-500">
+                <span class="text-4xl">🚢</span><h3 class="font-black mt-4">VOYAGE</h3>
             </div>
+        </div>
+
+        <div id="admin-area" class="hidden mt-12 p-6 border-2 border-dashed border-slate-300 rounded-2xl">
+            <p class="text-sm font-bold text-slate-400 mb-4">ADMINISTRATOR CONTROL</p>
+            <button class="bg-indigo-600 text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest">Edit Activities</button>
         </div>
     </div>
 
     <script>
-        function doLogin() {
-            const id = document.getElementById('userId').value;
-            const btn = document.getElementById('loginBtn');
-            btn.innerText = "Checking...";
-            btn.disabled = true;
+        function login() {
+    const id = document.getElementById('userId').value;
+    if(!id) return;
+    document.getElementById('btn-text').innerText = "VERIFYING...";
 
-            // 重要：呼叫 GAS 內的函數
-            google.script.run.withSuccessHandler(res => {
-                if(res.success) {
-                    sessionStorage.setItem('gameData', JSON.stringify(res));
-                    renderUI(res);
-                } else {
-                    alert(res.msg);
-                    btn.innerText = "LOGIN";
-                    btn.disabled = false;
-                }
-            }).getInitialData(id);
-        }
+    // 1. 這裡填入你部署後的「網頁應用程式網址」
+    const scriptUrl = "https://script.google.com/macros/s/XXXXXXXXX/exec"; 
 
-        function renderUI(data) {
-            document.getElementById('login-ui').classList.add('hidden');
-            document.getElementById('main-ui').classList.remove('hidden');
-            document.getElementById('user-welcome').innerText = "Hello, " + data.user.name;
-            document.getElementById('user-role').innerText = "Role: " + data.user.role;
-            document.body.className = "theme-" + (data.config.CurrentTheme || 'default');
-            if(data.config.AnnounceText) {
-                const bar = document.getElementById('announce-bar');
-                bar.innerText = "📢 " + data.config.AnnounceText;
-                bar.classList.remove('hidden');
+    // 2. 使用 fetch 發送請求 (因為你在 GitHub)
+    fetch(`${scriptUrl}?userId=${id}`)
+        .then(response => response.json())
+        .then(res => {
+            if(res.success) {
+                sessionStorage.setItem('gameData', JSON.stringify(res));
+                showPortal(res);
+            } else {
+                alert("Access Denied: " + res.msg);
+                document.getElementById('btn-text').innerText = "SIGN IN";
             }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Connection Error. Check GAS deployment.");
+        });
+}
+
+        function showPortal(data) {
+            document.getElementById('login-section').classList.add('hidden');
+            document.body.className = "theme-" + (data.config.CurrentTheme || 'default');
+            const portal = document.getElementById('portal-section');
+            portal.classList.remove('hidden');
+            
+            document.getElementById('greet').innerText = "Welcome, " + data.user.name;
+            document.getElementById('role-tag').innerText = "Access Level: " + data.user.role;
+
             if(data.user.level >= 10) {
-                document.getElementById('admin-section').classList.remove('hidden');
-                if(data.user.level === 99) document.getElementById('super-admin-btn').classList.remove('hidden');
+                document.getElementById('admin-area').classList.remove('hidden');
             }
         }
     </script>

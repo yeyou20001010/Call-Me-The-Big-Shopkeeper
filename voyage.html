@@ -1,53 +1,51 @@
-!DOCTYPE html
-html lang=zh-TW
-head
-    meta charset=UTF-8
-    meta name=viewport content=width=device-width, initial-scale=1.0
-    script src=httpsunpkg.comvue@3distvue.global.jsscript
-    script src=httpscdn.tailwindcss.comscript
-    style
-        [v-cloak] { display none; }
-        body { transition 0.3s; }
-        .theme-christmas { background-color #fef2f2; }
-    style
-head
-body class=p-3 mdp-8
-    div id=app v-cloak class=max-w-7xl mx-auto
-        div v-if=isAuthorized
-            div class=flex justify-between items-center mb-6
-                h1 class=text-2xl font-bold🚢 Voyage Systemh1
-                button @click=goHome class=bg-gray-500 text-white px-4 py-1 roundedBackbutton
-            div
-            div
-    div
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Voyage System</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        [v-cloak] { display: none; }
+        .theme-christmas { background-color: #fef2f2; }
+    </style>
+</head>
+<body class="p-6">
+    <div id="app" v-cloak class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-black italic">🚢 VOYAGE</h1>
+            <button @click="back" class="bg-slate-800 text-white px-6 py-2 rounded-full">EXIT</button>
+        </div>
 
-    script
+        <div class="bg-white p-8 rounded-3xl shadow-xl">
+            <p class="text-slate-500">Welcome, {{ userName }}. System is ready.</p>
+        </div>
+    </div>
+
+    <script>
         const { createApp } = Vue;
         createApp({
             data() {
                 return {
-                    isAuthorized false,
-                    gameConfig null
-                     ... other original data properties
+                    userName: '',
+                    config: {}
                 }
             },
             mounted() {
                 const sessionRaw = sessionStorage.getItem('gameData');
                 if (!sessionRaw) {
-                    alert(Unauthorized. Redirecting...);
-                    location.href = index.html;
+                    location.href = "index.html";
                     return;
                 }
                 const data = JSON.parse(sessionRaw);
-                this.gameConfig = data;
-                this.isAuthorized = true;
-                document.body.className = theme- + (data.config.CurrentTheme  'default');
+                this.userName = data.user.name;
+                this.config = data.config;
+                document.body.className = "theme-" + (data.config.CurrentTheme || 'default');
             },
-            methods {
-                goHome() { location.href = 'index.html'; },
-                 ... your other original methods (formatMoney etc.)
+            methods: {
+                back() { location.href = 'index.html'; }
             }
         }).mount('#app');
-    script
-body
-html
+    </script>
+</body>
+</html>

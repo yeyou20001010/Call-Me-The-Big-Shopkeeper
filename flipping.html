@@ -2,32 +2,40 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flipping Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: sans-serif; margin: 0; background-color: #f7f7f7; transition: 0.3s; }
-        .theme-christmas { background-color: #fdf2f2; }
-        #mainContainer { display: grid; grid-template-columns: 150px 550px 450px; gap: 20px; padding: 20px; max-width: 1250px; margin: 0 auto; }
-        /* Add your original flipping CSS here */
+        .theme-default { --primary: #3b82f6; }
+        .theme-christmas { --primary: #dc2626; }
+        body { transition: 0.3s; }
+        .card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
     </style>
 </head>
-<body>
-    <div id="mainContainer">
+<body class="p-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-black">🃏 Flipping Tool</h1>
+            <button onclick="location.href='index.html'" class="bg-gray-200 px-4 py-1 rounded">Back</button>
         </div>
 
+        <div id="gameContent" class="bg-white p-6 rounded-2xl shadow">
+            <p class="text-center text-gray-400">Loading Game Assets...</p>
+        </div>
+    </div>
+
     <script>
-        function checkAuth() {
+        window.onload = function() {
             const sessionRaw = sessionStorage.getItem('gameData');
             if (!sessionRaw) {
-                alert("Please login via gateway.");
                 location.href = "index.html";
                 return;
             }
             const gameData = JSON.parse(sessionRaw);
             document.body.className = "theme-" + (gameData.config.CurrentTheme || 'default');
-
-            // Your original initializePageContent() logic starts here
-        }
-        window.onload = checkAuth;
+            
+            // 初始化你的翻牌邏輯...
+            console.log("Game Authorized for: " + gameData.user.name);
+        };
     </script>
 </body>
 </html>
