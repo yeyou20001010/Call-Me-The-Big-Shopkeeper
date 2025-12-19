@@ -4,54 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>終極體力監控系統 - 專業版</title>
+    <title>體力監控中心 - 智慧排序版</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; }
+        .progress-ring-circle { transition: stroke-dashoffset 0.8s ease-out; transform: rotate(-90deg); transform-origin: 50% 50%; }
         .drag-over { border: 3px dashed #6366f1 !important; background: #f5f3ff !important; }
-        .progress-ring-circle { transition: stroke-dashoffset 1s linear; transform: rotate(-90deg); transform-origin: 50% 50%; }
-        .full-status { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen p-4 md:p-10">
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col lg:flex-row justify-between items-center mb-10 bg-white p-8 rounded-[3rem] shadow-xl border border-slate-200 gap-6">
             <div class="flex items-center gap-5">
-                <div class="w-16 h-16 bg-indigo-600 rounded-[1.5rem] flex items-center justify-center text-white text-3xl shadow-lg shadow-indigo-200 font-black italic">S</div>
+                <div class="w-16 h-16 bg-indigo-600 rounded-[1.5rem] flex items-center justify-center text-white text-3xl shadow-lg shadow-indigo-200 font-black">⚡</div>
                 <div>
                     <h2 class="text-3xl font-black text-slate-800 tracking-tight">體力監控中心</h2>
-                    <p class="text-sm font-bold text-indigo-500 uppercase tracking-[0.2em]">Professional Stamina Tracker</p>
+                    <p class="text-sm font-bold text-indigo-500 uppercase tracking-widest">Multi-Group & Smart Sorting</p>
                 </div>
             </div>
             <div class="flex gap-3 flex-wrap justify-center">
-                <button id="sortBtn" onclick="toggleSort()" class="bg-amber-100 text-amber-700 px-6 py-3 rounded-2xl text-base font-black hover:bg-amber-200 transition flex items-center gap-2">
-                    <span>🔄</span> 排序：<span id="sortModeText">預設</span>
+                <button id="sortBtn" onclick="toggleSort()" class="bg-amber-100 text-amber-700 px-6 py-4 rounded-2xl text-lg font-black hover:bg-amber-200 transition flex items-center gap-2 border-2 border-amber-200">
+                    <span>🔄</span> 排序：<span id="sortModeText">按活動 (預設)</span>
                 </button>
-                <button onclick="openManageModal()" class="bg-indigo-50 text-indigo-700 px-6 py-3 rounded-2xl text-base font-black hover:bg-indigo-100 transition">👥 名單管理</button>
-                <button onclick="clearAllMonitoring()" class="bg-red-50 text-red-500 px-6 py-3 rounded-2xl text-base font-black hover:bg-red-100 transition">🗑️ 清空數據</button>
-                <button onclick="location.href='portal.html'" class="bg-slate-900 text-white px-6 py-3 rounded-2xl text-base font-black hover:scale-105 transition">返回</button>
+                <button onclick="openManageModal()" class="bg-indigo-50 text-indigo-700 px-6 py-4 rounded-2xl text-lg font-black hover:bg-indigo-100 transition">👥 名單管理</button>
+                <button onclick="clearAllMonitoring()" class="bg-red-50 text-red-500 px-6 py-4 rounded-2xl text-lg font-black hover:bg-red-100 transition">🗑️ 清空所有</button>
+                <button onclick="location.href='portal.html'" class="bg-slate-900 text-white px-6 py-4 rounded-2xl text-lg font-black">返回</button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
             <div class="xl:col-span-1 space-y-6">
                 <div class="bg-white p-8 rounded-[2.5rem] shadow-lg border border-slate-100">
-                    <h3 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2 border-b pb-4"><span>📅</span> 選擇活動</h3>
+                    <h3 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2 border-b pb-4"><span>📅</span> 選擇目前活動</h3>
                     <select id="activitySelect" class="w-full p-5 bg-slate-50 rounded-2xl font-black text-lg text-indigo-600 outline-none border-2 border-transparent focus:border-indigo-500 mb-4 shadow-inner"></select>
-                    <div id="actDetail" class="bg-indigo-50 p-4 rounded-2xl space-y-2">
+                    <div id="actDetail" class="bg-indigo-50 p-5 rounded-2xl space-y-2">
                         <p class="text-sm font-bold text-indigo-700">回體速率：<span id="rateDetail" class="font-black">--</span></p>
                         <p class="text-sm font-bold text-indigo-700">體力上限：<span id="maxDetail" class="font-black">--</span></p>
                     </div>
-                    <button onclick="openBatchModal()" class="w-full mt-8 bg-indigo-600 text-white py-5 rounded-[2rem] text-lg font-black shadow-xl shadow-indigo-100 hover:-translate-y-1 transition-all">🚀 批量啟動監測</button>
+                    <button onclick="openBatchModal()" class="w-full mt-8 bg-indigo-600 text-white py-6 rounded-[2rem] text-xl font-black shadow-xl shadow-indigo-100 hover:-translate-y-1 transition-all">🚀 批量啟動監測</button>
                 </div>
             </div>
 
             <div class="xl:col-span-3">
-                <div id="monitorGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div id="monitorGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-800">
                     </div>
                 <div id="emptyDisplay" class="hidden text-center py-40 bg-white rounded-[3rem] border-4 border-dashed border-slate-200">
-                    <p class="text-slate-300 font-black text-2xl italic">目前沒有運作中的體力時鐘</p>
+                    <p class="text-slate-300 font-black text-2xl italic">目前沒有進行中的活動時鐘</p>
                 </div>
             </div>
         </div>
@@ -63,10 +61,10 @@
             <h3 class="text-3xl font-black mb-2 text-slate-800">批量加入監測</h3>
             <div class="flex justify-between items-center mb-8 border-b pb-4">
                 <p id="currentActName" class="text-lg font-bold text-indigo-600"></p>
-                <button onclick="toggleAllCheckboxes()" class="bg-slate-100 px-4 py-2 rounded-xl font-bold text-sm">全選 / 取消</button>
+                <button onclick="toggleAllCheckboxes()" class="bg-slate-100 px-5 py-2 rounded-xl font-bold text-sm">全選 / 取消</button>
             </div>
-            <div id="batchInputList" class="overflow-y-auto flex-1 space-y-6 pr-4 mb-8"></div>
-            <button onclick="submitBatch()" class="w-full bg-indigo-600 text-white py-6 rounded-[2rem] text-xl font-black shadow-2xl">開始記錄時間點</button>
+            <div id="batchInputList" class="overflow-y-auto flex-1 space-y-6 pr-4 mb-8 text-lg"></div>
+            <button onclick="submitBatch()" class="w-full bg-indigo-600 text-white py-6 rounded-[2rem] text-xl font-black">確認加入</button>
         </div>
     </div>
 
@@ -74,19 +72,19 @@
         <div class="bg-white w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl relative flex flex-col max-h-[90vh]">
             <button onclick="closeModal('manageModal')" class="absolute top-10 right-10 text-slate-300 hover:text-slate-600 text-3xl">✕</button>
             <h3 class="text-3xl font-black mb-8 text-slate-800">名單與群組管理</h3>
-            <div class="flex gap-3 mb-8">
-                <input id="newGroupName" type="text" placeholder="輸入新群組名稱..." class="flex-1 bg-slate-100 p-5 rounded-2xl outline-none text-lg font-bold">
-                <button onclick="addGroup()" class="bg-indigo-600 text-white px-10 rounded-2xl font-black text-lg">新增</button>
+            <div class="flex gap-4 mb-8">
+                <input id="newGroupName" type="text" placeholder="新群組名稱..." class="flex-1 bg-slate-100 p-5 rounded-2xl outline-none text-xl font-bold">
+                <button onclick="addGroup()" class="bg-indigo-600 text-white px-10 rounded-2xl font-black text-xl">新增</button>
             </div>
-            <div id="groupListArea" class="overflow-y-auto flex-1 space-y-6 pr-4"></div>
+            <div id="groupListArea" class="overflow-y-auto flex-1 space-y-8 pr-4"></div>
         </div>
     </div>
 
     <script>
         let activities = [];
-        let db = JSON.parse(localStorage.getItem('stamina_v5_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
-        let monitors = JSON.parse(localStorage.getItem('stamina_v5_active')) || [];
-        let sortMode = 0; // 0: 預設, 1: 活動名稱, 2: 剩餘時間
+        let db = JSON.parse(localStorage.getItem('stamina_v6_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
+        let monitors = JSON.parse(localStorage.getItem('stamina_v6_active')) || [];
+        let sortMode = 0; // 0: 按活動, 1: 按回滿時長, 2: 按群組, 3: 按人物
 
         window.onload = function() {
             const data = JSON.parse(sessionStorage.getItem('gameData'));
@@ -109,10 +107,18 @@
         };
 
         function toggleSort() {
-            sortMode = (sortMode + 1) % 3;
-            const texts = ["預設順序", "按活動名稱", "按回滿時長"];
+            sortMode = (sortMode + 1) % 4;
+            const texts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
             document.getElementById('sortModeText').innerText = texts[sortMode];
             renderMonitoring();
+        }
+
+        // 輔助函式：尋找某個人物屬於哪個群組
+        function getGroupNameByCharId(charId) {
+            for (let g of db.groups) {
+                if (g.members.some(m => m.id === charId)) return g.name;
+            }
+            return "📌 未分類人物";
         }
 
         function formatFullTime(ms) {
@@ -132,68 +138,93 @@
                 const recovered = Math.floor(minsPassed / act.minPerStamina);
                 const current = Math.min(act.maxStamina, m.initStamina + recovered);
                 const isFull = current >= act.maxStamina;
+                let remSec = isFull ? 0 : ((act.maxStamina - current) * act.minPerStamina - (minsPassed % act.minPerStamina)) * 60;
                 
-                let remSec = 0;
-                if(!isFull) {
-                    remSec = ((act.maxStamina - current) * act.minPerStamina - (minsPassed % act.minPerStamina)) * 60;
-                }
-                
-                return { ...m, current, isFull, remSec, actName: act.name, actMax: act.maxStamina, originalIdx: idx };
+                return { 
+                    ...m, current, isFull, remSec, 
+                    actName: act.name, actMax: act.maxStamina, 
+                    groupName: getGroupNameByCharId(m.charId),
+                    originalIdx: idx 
+                };
             });
 
-            // 排序邏輯
-            if(sortMode === 1) {
-                displayList.sort((a, b) => a.actName.localeCompare(b.actName));
-            } else if(sortMode === 2) {
-                displayList.sort((a, b) => a.remSec - b.remSec);
-            }
+            // 四態排序邏輯
+            if(sortMode === 0) displayList.sort((a, b) => a.actName.localeCompare(b.actName));
+            else if(sortMode === 1) displayList.sort((a, b) => a.remSec - b.remSec);
+            else if(sortMode === 2) displayList.sort((a, b) => a.groupName.localeCompare(b.groupName));
+            else if(sortMode === 3) displayList.sort((a, b) => a.charName.localeCompare(b.charName));
 
             grid.innerHTML = displayList.map((m) => {
                 const percent = (m.current / m.actMax) * 100;
-                const fullTimeText = m.isFull ? "---" : formatFullTime(now + m.remSec * 1000);
+                const fullTimeText = m.isFull ? "目前狀態：已回滿" : `預計回滿：${formatFullTime(now + m.remSec * 1000)}`;
                 
-                let countdown = "已回滿";
+                let countdown = "READY (FULL)";
                 if(!m.isFull) {
                     const h = Math.floor(m.remSec / 3600);
                     const min = Math.floor((m.remSec % 3600) / 60);
                     const sec = Math.floor(m.remSec % 60);
-                    countdown = `${h}時 ${min}分 ${sec}秒`;
+                    countdown = `${h}h ${min}m ${sec}s`;
                 }
 
                 return `
                 <div class="bg-white p-8 rounded-[3rem] shadow-md border border-slate-200 flex flex-col relative group hover:shadow-2xl transition-all">
-                    <button onclick="removeMonitor(${m.originalIdx})" class="absolute top-6 right-8 text-slate-300 hover:text-red-500 text-xl">✕</button>
+                    <button onclick="removeMonitor(${m.originalIdx})" class="absolute top-6 right-8 text-slate-300 hover:text-red-500 text-2xl">✕</button>
                     
                     <div class="flex items-start justify-between mb-6">
-                        <div class="flex-1">
-                            <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">${m.actName}</span>
-                            <h4 class="text-2xl font-black text-slate-800 mt-2 truncate">${m.charName}</h4>
+                        <div class="flex-1 pr-4">
+                            <div class="flex gap-2 flex-wrap mb-2">
+                                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest">${m.actName}</span>
+                                <span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest">${m.groupName}</span>
+                            </div>
+                            <h4 class="text-2xl font-black text-slate-800 mt-1 truncate">${m.charName}</h4>
                         </div>
-                        <div class="relative w-24 h-24 shrink-0">
-                            <svg class="w-24 h-24"><circle class="text-slate-100" stroke-width="10" stroke="currentColor" fill="transparent" r="40" cx="48" cy="48"/>
-                            <circle class="${m.isFull?'text-green-500':'text-indigo-600'} progress-ring-circle" stroke-width="10" stroke-dasharray="251" stroke-dashoffset="${251-(251*percent/100)}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="48" cy="48"/></svg>
+                        <div class="relative w-24 h-24 shrink-0 shadow-inner rounded-full p-1 bg-slate-50">
+                            <svg class="w-full h-full"><circle class="text-slate-100" stroke-width="10" stroke="currentColor" fill="transparent" r="40" cx="44" cy="44"/>
+                            <circle class="${m.isFull?'text-green-500':'text-indigo-600'} progress-ring-circle" stroke-width="10" stroke-dasharray="251" stroke-dashoffset="${251-(251*percent/100)}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="44" cy="44"/></svg>
                             <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                <span class="text-2xl font-black text-slate-800">${m.current}</span>
-                                <span class="text-[8px] font-bold text-slate-400 uppercase">現存體力</span>
+                                <span class="text-2xl font-black text-slate-800 leading-none">${m.current}</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase mt-1">體力點數</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="space-y-4 bg-slate-50 p-6 rounded-[2rem]">
+                    <div class="space-y-4 bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
                         <div>
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">距離回滿倒計時</p>
-                            <p class="text-2xl font-black ${m.isFull?'text-green-500':'text-slate-900'} font-mono">${countdown}</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">距離回滿倒計時</p>
+                            <p class="text-3xl font-black ${m.isFull?'text-green-500':'text-slate-900'} font-mono tracking-tighter">${countdown}</p>
                         </div>
                         <div class="border-t border-slate-200 pt-3">
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">預計回滿時間點</p>
-                            <p class="text-sm font-bold text-slate-600">${fullTimeText}</p>
+                            <p class="text-xs font-bold text-slate-500">${fullTimeText}</p>
                         </div>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        // --- 管理功能 (比照先前邏輯但加大字體與UI) ---
+        // --- 管理介面渲染 ---
+        function renderManageUI() {
+            const area = document.getElementById('groupListArea');
+            area.innerHTML = db.groups.map((g, gi) => `
+                <div class="bg-slate-50 p-8 rounded-[2.5rem] border-2 border-transparent transition-all group-container" ondragover="allowDrop(event)" ondrop="handleDrop(event, '${g.id}')">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-2xl font-black text-slate-700">${g.name} ${g.id==='default'?'📌':''}</span>
+                        <div class="flex gap-4">
+                            <button onclick="addMember('${g.id}')" class="text-base text-indigo-600 font-black">＋新增人物</button>
+                            ${g.id !== 'default' ? `<button onclick="removeGroup(${gi})" class="text-base text-red-400 font-bold">刪除組</button>` : ''}
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${g.members.map((m, mi) => `
+                            <div draggable="true" ondragstart="handleDragStart(event, '${g.id}', ${mi})" class="bg-white p-5 rounded-2xl text-lg font-bold flex justify-between shadow-sm cursor-move border border-slate-200 hover:border-indigo-300">
+                                <span>${m.name}</span>
+                                <button onclick="removeMember('${g.id}', ${mi})" class="text-slate-200 hover:text-red-500">✕</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`).join('');
+        }
+
+        // --- 其餘邏輯封裝 (Batch, DragDrop, etc.) ---
         function addGroup() {
             const name = document.getElementById('newGroupName').value;
             if(!name) return;
@@ -208,42 +239,21 @@
                 saveDB(); renderManageUI();
             }
         }
-        function renderManageUI() {
-            const area = document.getElementById('groupListArea');
-            area.innerHTML = db.groups.map((g, gi) => `
-                <div class="bg-slate-50 p-8 rounded-[2.5rem] border-2 border-transparent transition-all group-container" ondragover="allowDrop(event)" ondrop="handleDrop(event, '${g.id}')">
-                    <div class="flex justify-between items-center mb-6">
-                        <span class="text-xl font-black text-slate-700">${g.name}</span>
-                        <div class="flex gap-4">
-                            <button onclick="addMember('${g.id}')" class="text-sm text-indigo-600 font-black">＋新增人物</button>
-                            ${g.id !== 'default' ? `<button onclick="removeGroup(${gi})" class="text-sm text-red-400 font-bold">刪除組</button>` : ''}
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        ${g.members.map((m, mi) => `
-                            <div draggable="true" ondragstart="handleDragStart(event, '${g.id}', ${mi})" class="bg-white p-4 rounded-2xl text-base font-bold flex justify-between shadow-sm cursor-move border border-slate-200">
-                                <span>${m.name}</span>
-                                <button onclick="removeMember('${g.id}', ${mi})" class="text-slate-200 hover:text-red-500">✕</button>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>`).join('');
-        }
         function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
         function openBatchModal() {
             const actIdx = document.getElementById('activitySelect').value;
             document.getElementById('currentActName').innerText = "📍 正在加入活動：" + activities[actIdx].name;
             document.getElementById('batchInputList').innerHTML = db.groups.map(g => `
-                <div class="bg-slate-50 p-6 rounded-[2rem] mb-4">
-                    <div class="flex justify-between mb-4"><span class="font-black text-slate-500 text-sm">群組：${g.name}</span><button onclick="toggleGroupCheckboxes(this)" class="text-xs text-indigo-500 font-bold">全選</button></div>
+                <div class="bg-slate-50 p-6 rounded-[2rem] mb-6">
+                    <div class="flex justify-between mb-4"><span class="font-black text-slate-500">群組：${g.name}</span><button onclick="toggleGroupCheckboxes(this)" class="text-sm text-indigo-500 font-bold">此組全選</button></div>
                     <div class="space-y-3">
                         ${g.members.map(m => `
-                            <div class="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm">
+                            <div class="flex items-center gap-4 bg-white p-5 rounded-2xl shadow-sm">
                                 <input type="checkbox" class="char-cb w-6 h-6 rounded-lg text-indigo-600" data-name="${m.name}" data-id="${m.id}">
                                 <span class="flex-1 font-black text-slate-700">${m.name}</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-bold text-slate-400">初始體力</span>
-                                    <input type="number" class="w-20 p-2 bg-slate-100 rounded-xl text-center font-black" value="0">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs font-bold text-slate-400">目前體力</span>
+                                    <input type="number" class="w-24 p-2 bg-slate-100 rounded-xl text-center font-black text-lg" value="0">
                                 </div>
                             </div>`).join('')}
                     </div>
@@ -264,7 +274,7 @@
             });
             saveActive(); closeModal('batchModal'); renderMonitoring();
         }
-        // 輔助函式與拖曳邏輯比照上一版...
+
         let draggedInfo = null;
         function handleDragStart(e, groupId, memberIdx) { draggedInfo = { groupId, memberIdx }; }
         function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
@@ -275,8 +285,9 @@
             const targetGroup = db.groups.find(g => g.id === targetGroupId);
             const [member] = sourceGroup.members.splice(draggedInfo.memberIdx, 1);
             targetGroup.members.push(member);
-            saveDB(); renderManageUI();
+            saveDB(); renderManageUI(); renderMonitoring(); // 因為群組名變了，需要重新渲染卡片
         }
+
         function toggleGroupCheckboxes(btn) {
             const cbs = btn.closest('.bg-slate-50').querySelectorAll('.char-cb');
             const allChecked = Array.from(cbs).every(c => c.checked);
@@ -289,10 +300,10 @@
         }
         function removeMonitor(idx) { monitors.splice(idx, 1); saveActive(); renderMonitoring(); }
         function clearAllMonitoring() { if(confirm("確定清空所有監測時鐘？")) { monitors = []; saveActive(); renderMonitoring(); } }
-        function saveDB() { localStorage.setItem('stamina_v5_db', JSON.stringify(db)); }
-        function saveActive() { localStorage.setItem('stamina_v5_active', JSON.stringify(monitors)); }
+        function saveDB() { localStorage.setItem('stamina_v6_db', JSON.stringify(db)); }
+        function saveActive() { localStorage.setItem('stamina_v6_active', JSON.stringify(monitors)); }
         function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
-        function removeGroup(gi) { db.groups.splice(gi, 1); saveDB(); renderManageUI(); }
+        function removeGroup(gi) { db.groups.splice(gi, 1); saveDB(); renderManageUI(); renderMonitoring(); }
         function removeMember(gid, mi) { 
             const g = db.groups.find(g => g.id === gid);
             const mid = g.members[mi].id;
