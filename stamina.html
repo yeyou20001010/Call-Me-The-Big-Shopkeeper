@@ -8,57 +8,37 @@
     <title>體力監控中心</title>
     <style>
         :root {
-            /* 配色定義 */
             --highlight-pink: #FF9D6F; 
             --full-green: #02C874;     
             --morandi-bg: #FBFBF9;
             --tag-bg: #F0EFEB;
         }
-
         body { 
-            /* 使用 Noto Sans TC 並模擬圓潤感 */
             font-family: 'Varela Round', 'Noto Sans TC', "Microsoft JhengHei", sans-serif;
             background-color: #EAE8E4; 
             color: #6D6875;
         }
-        
-        /* 卡片樣式回溯與調整 */
         .card-standard { background-color: var(--morandi-bg); border: 1px solid #D7D3CC; }
-        
-        /* 修正 6：已回滿外框改為 實線、加粗、顏色同字體色 (#02C874) */
         .card-full-highlight { 
             background-color: var(--morandi-bg) !important; 
             border: 4px solid var(--full-green) !important; 
             box-shadow: 0 4px 15px rgba(2, 200, 116, 0.15);
         }
-        
-        /* 文字配色 */
         .text-status-pink { color: var(--highlight-pink); } 
         .text-full-green { color: var(--full-green); }
-
-        /* 修正 7：核取方塊樣式優化，減輕底色 */
-        .char-cb { 
-            accent-color: #8E9AAF;
-            width: 1.25rem;
-            height: 1.25rem;
-            cursor: pointer;
-        }
-
-        /* 修正 8：標籤文字對比度強化 */
         .tag-label {
             background-color: var(--tag-bg);
-            color: #5E548E; /* 加深標籤字體顏色 */
+            color: #5E548E;
             border: 1px solid #D7D3CC;
             padding: 2px 8px;
             border-radius: 6px;
             font-size: 10px;
             font-weight: 900;
         }
-
         .progress-ring-circle { transition: stroke-dashoffset 0.8s ease-out; transform: rotate(-90deg); transform-origin: 50% 50%; }
-
-        /* 圓潤按鈕與輸入框 */
-        button, select, input { border-radius: 1rem !important; }
+        /* 拖曳視覺效果 */
+        .drag-over { border: 2px dashed var(--highlight-pink) !important; background-color: #FDF2F0; }
+        .dragging { opacity: 0.4; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-10">
@@ -68,41 +48,41 @@
                 <div class="w-16 h-16 bg-[#6D6875] rounded-2xl flex items-center justify-center text-[#F4F2EE] text-3xl font-black">⚡</div>
                 <div>
                     <h2 class="text-3xl font-black text-[#5E548E] tracking-tight">體力監控中心</h2>
-                    <p class="text-xs font-bold text-[#8E9AAF] tracking-widest">REAL-TIME MONITOR</p>
+                    <p class="text-xs font-bold text-[#8E9AAF] tracking-widest">STAMINA MONITOR</p>
                 </div>
             </div>
             
             <div class="flex gap-3 flex-wrap justify-center items-center">
-                <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm hover:opacity-90">返回入口</button>
-                <button onclick="openManageModal()" class="bg-[#B8B0A5] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm hover:opacity-90">👥 名單群組管理</button>
-                <button onclick="clearAllMonitoring()" class="bg-[#AF7A7D] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm hover:opacity-90">🗑️ 全部清空</button>
+                <div class="flex items-center bg-[#F0EFEB] rounded-2xl p-1 border border-[#D7D3CC]">
+                    <button onclick="changeSort(-1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❮</button>
+                    <div class="px-4 min-w-[140px] text-center">
+                        <span id="sortModeText" class="font-black text-sm text-[#6D6875]">按活動 (預設)</span>
+                    </div>
+                    <button onclick="changeSort(1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❯</button>
+                </div>
+                <button onclick="openManageModal()" class="bg-[#B8B0A5] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">👥 名單管理</button>
+                <button onclick="clearAllMonitoring()" class="bg-[#AF7A7D] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">🗑️ 全部清空</button>
+                <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">返回入口</button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
             <div class="xl:col-span-1">
-                <div class="bg-[#FBFBF9] p-8 rounded-[2.5rem] shadow-sm border border-[#D7D3CC]">
-                    <h3 class="text-lg font-black text-[#6D6875] mb-6 border-b border-[#E0DDD7] pb-4">📅 選擇當前活動</h3>
+                <div class="bg-[#FBFBF9] p-8 rounded-[2.5rem] shadow-sm border border-[#D7D3CC] sticky top-10">
+                    <h3 class="text-lg font-black text-[#6D6875] mb-6 border-b border-[#E0DDD7] pb-4">📅 活動選擇</h3>
                     <select id="activitySelect" class="w-full p-4 bg-white rounded-2xl font-black text-lg text-[#8E9AAF] border border-[#D7D3CC] mb-4 outline-none"></select>
                     <div class="bg-[#F4F2EE] p-5 rounded-2xl space-y-2 text-sm font-bold">
-                        <p>回體速率：<span id="rateDetail" class="text-[#8E9AAF]">--</span></p>
-                        <p>體力上限：<span id="maxDetail" class="text-[#8E9AAF]">--</span></p>
+                        <p>速率：<span id="rateDetail" class="text-[#8E9AAF]">--</span></p>
+                        <p>上限：<span id="maxDetail" class="text-[#8E9AAF]">--</span></p>
                     </div>
                     <button onclick="openBatchModal()" class="w-full mt-8 bg-[#8E9AAF] text-white py-5 rounded-[2rem] text-lg font-black shadow-md hover:brightness-95 transition-all">🚀 批量啟動監測</button>
                 </div>
             </div>
 
             <div class="xl:col-span-3">
-                <div class="flex justify-between items-center mb-6 px-4">
-                    <div class="flex items-center bg-[#F0EFEB] rounded-2xl p-1 border border-[#D7D3CC]">
-                        <button onclick="changeSort(-1)" class="p-2 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❮</button>
-                        <span id="sortModeText" class="px-4 font-black text-sm text-[#6D6875]">按活動 (預設)</span>
-                        <button onclick="changeSort(1)" class="p-2 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❯</button>
-                    </div>
-                </div>
                 <div id="monitorGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                 <div id="emptyDisplay" class="hidden text-center py-40 bg-[#FBFBF9] rounded-[3rem] border-4 border-dashed border-[#D7D3CC]">
-                    <p class="text-[#D7D3CC] font-black text-2xl">目前尚無進行中的監測</p>
+                    <p class="text-[#D7D3CC] font-black text-2xl">目前無監測項目</p>
                 </div>
             </div>
         </div>
@@ -117,7 +97,7 @@
                 <button onclick="toggleAllCheckboxes()" id="btnSelectAll" class="bg-white border border-[#D7D3CC] px-4 py-2 rounded-xl font-black text-xs">勾選所有人物</button>
             </div>
             <div id="batchInputList" class="overflow-y-auto flex-1 space-y-6 pr-2 mb-8"></div>
-            <button onclick="submitBatch()" class="w-full bg-[#8E9AAF] text-white py-6 rounded-[2rem] text-xl font-black shadow-lg">確認並同步體力數據</button>
+            <button onclick="submitBatch()" class="w-full bg-[#8E9AAF] text-white py-6 rounded-[2rem] text-xl font-black shadow-lg">確認並開始監測</button>
         </div>
     </div>
 
@@ -126,7 +106,7 @@
             <button onclick="closeModal('manageModal')" class="absolute top-10 right-10 text-[#D7D3CC] hover:text-[#6D6875] text-3xl font-black">✕</button>
             <h3 class="text-2xl font-black mb-6">名單與群組管理</h3>
             <div class="flex gap-3 mb-8">
-                <input id="newGroupName" type="text" placeholder="輸入新群組名稱..." class="flex-1 bg-white border border-[#D7D3CC] p-4 rounded-2xl outline-none font-bold">
+                <input id="newGroupName" type="text" placeholder="新群組名稱..." class="flex-1 bg-white border border-[#D7D3CC] p-4 rounded-2xl outline-none font-bold">
                 <button onclick="addGroup()" class="bg-[#8E9AAF] text-white px-8 rounded-2xl font-black shadow-sm">建立群組</button>
             </div>
             <div id="groupListArea" class="overflow-y-auto flex-1 space-y-6 pr-2"></div>
@@ -135,8 +115,8 @@
 
     <script>
         let activities = [];
-        let db = JSON.parse(localStorage.getItem('stamina_v13_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
-        let monitors = JSON.parse(localStorage.getItem('stamina_v13_active')) || [];
+        let db = JSON.parse(localStorage.getItem('stamina_v14_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
+        let monitors = JSON.parse(localStorage.getItem('stamina_v14_active')) || [];
         let sortMode = 0; 
         const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
 
@@ -144,7 +124,6 @@
             const data = JSON.parse(sessionStorage.getItem('gameData'));
             if(!data) return location.href = "index.html";
             activities = data.activities;
-
             const select = document.getElementById('activitySelect');
             activities.forEach((act, idx) => {
                 const opt = document.createElement('option'); opt.value = idx; opt.textContent = act.name;
@@ -154,11 +133,18 @@
                 const act = activities[select.value];
                 document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / 1 點`;
                 document.getElementById('maxDetail').innerText = `${act.maxStamina} 點`;
+                // 修正 4: 切換活動時重置全選按鈕狀態
+                resetSelectAllBtn();
             };
             select.dispatchEvent(new Event('change'));
             renderMonitoring();
             setInterval(renderMonitoring, 1000);
         };
+
+        function resetSelectAllBtn() {
+            const btn = document.getElementById('btnSelectAll');
+            if(btn) btn.innerText = "勾選所有人物";
+        }
 
         function changeSort(dir) {
             sortMode = (sortMode + dir + 4) % 4;
@@ -166,14 +152,18 @@
             renderMonitoring();
         }
 
-        // --- 修正 5 & 9：卡片結構回溯 + 實時體力標註 ---
+        function getGroupNameByCharId(id) { 
+            for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } 
+            return "未分類"; 
+        }
+
+        // --- 修正 3: 排序邏輯修復 ---
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
             if(monitors.length === 0) { 
                 grid.innerHTML = ""; document.getElementById('emptyDisplay').classList.remove('hidden'); return; 
             }
             document.getElementById('emptyDisplay').classList.add('hidden');
-
             const now = Date.now();
             let list = monitors.map((m, idx) => {
                 const act = activities[m.actIdx];
@@ -184,58 +174,53 @@
                 return { ...m, current, isFull, remSec, actMax: act.maxStamina, actName: act.name, groupName: getGroupNameByCharId(m.charId), originalIdx: idx };
             });
 
-            // 排序邏輯 (略...)
-            if(sortMode === 1) list.sort((a,b)=>a.remSec - b.remSec);
+            if(sortMode === 0) list.sort((a,b) => a.actName.localeCompare(b.actName));
+            else if(sortMode === 1) list.sort((a,b) => a.remSec - b.remSec);
+            else if(sortMode === 2) list.sort((a,b) => a.groupName.localeCompare(b.groupName));
+            else if(sortMode === 3) list.sort((a,b) => a.charName.localeCompare(b.charName));
 
             grid.innerHTML = list.map(m => {
                 const percent = (m.current / m.actMax) * 100;
                 const cardClass = m.isFull ? 'card-full-highlight' : 'card-standard';
                 const textColor = m.isFull ? 'text-full-green' : 'text-status-pink';
                 const ringColor = m.isFull ? '#02C874' : '#FF9D6F';
+                let countdown = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
                 
-                let countdown = "已充滿";
-                let fullTimeLabel = "狀態：已完全回滿";
-                
-                if(!m.isFull) {
-                    const h = Math.floor(m.remSec / 3600);
-                    const min = Math.floor((m.remSec % 3600) / 60);
-                    const sec = Math.floor(m.remSec % 60);
-                    countdown = `${h}時 ${min}分 ${sec}秒`;
-                    const d = new Date(now + m.remSec * 1000);
-                    fullTimeLabel = `回滿時間：${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-                }
-
                 return `
-                <div class="${cardClass} p-8 rounded-[2.5rem] flex flex-col relative transition-all duration-300">
+                <div class="${cardClass} p-8 rounded-[2.5rem] flex flex-col relative">
                     <button onclick="removeMonitor(${m.originalIdx})" class="absolute top-6 right-8 text-[#D7D3CC] hover:text-red-400 text-2xl z-10">✕</button>
-                    
                     <div class="flex gap-2 mb-3">
                         <span class="tag-label">${m.actName}</span>
                         <span class="tag-label">${m.groupName}</span>
                     </div>
-
                     <div class="flex items-start justify-between mb-6">
                         <h4 class="text-2xl font-black text-[#6D6875] tracking-tight">${m.charName}</h4>
                         <div class="relative w-20 h-20 shrink-0">
                             <svg class="w-20 h-20"><circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/>
                             <circle style="stroke: ${ringColor}" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/></svg>
                             <div class="absolute inset-0 flex flex-col items-center justify-center font-black">
-                                <span class="text-xl text-[#6D6875] leading-none">${m.current}</span>
+                                <span class="text-xl text-[#6D6875]">${m.current}</span>
                                 <span class="text-[8px] text-[#A5A5A5] mt-1">目前體力</span>
                             </div>
                         </div>
                     </div>
-
                     <div class="bg-white/40 p-5 rounded-[1.5rem] border border-[#D7D3CC]/30">
-                        <p class="text-[10px] font-black text-[#A5A5A5] uppercase tracking-widest mb-1">實時體力狀態</p>
-                        <p class="text-3xl font-black ${textColor} tracking-tighter mb-2">${m.isFull ? '體力已回滿' : countdown}</p>
-                        <p class="text-xs font-bold text-[#8E9AAF]">${fullTimeLabel}</p>
+                        <p class="text-[10px] font-black text-[#A5A5A5] mb-1">實時體力狀態</p>
+                        <p class="text-3xl font-black ${textColor} tracking-tighter">${countdown}</p>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        // --- 批量加入 (修正 4：全選標籤與按鈕邏輯) ---
+        // --- 修正 4: 全選功能邏輯修復 ---
+        function toggleAllCheckboxes() {
+            const cbs = document.querySelectorAll('.char-cb');
+            const btn = document.getElementById('btnSelectAll');
+            const allChecked = Array.from(cbs).every(c => c.checked);
+            cbs.forEach(c => c.checked = !allChecked);
+            btn.innerText = !allChecked ? "取消所有勾選" : "勾選所有人物";
+        }
+
         function toggleGroupCheckboxes(btn) {
             const wrapper = btn.closest('.group-wrapper');
             const cbs = wrapper.querySelectorAll('.char-cb');
@@ -244,23 +229,15 @@
             btn.innerText = allChecked ? "本組全選" : "取消全選";
         }
 
-        function toggleAllCheckboxes() {
-            const cbs = document.querySelectorAll('.char-cb');
-            const btn = document.getElementById('btnSelectAll');
-            const anyUnchecked = Array.from(cbs).some(c => !c.checked);
-            cbs.forEach(c => c.checked = anyUnchecked);
-            btn.innerText = anyUnchecked ? "取消所有勾選" : "勾選所有人物";
-        }
-
         function openBatchModal() {
+            resetSelectAllBtn();
             const actIdx = document.getElementById('activitySelect').value;
             const act = activities[actIdx];
-            document.getElementById('currentActName').innerText = "當前監測項目：" + act.name;
-            const list = document.getElementById('batchInputList');
-            list.innerHTML = db.groups.map(g => `
+            document.getElementById('currentActName').innerText = "當前活動：" + act.name;
+            document.getElementById('batchInputList').innerHTML = db.groups.map(g => `
                 <div class="bg-[#F4F2EE] p-5 rounded-[2rem] group-wrapper">
                     <div class="flex justify-between mb-4 items-center">
-                        <span class="font-black text-[#8E9AAF] text-sm">群組：${g.name}</span>
+                        <span class="font-black text-[#8E9AAF] text-sm">${g.name}</span>
                         <button onclick="toggleGroupCheckboxes(this)" class="text-xs text-[#8E9AAF] border border-[#D7D3CC] px-2 py-1 rounded-lg font-black bg-white">本組全選</button>
                     </div>
                     <div class="space-y-3">
@@ -268,78 +245,88 @@
                             <div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-[#D7D3CC]">
                                 <input type="checkbox" class="char-cb" data-name="${m.name}" data-id="${m.id}">
                                 <span class="flex-1 font-black text-[#6D6875]">${m.name}</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[10px] font-bold text-[#A5A5A5]">起始體力</span>
-                                    <input type="number" class="stamina-input w-20 p-2 bg-[#F4F2EE] rounded-lg text-center font-black" 
-                                           value="0" min="0" max="${act.maxStamina}" oninput="this.value = Math.max(0, Math.min(${act.maxStamina}, this.value))">
-                                </div>
+                                <input type="number" class="stamina-input w-20 p-2 bg-[#F4F2EE] rounded-lg text-center font-black" 
+                                       value="0" min="0" max="${act.maxStamina}" oninput="this.value = Math.max(0, Math.min(${act.maxStamina}, this.value))">
                             </div>`).join('')}
                     </div>
                 </div>`).join('');
             document.getElementById('batchModal').classList.replace('hidden', 'flex');
         }
 
-        function submitBatch() {
-            const actIdx = document.getElementById('activitySelect').value;
-            const act = activities[actIdx];
-            const rows = document.querySelectorAll('#batchInputList input[type="checkbox"]:checked');
-            if(rows.length === 0) return alert("請至少選擇一位人物");
-            
-            rows.forEach(cb => {
-                const row = cb.closest('.bg-white');
-                const val = parseInt(row.querySelector('.stamina-input').value) || 0;
-                const existingIdx = monitors.findIndex(m => m.charId === cb.dataset.id && m.actIdx == actIdx);
-                const data = { charId: cb.dataset.id, charName: cb.dataset.name, actIdx: actIdx, initStamina: val, startTime: Date.now() };
-                if(existingIdx > -1) monitors[existingIdx] = data; else monitors.push(data);
-            });
-            saveActive(); closeModal('batchModal'); renderMonitoring();
-        }
-
-        // --- 修正 3：名單管理與刪除所有成員 ---
-        function clearGroupMembers(gid) {
-            if(confirm("確定要刪除該群組內的所有成員嗎？")) {
-                db.groups.find(g => g.id === gid).members = [];
-                saveDB(); renderManageUI();
-            }
-        }
+        // --- 修正 2: 拖曳功能精確修復 ---
+        let dragInfo = null;
+        function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.currentTarget.classList.add('dragging'); }
+        function handleDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
 
         function renderManageUI() {
             const area = document.getElementById('groupListArea');
             area.innerHTML = db.groups.map((g, gi) => `
-                <div class="bg-[#F4F2EE] p-6 rounded-[2rem] border border-[#D7D3CC]">
+                <div class="bg-[#F4F2EE] p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
                     <div class="flex justify-between items-center mb-4">
                         <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
                         <div class="flex gap-2">
-                            <button onclick="clearGroupMembers('${g.id}')" class="text-xs text-[#AF7A7D] border border-[#AF7A7D] px-2 py-1 rounded-lg font-black">🗑️ 清空成員</button>
+                            <button onclick="clearGroup('${g.id}')" class="text-xs text-[#AF7A7D] border border-[#AF7A7D] px-2 py-1 rounded-lg font-black">清空成員</button>
                             ${g.id !== 'default' ? `<button onclick="removeGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black">刪除群組</button>` : ''}
                         </div>
                     </div>
                     <div class="flex gap-2 mb-4">
-                        <input type="text" placeholder="人物名稱" class="flex-1 p-2 rounded-xl text-sm border-none shadow-inner char-input">
+                        <input type="text" placeholder="人物名稱" class="flex-1 p-2 rounded-xl text-sm border-none char-input">
                         <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-4 rounded-xl text-xs font-black">新增</button>
                     </div>
                     <div class="grid grid-cols-2 gap-3 min-h-[40px]">
                         ${g.members.map((m, mi) => `
-                            <div class="bg-white p-3 rounded-xl text-sm font-black flex justify-between border border-[#D7D3CC]">
+                            <div draggable="true" ondragstart="handleDragStart(event, '${g.id}', ${mi})" ondragend="handleDragEnd(event)" 
+                                 class="bg-white p-3 rounded-xl text-sm font-black flex justify-between border border-[#D7D3CC] cursor-move">
                                 <span>${m.name}</span>
                                 <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-red-400">✕</button>
                             </div>`).join('')}
                     </div>
                 </div>`).join('');
+            
+            // 綁定拖曳
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', e => {
+                    e.preventDefault(); zone.classList.remove('drag-over');
+                    const targetGid = zone.dataset.gid;
+                    if(dragInfo && dragInfo.gid !== targetGid) {
+                        const sGroup = db.groups.find(g => g.id === dragInfo.gid);
+                        const tGroup = db.groups.find(g => g.id === targetGid);
+                        const [item] = sGroup.members.splice(dragInfo.mi, 1);
+                        tGroup.members.push(item);
+                        saveDB(); renderManageUI();
+                    }
+                });
+            });
         }
 
-        // --- 基礎函數 ---
-        function addMemberInLine(btn, gid) { const inp = btn.previousElementSibling; if(!inp.value) return; db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); }
+        // --- 核心函數 ---
+        function submitBatch() {
+            const actIdx = document.getElementById('activitySelect').value;
+            const rows = document.querySelectorAll('#batchInputList input[type="checkbox"]:checked');
+            if(rows.length === 0) return alert("未勾選人物");
+            rows.forEach(cb => {
+                const row = cb.closest('.bg-white');
+                const val = parseInt(row.querySelector('.stamina-input').value) || 0;
+                const data = { charId: cb.dataset.id, charName: cb.dataset.name, actIdx: actIdx, initStamina: val, startTime: Date.now() };
+                const idx = monitors.findIndex(m => m.charId === cb.dataset.id && m.actIdx == actIdx);
+                if(idx > -1) monitors[idx] = data; else monitors.push(data);
+            });
+            saveActive(); closeModal('batchModal'); renderMonitoring();
+        }
+
+        function saveDB() { localStorage.setItem('stamina_v14_db', JSON.stringify(db)); }
+        function saveActive() { localStorage.setItem('stamina_v14_active', JSON.stringify(monitors)); }
+        function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
+        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
         function addGroup() { const n = document.getElementById('newGroupName').value; if(n){ db.groups.push({id:'g'+Date.now(), name:n, members:[]}); document.getElementById('newGroupName').value=""; saveDB(); renderManageUI(); }}
-        function removeGroup(gi) { if(confirm("確定刪除群組？")) { db.groups.splice(gi,1); saveDB(); renderManageUI(); }}
+        function addMemberInLine(btn, gid) { const inp = btn.previousElementSibling; if(inp.value){ db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); }}
+        function removeGroup(gi) { if(confirm("刪除群組？")) { db.groups.splice(gi,1); saveDB(); renderManageUI(); }}
         function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
-        function saveDB() { localStorage.setItem('stamina_v13_db', JSON.stringify(db)); }
-        function saveActive() { localStorage.setItem('stamina_v13_active', JSON.stringify(monitors)); }
+        function clearGroup(gid) { if(confirm("清空成員？")) { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); }}
         function removeMonitor(idx) { monitors.splice(idx,1); saveActive(); renderMonitoring(); }
         function clearAllMonitoring() { if(confirm("確定清空所有監測？")) { monitors=[]; saveActive(); renderMonitoring(); }}
-        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
-        function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
-        function getGroupNameByCharId(id) { for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } return "未分類"; }
     </script>
 </body>
 </html>
