@@ -62,7 +62,7 @@
                 </div>
                 <button onclick="openManageModal()" class="bg-[#B8B0A5] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">👥 名單管理</button>
                 <button onclick="clearAllMonitoring()" class="bg-[#AF7A7D] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">🗑️ 全部清空</button>
-                <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">返回入口</button>
+                <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">返回選單</button>
             </div>
         </div>
 
@@ -131,8 +131,8 @@
             });
             select.onchange = () => {
                 const act = activities[select.value];
-                document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / 1 點`;
-                document.getElementById('maxDetail').innerText = `${act.maxStamina} 點`;
+                document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / 1 體`;
+                document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
                 const btn = document.getElementById('btnSelectAll');
                 if(btn) btn.innerText = "勾選所有人物";
             };
@@ -355,3 +355,4 @@
     </script>
 </body>
 </html>
+
