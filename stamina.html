@@ -36,7 +36,6 @@
             font-weight: 900;
         }
         .progress-ring-circle { transition: stroke-dashoffset 0.8s ease-out; transform: rotate(-90deg); transform-origin: 50% 50%; }
-        /* 拖曳視覺效果 */
         .drag-over { border: 2px dashed var(--highlight-pink) !important; background-color: #FDF2F0; }
         .dragging { opacity: 0.4; }
     </style>
@@ -55,7 +54,8 @@
             <div class="flex gap-3 flex-wrap justify-center items-center">
                 <div class="flex items-center bg-[#F0EFEB] rounded-2xl p-1 border border-[#D7D3CC]">
                     <button onclick="changeSort(-1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❮</button>
-                    <div class="px-4 min-w-[140px] text-center">
+                    <div class="px-4 min-w-[150px] text-center">
+                        <p class="text-[10px] font-black text-[#A5A5A5] uppercase">排序方式</p>
                         <span id="sortModeText" class="font-black text-sm text-[#6D6875]">按活動 (預設)</span>
                     </div>
                     <button onclick="changeSort(1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❯</button>
@@ -82,7 +82,7 @@
             <div class="xl:col-span-3">
                 <div id="monitorGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                 <div id="emptyDisplay" class="hidden text-center py-40 bg-[#FBFBF9] rounded-[3rem] border-4 border-dashed border-[#D7D3CC]">
-                    <p class="text-[#D7D3CC] font-black text-2xl">目前無監測項目</p>
+                    <p class="text-[#D7D3CC] font-black text-2xl">目前無進行中的監測項目</p>
                 </div>
             </div>
         </div>
@@ -115,8 +115,8 @@
 
     <script>
         let activities = [];
-        let db = JSON.parse(localStorage.getItem('stamina_v14_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
-        let monitors = JSON.parse(localStorage.getItem('stamina_v14_active')) || [];
+        let db = JSON.parse(localStorage.getItem('stamina_v15_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
+        let monitors = JSON.parse(localStorage.getItem('stamina_v15_active')) || [];
         let sortMode = 0; 
         const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
 
@@ -133,18 +133,13 @@
                 const act = activities[select.value];
                 document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / 1 點`;
                 document.getElementById('maxDetail').innerText = `${act.maxStamina} 點`;
-                // 修正 4: 切換活動時重置全選按鈕狀態
-                resetSelectAllBtn();
+                const btn = document.getElementById('btnSelectAll');
+                if(btn) btn.innerText = "勾選所有人物";
             };
             select.dispatchEvent(new Event('change'));
             renderMonitoring();
             setInterval(renderMonitoring, 1000);
         };
-
-        function resetSelectAllBtn() {
-            const btn = document.getElementById('btnSelectAll');
-            if(btn) btn.innerText = "勾選所有人物";
-        }
 
         function changeSort(dir) {
             sortMode = (sortMode + dir + 4) % 4;
@@ -157,7 +152,7 @@
             return "未分類"; 
         }
 
-        // --- 修正 3: 排序邏輯修復 ---
+        // --- 修正 1: 完整顯示年月日時分秒 ---
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
             if(monitors.length === 0) { 
@@ -184,8 +179,22 @@
                 const cardClass = m.isFull ? 'card-full-highlight' : 'card-standard';
                 const textColor = m.isFull ? 'text-full-green' : 'text-status-pink';
                 const ringColor = m.isFull ? '#02C874' : '#FF9D6F';
-                let countdown = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
                 
+                let countdownText = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
+                
+                // 修正：計算並格式化完整的 YYYY/MM/DD HH:mm:ss
+                let fullTimeLabel = "狀態：體力已充滿";
+                if(!m.isFull) {
+                    const d = new Date(now + m.remSec * 1000);
+                    const Y = d.getFullYear();
+                    const M = (d.getMonth() + 1).toString().padStart(2,'0');
+                    const D = d.getDate().toString().padStart(2,'0');
+                    const h = d.getHours().toString().padStart(2,'0');
+                    const min = d.getMinutes().toString().padStart(2,'0');
+                    const s = d.getSeconds().toString().padStart(2,'0');
+                    fullTimeLabel = `預計回滿：${Y}/${M}/${D} ${h}:${min}:${s}`;
+                }
+
                 return `
                 <div class="${cardClass} p-8 rounded-[2.5rem] flex flex-col relative">
                     <button onclick="removeMonitor(${m.originalIdx})" class="absolute top-6 right-8 text-[#D7D3CC] hover:text-red-400 text-2xl z-10">✕</button>
@@ -206,13 +215,83 @@
                     </div>
                     <div class="bg-white/40 p-5 rounded-[1.5rem] border border-[#D7D3CC]/30">
                         <p class="text-[10px] font-black text-[#A5A5A5] mb-1">實時體力狀態</p>
-                        <p class="text-3xl font-black ${textColor} tracking-tighter">${countdown}</p>
+                        <p class="text-3xl font-black ${textColor} tracking-tighter mb-1">${countdownText}</p>
+                        <p class="text-[11px] font-bold text-[#8E9AAF]">${fullTimeLabel}</p>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        // --- 修正 4: 全選功能邏輯修復 ---
+        // --- 修正 2: 人物名單組內與跨組拖曳調整 ---
+        let dragInfo = null;
+        function handleDragStart(e, gid, mi) { 
+            dragInfo = { gid, mi }; 
+            e.currentTarget.classList.add('dragging'); 
+        }
+        function handleDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
+
+        function renderManageUI() {
+            const area = document.getElementById('groupListArea');
+            area.innerHTML = db.groups.map((g, gi) => `
+                <div class="bg-[#F4F2EE] p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
+                        <div class="flex gap-2">
+                            <button onclick="clearGroup('${g.id}')" class="text-xs text-[#AF7A7D] border border-[#AF7A7D] px-2 py-1 rounded-lg font-black">清空成員</button>
+                            ${g.id !== 'default' ? `<button onclick="removeGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black">刪除群組</button>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" placeholder="人物名稱" class="flex-1 p-2 rounded-xl text-sm border-none shadow-inner char-input">
+                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-4 rounded-xl text-xs font-black">新增</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 min-h-[40px] member-list" data-gid="${g.id}">
+                        ${g.members.map((m, mi) => `
+                            <div draggable="true" 
+                                 ondragstart="handleDragStart(event, '${g.id}', ${mi})" 
+                                 ondragend="handleDragEnd(event)" 
+                                 data-mi="${mi}"
+                                 class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between border border-[#D7D3CC] cursor-move">
+                                <span>${m.name}</span>
+                                <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-red-400">✕</button>
+                            </div>`).join('')}
+                    </div>
+                </div>`).join('');
+            
+            // 綁定拖曳邏輯
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.addEventListener('dragover', e => { 
+                    e.preventDefault(); 
+                    zone.classList.add('drag-over'); 
+                });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', e => {
+                    e.preventDefault(); 
+                    zone.classList.remove('drag-over');
+                    const targetGid = zone.dataset.gid;
+                    if (!dragInfo) return;
+
+                    const sGroup = db.groups.find(g => g.id === dragInfo.gid);
+                    const tGroup = db.groups.find(g => g.id === targetGid);
+                    const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
+
+                    // 檢查是否掉落在特定人物上方（用於組內/組間定位）
+                    const dropTarget = e.target.closest('.member-item');
+                    if (dropTarget && dropTarget.parentNode.dataset.gid === targetGid) {
+                        const targetMi = parseInt(dropTarget.dataset.mi);
+                        tGroup.members.splice(targetMi, 0, movingItem);
+                    } else {
+                        tGroup.members.push(movingItem);
+                    }
+
+                    saveDB(); 
+                    renderManageUI();
+                    dragInfo = null;
+                });
+            });
+        }
+
+        // --- 其他核心邏輯 ---
         function toggleAllCheckboxes() {
             const cbs = document.querySelectorAll('.char-cb');
             const btn = document.getElementById('btnSelectAll');
@@ -220,7 +299,6 @@
             cbs.forEach(c => c.checked = !allChecked);
             btn.innerText = !allChecked ? "取消所有勾選" : "勾選所有人物";
         }
-
         function toggleGroupCheckboxes(btn) {
             const wrapper = btn.closest('.group-wrapper');
             const cbs = wrapper.querySelectorAll('.char-cb');
@@ -228,9 +306,7 @@
             cbs.forEach(c => c.checked = !allChecked);
             btn.innerText = allChecked ? "本組全選" : "取消全選";
         }
-
         function openBatchModal() {
-            resetSelectAllBtn();
             const actIdx = document.getElementById('activitySelect').value;
             const act = activities[actIdx];
             document.getElementById('currentActName').innerText = "當前活動：" + act.name;
@@ -252,56 +328,6 @@
                 </div>`).join('');
             document.getElementById('batchModal').classList.replace('hidden', 'flex');
         }
-
-        // --- 修正 2: 拖曳功能精確修復 ---
-        let dragInfo = null;
-        function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.currentTarget.classList.add('dragging'); }
-        function handleDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
-
-        function renderManageUI() {
-            const area = document.getElementById('groupListArea');
-            area.innerHTML = db.groups.map((g, gi) => `
-                <div class="bg-[#F4F2EE] p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
-                        <div class="flex gap-2">
-                            <button onclick="clearGroup('${g.id}')" class="text-xs text-[#AF7A7D] border border-[#AF7A7D] px-2 py-1 rounded-lg font-black">清空成員</button>
-                            ${g.id !== 'default' ? `<button onclick="removeGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black">刪除群組</button>` : ''}
-                        </div>
-                    </div>
-                    <div class="flex gap-2 mb-4">
-                        <input type="text" placeholder="人物名稱" class="flex-1 p-2 rounded-xl text-sm border-none char-input">
-                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-4 rounded-xl text-xs font-black">新增</button>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3 min-h-[40px]">
-                        ${g.members.map((m, mi) => `
-                            <div draggable="true" ondragstart="handleDragStart(event, '${g.id}', ${mi})" ondragend="handleDragEnd(event)" 
-                                 class="bg-white p-3 rounded-xl text-sm font-black flex justify-between border border-[#D7D3CC] cursor-move">
-                                <span>${m.name}</span>
-                                <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-red-400">✕</button>
-                            </div>`).join('')}
-                    </div>
-                </div>`).join('');
-            
-            // 綁定拖曳
-            document.querySelectorAll('.drop-zone').forEach(zone => {
-                zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-                zone.addEventListener('drop', e => {
-                    e.preventDefault(); zone.classList.remove('drag-over');
-                    const targetGid = zone.dataset.gid;
-                    if(dragInfo && dragInfo.gid !== targetGid) {
-                        const sGroup = db.groups.find(g => g.id === dragInfo.gid);
-                        const tGroup = db.groups.find(g => g.id === targetGid);
-                        const [item] = sGroup.members.splice(dragInfo.mi, 1);
-                        tGroup.members.push(item);
-                        saveDB(); renderManageUI();
-                    }
-                });
-            });
-        }
-
-        // --- 核心函數 ---
         function submitBatch() {
             const actIdx = document.getElementById('activitySelect').value;
             const rows = document.querySelectorAll('#batchInputList input[type="checkbox"]:checked');
@@ -315,16 +341,15 @@
             });
             saveActive(); closeModal('batchModal'); renderMonitoring();
         }
-
-        function saveDB() { localStorage.setItem('stamina_v14_db', JSON.stringify(db)); }
-        function saveActive() { localStorage.setItem('stamina_v14_active', JSON.stringify(monitors)); }
+        function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
+        function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
         function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
         function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
         function addGroup() { const n = document.getElementById('newGroupName').value; if(n){ db.groups.push({id:'g'+Date.now(), name:n, members:[]}); document.getElementById('newGroupName').value=""; saveDB(); renderManageUI(); }}
         function addMemberInLine(btn, gid) { const inp = btn.previousElementSibling; if(inp.value){ db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); }}
         function removeGroup(gi) { if(confirm("刪除群組？")) { db.groups.splice(gi,1); saveDB(); renderManageUI(); }}
         function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
-        function clearGroup(gid) { if(confirm("清空成員？")) { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); }}
+        function clearGroup(gid) { if(confirm("清空成員？")) { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); } }
         function removeMonitor(idx) { monitors.splice(idx,1); saveActive(); renderMonitoring(); }
         function clearAllMonitoring() { if(confirm("確定清空所有監測？")) { monitors=[]; saveActive(); renderMonitoring(); }}
     </script>
