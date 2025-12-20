@@ -2,31 +2,216 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>偉大航線</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>偉大航線投資決策</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;900&family=Varela+Round&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --highlight-pink: #FF9D6F;
+            --morandi-bg: #FBFBF9;
+            --tag-bg: #F0EFEB;
+            --accent-purple: #5E548E;
+        }
+        body { 
+            font-family: 'Varela Round', 'Noto Sans TC', "Microsoft JhengHei", sans-serif;
+            background-color: #EAE8E4; 
+            color: #6D6875;
+        }
         [v-cloak] { display: none; }
-        .theme-christmas { background-color: #fef2f2; }
-        body { transition: 0.3s; background-color: #f8fafc; }
+        
+        /* 統一圓角與陰影 */
+        .card-standard { 
+            background-color: var(--morandi-bg); 
+            border: 1px solid #D7D3CC;
+            border-radius: 2rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        /* 輸入框樣式優化 */
+        input {
+            background-color: #F4F2EE !important;
+            border: 1px solid #D7D3CC !important;
+            border-radius: 0.75rem !important;
+            padding: 0.5rem !important;
+            text-align: right;
+            font-weight: 900;
+            color: var(--accent-purple);
+        }
+        input:focus { outline: 2px solid var(--highlight-pink); border-color: transparent !important; }
+
+        /* 標籤樣式 */
+        .section-tag {
+            background-color: var(--tag-bg);
+            color: var(--accent-purple);
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 900;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #FDF2F0 0%, #FBFBF9 100%);
+            border: 2px solid var(--highlight-pink);
+        }
+        
+        /* 隱藏數值調節器 */
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
-<body class="p-4 md:p-10">
-    <div id="app" v-cloak class="max-w-6xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-black italic text-slate-900">🚢 VOYAGE SYSTEM</h1>
-            <button @click="goHome" class="bg-slate-800 text-white px-6 py-2 rounded-full font-bold shadow-lg">離開</button>
+<body class="p-4 md:p-8">
+    <div id="app" v-cloak class="max-w-7xl mx-auto">
+        
+        <div class="flex flex-col lg:flex-row justify-between items-center mb-8 bg-[#FBFBF9] p-8 rounded-[2rem] shadow-sm border border-[#D7D3CC] gap-6">
+            <div class="flex items-center gap-5">
+                <div class="w-16 h-16 bg-[#5E548E] rounded-2xl flex items-center justify-center text-[#F4F2EE] text-3xl font-black">🚢</div>
+                <div>
+                    <h2 class="text-3xl font-black text-[#5E548E] tracking-tight">偉大航線投資決策</h2>
+                    <p class="text-xs font-bold text-[#8E9AAF] tracking-widest">GRAND LINE INVESTMENT</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button @click="resetData" class="bg-[#AF7A7D] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">🗑️ 重置資料</button>
+                <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">返回入口</button>
+            </div>
         </div>
 
-        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl">
-            <div class="mb-6 pb-6 border-b border-slate-100">
-                <p class="text-blue-600 font-bold">歡迎回來, {{ userName }}</p>
-                <h2 class="text-slate-400 text-sm">系統已就緒，請開始規劃航線</h2>
-            </div>
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
             
-            <div class="py-20 text-center border-4 border-dashed border-slate-100 rounded-3xl">
-                <p class="text-slate-300">航線地圖與資源數據區塊</p>
+            <div class="xl:col-span-8 space-y-6">
+                <div class="card-standard">
+                    <span class="section-tag">表₀ 基礎資料輸入</span>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-black text-[#8E9AAF] ml-2">可用資金</label>
+                            <input type="number" v-model.number="fund" placeholder="資金">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-black text-[#8E9AAF] ml-2">剩餘載重</label>
+                            <input type="number" v-model.number="capacity" placeholder="載重">
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-[#8E9AAF] text-xs font-black uppercase">
+                                    <th class="p-2">品項</th>
+                                    <th class="p-2 text-right">交易差價</th>
+                                    <th class="p-2 text-right">漲跌%</th>
+                                    <th class="p-2 text-right">購買量</th>
+                                    <th class="p-2 text-right">單位毛利</th>
+                                    <th class="p-2 text-right">預估淨利</th>
+                                </tr>
+                            </thead>
+                            <tbody class="font-bold">
+                                <tr v-for="item in products" :key="item.name" class="border-t border-[#F0EFEB]">
+                                    <td class="p-3 text-[#5E548E] font-black">{{ item.name }}</td>
+                                    <td class="p-2"><input type="number" v-model.number="item.priceDiff" class="w-full"></td>
+                                    <td class="p-2"><input type="number" v-model.number="item.trend" class="w-full"></td>
+                                    <td class="p-2"><input type="number" v-model.number="item.quantity" class="w-full"></td>
+                                    <td class="p-2 text-right text-sm">{{ formatMoney(getUnitProfit(item)) }}</td>
+                                    <td class="p-2 text-right text-sm text-[#FF9D6F]">{{ formatMoney(getTotalProfit(item)) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="card-standard" :class="{'opacity-50': fund > totalCost0}">
+                        <span class="section-tag">表₁ 特產優先計算 (資金不足時)</span>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-[#D7D3CC]">
+                                <span class="text-xs font-black text-[#8E9AAF]">買空特產剩餘資金</span>
+                                <span class="font-black text-[#5E548E]">{{ formatMoney(remainFund1) }}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[10px] font-black ml-1">副產售價</label>
+                                    <input type="number" v-model.number="extraPrice1">
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[10px] font-black ml-1">副產漲跌%</label>
+                                    <input type="number" v-model.number="extraTrend1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-standard" :class="{'opacity-50': fund > totalCost0}">
+                        <span class="section-tag">表₂ 高毛利副產計算</span>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-[#D7D3CC]">
+                                <span class="text-xs font-black text-[#8E9AAF]">買空高毛利剩餘資金</span>
+                                <span class="font-black text-[#5E548E]">{{ formatMoney(remainFund2) }}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[10px] font-black ml-1">其他售價</label>
+                                    <input type="number" v-model.number="extraPrice2">
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[10px] font-black ml-1">其他漲跌%</label>
+                                    <input type="number" v-model.number="extraTrend2">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <div class="xl:col-span-4 space-y-6">
+                <div class="card-standard highlight-box">
+                    <span class="section-tag" style="background-color: #FF9D6F; color: white;">🏆 最佳投資方案判斷</span>
+                    <div class="mt-4 p-6 bg-white rounded-[1.5rem] shadow-inner border border-[#FF9D6F]/20">
+                        <p class="text-[10px] font-black text-[#8E9AAF] mb-1 uppercase tracking-widest">系統建議</p>
+                        <p class="text-2xl font-black text-[#FF9D6F] leading-tight mb-4">{{ finalDecision.msg }}</p>
+                        <hr class="mb-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-sm font-bold">判斷依據:</span>
+                                <span class="text-sm font-black text-[#5E548E]">{{ finalDecision.reason }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm font-bold">預估總淨利:</span>
+                                <span class="text-xl font-black text-[#FF9D6F]">{{ formatMoney(finalDecision.profit) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 space-y-3">
+                        <div class="flex justify-between text-xs font-bold border-b border-[#D7D3CC] pb-2">
+                            <span>表₀ 最高淨利方案</span>
+                            <span>{{ formatMoney(bestByNet0.profit) }}</span>
+                        </div>
+                        <div v-if="fund <= totalCost0" class="flex justify-between text-xs font-bold border-b border-[#D7D3CC] pb-2">
+                            <span>表₁ 總淨利(買空特產+)</span>
+                            <span>{{ formatMoney(totalNetProfit1) }}</span>
+                        </div>
+                        <div v-if="fund <= totalCost0" class="flex justify-between text-xs font-bold border-b border-[#D7D3CC] pb-2">
+                            <span>表₂ 總淨利(買空高毛利副產+)</span>
+                            <span>{{ formatMoney(totalNetProfit2) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-standard bg-[#6D6875] text-white">
+                    <h4 class="font-black mb-4 flex items-center gap-2">
+                        <span>💡</span> 操作提示
+                    </h4>
+                    <ul class="text-xs space-y-3 font-bold opacity-90">
+                        <li>● 載重與資金足夠時，參考「表₀」結果即可。</li>
+                        <li>● 資金不足時，系統會自動比對「表₁」與「表₂」。</li>
+                        <li>● 若無特產，請將特產購買量輸入為 0。</li>
+                    </ul>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -35,24 +220,83 @@
         createApp({
             data() {
                 return {
-                    userName: '',
-                    gameData: null
+                    fund: 0,
+                    capacity: 0,
+                    products: [
+                        { name: '特產', priceDiff: 0, trend: 0, quantity: 0, buyPrice: 1600 },
+                        { name: '副產 1', priceDiff: 0, trend: 0, quantity: 0, buyPrice: 1200 },
+                        { name: '副產 2', priceDiff: 0, trend: 0, quantity: 0, buyPrice: 1200 }
+                    ],
+                    extraPrice1: 0, extraTrend1: 0,
+                    extraPrice2: 0, extraTrend2: 0
                 }
             },
-            mounted() {
-                const sessionRaw = sessionStorage.getItem('gameData');
-                if (!sessionRaw) {
-                    location.href = "index.html";
-                    return;
+            computed: {
+                // 原有的複雜邏輯保持不變
+                bestByNet0() {
+                    let best = { name: '無', profit: 0 };
+                    this.products.forEach(p => {
+                        let profit = this.getTotalProfit(p);
+                        if (profit > best.profit) { best = { name: p.name, profit: profit }; }
+                    });
+                    return best;
+                },
+                totalCost0() { return this.products.reduce((sum, p) => sum + (p.buyPrice * p.quantity), 0); },
+                
+                // 表1 邏輯
+                remainFund1() { 
+                    const specialty = this.products.find(p => p.name === '特產');
+                    return Math.max(0, this.fund - (specialty.buyPrice * specialty.quantity));
+                },
+                totalNetProfit1() {
+                    const specialty = this.products.find(p => p.name === '特產');
+                    const specProfit = this.getTotalProfit(specialty);
+                    const extraQty = Math.floor(this.remainFund1 / 1200);
+                    const extraProfit = extraQty * (this.extraPrice1 * (1 + this.extraTrend1/100) - 1200);
+                    return specProfit + extraProfit;
+                },
+
+                // 表2 邏輯
+                remainFund2() {
+                    const p1 = this.products.find(p => p.name === '副產 1');
+                    const p2 = this.products.find(p => p.name === '副產 2');
+                    const highGross = this.getUnitProfit(p1) > this.getUnitProfit(p2) ? p1 : p2;
+                    return Math.max(0, this.fund - (highGross.buyPrice * highGross.quantity));
+                },
+                totalNetProfit2() {
+                    const p1 = this.products.find(p => p.name === '副產 1');
+                    const p2 = this.products.find(p => p.name === '副產 2');
+                    const highGross = this.getUnitProfit(p1) > this.getUnitProfit(p2) ? p1 : p2;
+                    const highProfit = this.getTotalProfit(highGross);
+                    const extraQty = Math.floor(this.remainFund2 / 1200);
+                    const extraProfit = extraQty * (this.extraPrice2 * (1 + this.extraTrend2/100) - 1200);
+                    return highProfit + extraProfit;
+                },
+
+                finalDecision() {
+                    if (this.fund > this.totalCost0 || this.fund <= 0) {
+                        return { msg: "參考表₀：" + this.bestByNet0.name, profit: this.bestByNet0.profit, reason: "資金/載重充足" };
+                    }
+                    if (this.totalNetProfit1 >= this.totalNetProfit2 && this.totalNetProfit1 >= this.bestByNet0.profit) {
+                        return { msg: "方案一：特產買空方案", profit: this.totalNetProfit1, reason: "特產基礎利潤優勢" };
+                    } else if (this.totalNetProfit2 >= this.totalNetProfit1 && this.totalNetProfit2 >= this.bestByNet0.profit) {
+                        return { msg: "方案二：高毛利副產買空", profit: this.totalNetProfit2, reason: "副產組合收益較高" };
+                    }
+                    return { msg: "方案三：單買最優副產", profit: this.bestByNet0.profit, reason: "資金不適宜拆分購買" };
                 }
-                const data = JSON.parse(sessionRaw);
-                this.userName = data.user.name;
-                this.gameData = data;
-                document.body.className = "theme-" + (data.config.CurrentTheme || 'default');
             },
             methods: {
-                goHome() {
-                    location.href = 'portal.html';
+                getUnitProfit(p) { return p.priceDiff * (1 + p.trend/100); },
+                getTotalProfit(p) { return this.getUnitProfit(p) * p.quantity; },
+                formatMoney(val) {
+                    if (!val) return '0';
+                    return val.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' 貝里';
+                },
+                resetData() {
+                    this.fund = 0; this.capacity = 0;
+                    this.products.forEach(p => { p.priceDiff = 0; p.trend = 0; p.quantity = 0; });
+                    this.extraPrice1 = 0; this.extraTrend1 = 0;
+                    this.extraPrice2 = 0; this.extraTrend2 = 0;
                 }
             }
         }).mount('#app');
