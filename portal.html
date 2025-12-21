@@ -20,85 +20,66 @@
 
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 bg-white p-8 rounded-[2.5rem] shadow-sm gap-4 border border-slate-100">
             <div>
-                <h1 id="userName" class="text-3xl font-black text-slate-800 italic">載入中...</h1>
-                <p id="userRole" class="text-blue-500 font-bold text-xs uppercase tracking-[0.2em] mt-1"></p>
+                <h1 id="userName" class="text-3xl font-black text-slate-800">載入中...</h1>
+                <p id="userRole" class="text-slate-400 font-bold tracking-widest text-sm"></p>
             </div>
-            <button onclick="logout()" class="px-6 py-2 rounded-xl text-slate-300 font-bold hover:text-red-500 transition-all text-sm">安全登出</button>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            <button onclick="location.href='stamina.html'" class="bg-white p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all text-left border-b-8 border-blue-500 group">
-                <div class="text-3xl mb-3 group-hover:scale-125 transition-transform duration-300">⚡</div>
-                <h3 class="font-bold text-slate-700 text-lg">體力紀錄</h3>
-                <p class="text-slate-400 text-[10px] uppercase mt-1">Stamina Tracker</p>
-            </button>
-            <button onclick="location.href='flipping.html'" class="bg-white p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all text-left border-b-8 border-red-500 group">
-                <div class="text-3xl mb-3 group-hover:scale-125 transition-transform duration-300">🃏</div>
-                <h3 class="font-bold text-slate-700 text-lg">翻牌工具</h3>
-                <p class="text-slate-400 text-[10px] uppercase mt-1">Path Finder</p>
-            </button>
-            <button onclick="location.href='voyage.html'" class="bg-white p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all text-left border-b-8 border-amber-500 group">
-                <div class="text-3xl mb-3 group-hover:scale-125 transition-transform duration-300">🚢</div>
-                <h3 class="font-bold text-slate-700 text-lg">偉大航線</h3>
-                <p class="text-slate-400 text-[10px] uppercase mt-1">Voyage System</p>
-            </button>
-        </div>
-
-        <div id="adminPanel" class="hidden mt-12 p-8 bg-slate-900 rounded-[2.5rem] text-white shadow-2xl">
-            <div class="flex flex-wrap gap-4">
-                <button onclick="openConfigModal()" class="bg-indigo-600 hover:bg-indigo-500 px-8 py-3 rounded-2xl text-sm font-bold transition-all">修改系統配置</button>
-                <button id="superAdminBtn" onclick="openUserModal()" class="hidden bg-slate-700 hover:bg-slate-600 px-8 py-3 rounded-2xl text-sm font-bold transition-all">用戶名單管理</button>
+            <div class="flex gap-2">
+                <button onclick="logout()" class="px-6 py-3 bg-slate-100 text-slate-500 rounded-2xl font-black hover:bg-slate-200 transition">登出</button>
             </div>
         </div>
-    </div>
 
-    <div id="recoveryModal" class="fixed inset-0 bg-slate-900/90 hidden items-center justify-center p-6 z-[60] backdrop-blur-md">
-        <div class="bg-white w-full max-w-md rounded-[3rem] p-10 text-center shadow-2xl border-t-8 border-blue-500">
-            <div class="text-5xl mb-6">🛡️</div>
-            <h3 class="text-2xl font-black text-slate-800 mb-2">您的專屬救援碼</h3>
-            <p class="text-slate-400 text-sm mb-8">忘記密碼時這是唯一找回帳號的方式。<br><span class="text-red-500 font-bold">請立即截圖存檔，本視窗僅出現一次！</span></p>
-            <div id="recoveryDisplay" class="bg-slate-100 text-4xl font-mono font-black py-6 rounded-3xl tracking-[0.2em] text-blue-600 mb-8 italic"></div>
-            <button onclick="closeModal('recoveryModal')" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold hover:bg-black transition shadow-xl">我已存檔，進入系統</button>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div onclick="location.href='stamina.html'" class="group p-8 bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all cursor-pointer border-b-8 border-indigo-500 active:scale-95">
+                <div class="text-4xl mb-4">⚡</div>
+                <h3 class="text-xl font-black text-slate-800">體力監控中心</h3>
+                <p class="text-slate-400 font-bold text-sm">Stamina Real-time Monitor</p>
+            </div>
+        </div>
+
+        <div id="adminPanel" class="hidden mt-10">
+            <h2 class="text-slate-400 font-black text-xs tracking-widest mb-4 ml-4">ADMINISTRATOR TOOLS</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button onclick="openConfig()" class="p-6 bg-slate-800 text-white rounded-[2rem] font-black hover:bg-slate-700 transition flex items-center justify-center gap-3 shadow-lg">
+                    ⚙️ 修改系統配置
+                </button>
+                <button onclick="location.href='user_management.html'" class="p-6 bg-slate-800 text-white rounded-[2rem] font-black hover:bg-slate-700 transition shadow-lg">
+                    👥 用戶名單管理
+                </button>
+                <button id="superAdminBtn" onclick="location.href='test_version.html'" class="hidden p-6 bg-indigo-900 text-white rounded-[2rem] font-black border-2 border-indigo-400 hover:bg-indigo-800 transition shadow-lg md:col-span-2">
+                    🚀 測試版本更新入口 (僅限超級管理員)
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec";
-        let cachedData = null;
-
         window.onload = function() {
             const data = JSON.parse(sessionStorage.getItem('gameData'));
             if(!data) return location.href = "index.html";
-            cachedData = data;
 
-            // 1. 顯示親切稱呼
             document.getElementById('userName').innerText = "掌櫃, " + data.user.name;
             document.getElementById('userRole').innerText = "Access Level: " + data.user.role;
             
-            // 2. 顯示公告
             if(data.config && data.config.AnnounceText) {
                 document.getElementById('announceBox').classList.remove('hidden');
                 document.getElementById('announceDisplay').innerText = data.config.AnnounceText;
             }
 
-            // 3. 處理管理權限
+            // 權限判定：Admin(level 10+) 或 SuperAdmin(level 99)
             if(data.user.level >= 10) {
                 document.getElementById('adminPanel').classList.remove('hidden');
-                if(data.user.level === 99) document.getElementById('superAdminBtn').classList.remove('hidden');
-            }
-
-            // 4. 【修復重點】檢查救援碼彈窗觸發
-            // 使用 String 轉換確保 boolean 判斷準確
-            if(String(data.isNewRecovery) === "true") {
-                document.getElementById('recoveryDisplay').innerText = data.recoveryCode;
-                document.getElementById('recoveryModal').classList.remove('hidden');
-                document.getElementById('recoveryModal').classList.add('flex');
+                // 只有超級管理員才能看到測試入口
+                if(data.user.level === 99) {
+                    document.getElementById('superAdminBtn').classList.remove('hidden');
+                }
             }
         };
 
-        function closeModal(id) { 
-            document.getElementById(id).classList.replace('flex', 'hidden'); 
+        function openConfig() {
+            // 確認檔案名稱是否為 config.html
+            location.href = "config.html";
         }
+
         function logout() { sessionStorage.clear(); location.href = "index.html"; }
     </script>
 </body>
