@@ -6,187 +6,172 @@
     <title>大掌櫃工具箱 - 翻牌工具</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 莫蘭迪色系定義 */
+        /* 莫蘭迪與圓潤風格定義 */
         :root {
             --m-green: #a3b18a;
             --m-blue: #9eb3c2;
-            --m-pink: #d4a373;
+            --m-pink: #e29595; /* 醒目的莫蘭迪粉紅 */
             --m-bg: #f8f9fa;
-            --m-card: #ffffff;
-            --m-btn-border: #81a1c1; /* 深一點的莫蘭迪藍 */
-            --m-danger: #e29595; /* 莫蘭迪粉紅 */
+            --m-btn-bg: #eef2f6;
+            --m-btn-border: #9eb3c2;
+            --m-font: "Yuanti SC", "YouYuan", "Microsoft JhengHei", "Rounded Mplus 1c", sans-serif;
         }
 
-        body, html { height: 100vh; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; background: var(--m-bg); color: #4a4a4a; }
+        body, html { 
+            height: 100vh; overflow: hidden; 
+            font-family: var(--m-font); 
+            background: var(--m-bg); 
+            color: #4a4a4a; 
+        }
         
-        .layout-container { display: grid; grid-template-columns: 130px 1fr 380px; height: 100vh; }
+        .layout-container { display: grid; grid-template-columns: 140px 1fr 400px; height: 100vh; }
 
         #mainScrollArea {
             overflow-y: auto;
-            padding: 20px 20px 180px 20px;
+            padding: 15px 15px 180px 15px;
             height: 100%;
             scrollbar-width: none;
         }
         #mainScrollArea::-webkit-scrollbar { display: none; }
 
-        /* 格子樣式優化 */
+        /* 宮格優化：讓牌面盡量撐滿 */
         .card-slot { 
             border: 2px dashed #d1d5db; border-radius: 12px; aspect-ratio: 1/1; 
             display: flex; align-items: center; justify-content: center; 
             cursor: pointer; background: #fff; transition: all 0.3s;
-            overflow: hidden;
+            overflow: hidden; padding: 0px; /* 移除間距讓圖更大 */
         }
         .card-slot:hover { border-color: var(--m-blue); background: #fdfaf6; }
-        .card-slot img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
+        .card-slot img { width: 100%; height: 100%; object-fit: cover; } /* cover 能保證填滿，若不希望切到邊邊可用 contain */
 
-        /* 左側功能鈕 - 莫蘭迪可愛風增強版 */
+        /* 左側功能鈕：圓潤可愛化 */
         .btn-action {
-            border: 2px solid var(--m-btn-border);
-            border-radius: 16px;
-            background: #f0f4f8;
-            color: #5e81ac;
+            border: 3px solid var(--m-btn-border);
+            border-radius: 30px; /* 超圓弧 */
+            background: var(--m-btn-bg);
+            color: #5d707f;
             transition: all 0.2s;
-            font-weight: bold;
+            font-weight: 900;
+            font-size: 20px; /* 大字體 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0px #cbd5e1;
         }
-        .btn-action:hover { background: #e5ebf1; transform: translateY(-1px); }
-        .btn-action:active { transform: scale(0.95); }
+        .btn-action:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 6px 0px #cbd5e1; }
+        .btn-action:active { transform: translateY(2px); box-shadow: none; }
 
         .btn-danger {
-            background: #fff5f5;
-            border: 2px solid var(--m-danger);
+            background: #fff0f0;
+            border-color: var(--m-pink);
             color: #c36a6a;
-            font-weight: 900;
+            box-shadow: 0 4px 0px #e2b1b1;
         }
-        .btn-danger:hover { background: #fee2e2; }
+        .btn-danger:hover { background: #ffe4e4; box-shadow: 0 6px 0px #e2b1b1; }
 
-        /* 牌面選單按鈕 */
+        /* 牌面庫按鈕優化 */
         .card-btn {
-            aspect-ratio: 1/1; border-radius: 10px; background: white; border: 2px solid transparent;
+            aspect-ratio: 1/1; border-radius: 8px; background: white; border: 2px solid #f1f1f1;
             cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden;
+            overflow: hidden; padding: 1px; /* 極小間距 */
         }
         .card-btn img { width: 100%; height: 100%; object-fit: contain; }
-        .card-btn.active { border-color: var(--m-pink); transform: scale(0.92); background: #fffaf5; }
+        .card-btn.active { border-color: #d4a373; border-width: 3px; transform: scale(0.95); }
 
-        /* 響應式佈局 */
+        /* 6x6 選單間距縮小 */
+        .card-grid-container { 
+            display: grid; grid-template-columns: repeat(6, 1fr); 
+            gap: 4px; padding: 8px; 
+        }
+
+        /* 手機版與浮窗設定 */
         @media (max-width: 768px) {
             .layout-container { grid-template-columns: 1fr; }
             #rightPanel { display: none !important; }
             #mobileTrigger { display: flex !important; }
             #leftPanel { 
-                position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; 
-                flex-direction: row !important; padding: 10px; z-index: 50;
-                background: white; border-top: 2px solid #e5e7eb; border-radius: 20px 20px 0 0;
+                position: fixed; bottom: 0; left: 0; width: 100%; height: 80px; 
+                flex-direction: row !important; padding: 12px; z-index: 50;
+                background: white; border-top: 3px solid #f1f1f1; border-radius: 25px 25px 0 0;
             }
-            #leftPanel button { font-size: 11px; padding: 4px; height: 100%; }
+            #leftPanel button { font-size: 16px; border-radius: 20px; box-shadow: 0 3px 0px #cbd5e1; }
         }
 
-        #mobileTrigger { display: none; }
-
-        /* 拖曳浮窗 */
-        #mobileDraggable {
-            position: fixed; top: 10%; right: 20px; width: 280px;
-            background: white; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-            z-index: 100; display: none; flex-direction: column; border: 2px solid #f1f1f1;
-            touch-action: none;
-        }
-        .drag-handle { 
-            padding: 12px 18px; background: var(--m-blue); color: white; cursor: move; 
-            border-radius: 18px 18px 0 0; font-weight: bold; display: flex; justify-content: space-between;
-        }
-        
-        .card-grid-container { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 12px; }
-
-        /* 浮窗按鈕圖示 */
         #mobileTrigger {
-            position: fixed; bottom: 95px; right: 20px; width: 64px; height: 64px;
-            background: var(--m-pink); color: white; border-radius: 50%; z-index: 45;
-            box-shadow: 0 8px 20px rgba(212, 163, 115, 0.4);
-            flex-direction: column; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 22px; line-height: 1; border: none;
-        }
-        #mobileTrigger span { font-size: 10px; margin-top: 2px; font-weight: bold; }
-
-        .custom-alert {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 1000; display: none;
-            align-items: center; justify-content: center; backdrop-filter: blur(2px);
-        }
-        .alert-box {
-            background: white; padding: 25px; border-radius: 30px; width: 85%; max-width: 320px;
-            text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            position: fixed; bottom: 100px; right: 20px; width: 68px; height: 68px;
+            background: #d4a373; color: white; border-radius: 50%; z-index: 45;
+            box-shadow: 0 8px 15px rgba(212, 163, 115, 0.4);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 24px; border: none;
         }
     </style>
 </head>
 <body>
 
     <div class="layout-container">
-        <div id="leftPanel" class="bg-white border-r flex flex-col p-4 gap-3 shadow-sm z-10">
-            <button onclick="location.href='portal.html'" class="py-3 bg-slate-700 text-white rounded-2xl font-bold">🏠 返回</button>
-            <div class="h-[1px] bg-slate-100 hidden md:block"></div>
-            <button id="undoButton" class="btn-action flex-1">↩️ 回退</button>
-            <button id="redoButton" class="btn-action flex-1">↪️ 重做</button>
-            <button id="clearAllButton" class="btn-danger flex-1">🗑️ 清除</button>
+        <div id="leftPanel" class="bg-white border-r flex flex-col p-4 gap-4 shadow-sm z-10">
+            <button onclick="location.href='portal.html'" class="py-3 bg-slate-700 text-white rounded-[25px] font-black text-lg">🏠 返回</button>
+            <div class="h-[2px] bg-slate-100 hidden md:block"></div>
+            <button id="undoButton" class="btn-action flex-[2]">↩️回退</button>
+            <button id="redoButton" class="btn-action flex-[2]">↪️重做</button>
+            <button id="clearAllButton" class="btn-action btn-danger flex-1">清除</button>
         </div>
 
         <div id="mainScrollArea">
-            <div class="max-w-xl mx-auto space-y-10">
+            <div class="max-w-xl mx-auto space-y-8">
                 <section>
-                    <p class="text-[11px] font-black text-slate-400 mb-2 px-2 tracking-widest uppercase">Ratio 3 x 2</p>
-                    <div id="grid3x2" class="grid grid-cols-3 gap-2 bg-white/60 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 3/2;"></div>
+                    <p class="text-sm font-black text-slate-400 mb-2 px-2 tracking-widest">輪次1-2 (3 x 2)</p>
+                    <div id="grid3x2" class="grid grid-cols-3 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner" style="aspect-ratio: 3/2;"></div>
                 </section>
                 <section>
-                    <p class="text-[11px] font-black text-slate-400 mb-2 px-2 tracking-widest uppercase">Ratio 4 x 3</p>
-                    <div id="grid4x3" class="grid grid-cols-4 gap-2 bg-white/60 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 4/3;"></div>
+                    <p class="text-sm font-black text-slate-400 mb-2 px-2 tracking-widest">輪次3-5 (4 x 3)</p>
+                    <div id="grid4x3" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner" style="aspect-ratio: 4/3;"></div>
                 </section>
                 <section>
-                    <p class="text-[11px] font-black text-slate-400 mb-2 px-2 tracking-widest uppercase">Ratio 4 x 4</p>
-                    <div id="grid4x4" class="grid grid-cols-4 gap-2 bg-white/60 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 1/1;"></div>
+                    <p class="text-sm font-black text-slate-400 mb-2 px-2 tracking-widest">輪次6-8 (4 x 4)</p>
+                    <div id="grid4x4" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner" style="aspect-ratio: 1/1;"></div>
                 </section>
                 <section>
-                    <p class="text-[11px] font-black text-slate-400 mb-2 px-2 tracking-widest uppercase">Ratio 5 x 4</p>
-                    <div id="grid5x4" class="grid grid-cols-5 gap-2 bg-white/60 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 5/4;"></div>
+                    <p class="text-sm font-black text-slate-400 mb-2 px-2 tracking-widest">輪次9-10 (5 x 4)</p>
+                    <div id="grid5x4" class="grid grid-cols-5 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner" style="aspect-ratio: 5/4;"></div>
                 </section>
             </div>
         </div>
 
-        <div id="rightPanel" class="bg-white border-l p-6 flex flex-col overflow-hidden">
-            <h2 class="text-xl font-black text-slate-700 mb-6 flex items-center gap-2">🏮 牌面庫</h2>
-            <div id="cardMenu" class="card-grid-container overflow-y-auto pr-2"></div>
-            <div id="activeName" class="mt-6 p-4 bg-slate-50 text-slate-500 font-bold rounded-2xl text-center border-2 border-dashed">請點選牌面</div>
+        <div id="rightPanel" class="bg-white border-l p-4 flex flex-col overflow-hidden">
+            <h2 class="text-xl font-black text-slate-700 mb-4 px-2 italic"> 🎴花牌庫</h2>
+            <div id="cardMenu" class="card-grid-container overflow-y-auto pr-1"></div>
+            <div id="activeName" class="mt-4 p-3 bg-orange-50 text-orange-700 font-black rounded-2xl text-center border-2 border-orange-100">請選取牌面</div>
         </div>
     </div>
 
-    <div id="mobileDraggable">
-        <div class="drag-handle">
-            <span>翻牌工具箱</span>
-            <button onclick="toggleMobileMenu()" class="text-xl px-2">✕</button>
+    <div id="mobileDraggable" style="position:fixed; top:10%; right:20px; width:300px; background:white; border-radius:25px; box-shadow:0 20px 50px rgba(0,0,0,0.2); z-index:100; display:none; flex-direction:column; border:3px solid #f1f1f1;">
+        <div class="drag-handle" style="padding:15px; background:var(--m-blue); color:white; border-radius:22px 22px 0 0; cursor:move; font-weight:bold; display:flex; justify-content:space-between;">
+            <span>翻牌選單</span>
+            <button onclick="toggleMobileMenu()" class="font-bold">✕</button>
         </div>
-        <div id="mobileCardMenu" class="card-grid-container"></div>
-        <div id="mobileActiveName" class="py-2 text-center text-[10px] font-black text-slate-400 bg-slate-50 rounded-b-2xl">未選取物品</div>
+        <div id="mobileCardMenu" class="card-grid-container" style="max-height:400px; overflow-y:auto;"></div>
+        <div id="mobileActiveName" class="py-3 text-center text-sm font-black text-slate-400 bg-slate-50 rounded-b-[22px]">未選取</div>
     </div>
 
-    <button id="mobileTrigger" onclick="toggleMobileMenu()">
-        牌<span>選單</span>
-    </button>
+    <button id="mobileTrigger" onclick="toggleMobileMenu()">牌<span>選單</span></button>
 
-    <div id="clearConfirmModal" class="custom-alert">
-        <div class="alert-box">
-            <h3 class="text-lg font-black text-slate-800 mb-2">確定全部清除？</h3>
-            <p class="text-xs text-slate-400 mb-6">清空後當前進度將消失</p>
-            <div class="flex items-center justify-center gap-2 mb-6 text-xs text-slate-500">
-                <input type="checkbox" id="skipConfirmCheck" class="w-4 h-4 accent-orange-500"> 
-                <label for="skipConfirmCheck">下次不再詢問</label>
+    <div id="clearConfirmModal" class="fixed inset-0 bg-black/40 z-[1000] hidden items-center justify-center backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-[35px] w-[85%] max-w-[340px] text-center shadow-2xl">
+            <h3 class="text-xl font-black text-slate-800 mb-2">確定清除嗎？</h3>
+            <p class="text-sm text-slate-400 mb-6">紀錄清空後不可回退喔！</p>
+            <div class="flex items-center justify-center gap-2 mb-6 font-bold text-slate-500">
+                <input type="checkbox" id="skipConfirmCheck" class="w-5 h-5 accent-pink-500"> 
+                <label for="skipConfirmCheck">不再詢問</label>
             </div>
-            <div class="flex gap-3">
-                <button onclick="closeClearModal(false)" class="flex-1 py-3 bg-slate-100 rounded-2xl font-bold text-slate-600">取消</button>
-                <button onclick="closeClearModal(true)" class="flex-1 py-3 bg-orange-500 text-white rounded-2xl font-bold shadow-lg shadow-orange-200">清空</button>
+            <div class="flex gap-4">
+                <button onclick="closeClearModal(false)" class="flex-1 py-3 bg-slate-100 rounded-full font-black text-slate-500">取消</button>
+                <button onclick="closeClearModal(true)" class="flex-1 py-3 bg-pink-400 text-white rounded-full font-black shadow-lg">清空</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 牌庫數據修正 (url -> img)
         const cardData = [
             { name: "紫玉", img: "https://i.postimg.cc/RhYxh9M7/zi-yu.jpg" },
             { name: "堇書", img: "https://i.postimg.cc/rsH2sc8t/jin-shu.jpg" },
@@ -242,8 +227,8 @@
             const mbMenu = document.getElementById('mobileCardMenu');
             cardData.forEach(card => {
                 const btn = document.createElement('div');
-                btn.className = 'card-btn p-1';
-                btn.innerHTML = `<img src="${card.img}" title="${card.name}">`;
+                btn.className = 'card-btn';
+                btn.innerHTML = `<img src="${card.img}">`;
                 btn.onclick = (e) => {
                     e.stopPropagation();
                     currentSelected = card;
@@ -315,7 +300,6 @@
             const el = document.getElementById('mobileDraggable');
             const handle = el.querySelector('.drag-handle');
             let posX = 0, posY = 0, startX = 0, startY = 0;
-
             const dragStart = (e) => {
                 const event = e.type === 'touchstart' ? e.touches[0] : e;
                 startX = event.clientX; startY = event.clientY;
@@ -324,7 +308,6 @@
                 document.addEventListener('touchend', dragEnd);
                 document.addEventListener('mouseup', dragEnd);
             };
-
             const dragMove = (e) => {
                 const event = e.type === 'touchmove' ? e.touches[0] : e;
                 posX = startX - event.clientX; posY = startY - event.clientY;
@@ -333,12 +316,10 @@
                 el.style.left = (el.offsetLeft - posX) + "px";
                 el.style.transform = "none";
             };
-
             const dragEnd = () => {
                 document.removeEventListener('touchmove', dragMove);
                 document.removeEventListener('mousemove', dragMove);
             };
-
             handle.addEventListener('touchstart', dragStart);
             handle.addEventListener('mousedown', dragStart);
         }
