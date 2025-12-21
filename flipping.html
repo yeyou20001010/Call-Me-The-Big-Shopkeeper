@@ -13,7 +13,6 @@
             --m-pink: #d4a373;
             --m-bg: #f8f9fa;
             --m-card: #ffffff;
-            --m-text: #588157;
         }
 
         body, html { height: 100vh; overflow: hidden; font-family: "Microsoft JhengHei", sans-serif; background: var(--m-bg); color: #4a4a4a; }
@@ -27,7 +26,7 @@
 
         #mainScrollArea {
             overflow-y: auto;
-            padding: 20px 20px 160px 20px;
+            padding: 20px 20px 180px 20px;
             height: 100%;
             scrollbar-width: none;
         }
@@ -38,33 +37,43 @@
             border: 2px dashed #d1d5db; border-radius: 12px; aspect-ratio: 1/1; 
             display: flex; align-items: center; justify-content: center; 
             cursor: pointer; background: #fff; transition: all 0.3s;
+            overflow: hidden; /* 確保圖片不溢出 */
         }
         .card-slot:hover { border-color: var(--m-blue); background: #fdfaf6; }
-        .card-slot img { width: 92%; height: 92%; object-fit: contain; } /* 盡量貼滿 */
+        
+        /* 牌面盡量填滿 (不變形) */
+        .card-slot img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
 
-        /* 牌面按鈕 */
+        /* 牌面選單按鈕 */
         .card-btn {
-            border-radius: 10px; background: white; border: 2px solid transparent;
+            aspect-ratio: 1/1; border-radius: 10px; background: white; border: 2px solid transparent;
             cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden;
         }
-        .card-btn.active { border-color: var(--m-pink); transform: scale(0.95); }
+        .card-btn img { width: 100%; height: 100%; object-fit: contain; }
+        .card-btn.active { border-color: var(--m-pink); transform: scale(0.92); background: #fffaf5; }
 
-        /* --- 手機版 RWD --- */
+        /* --- 響應式佈局 (Mobile) --- */
         @media (max-width: 768px) {
             .layout-container { grid-template-columns: 1fr; }
-            #rightPanel { display: none; }
+            #rightPanel { display: none !important; } /* 強制隱藏右側固定欄 */
+            #mobileTrigger { display: flex !important; } /* 手機才顯示浮窗鈕 */
+            
             #leftPanel { 
                 position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; 
                 flex-direction: row !important; padding: 10px; z-index: 50;
                 background: white; border-top: 2px solid #e5e7eb; border-radius: 20px 20px 0 0;
             }
+            #leftPanel button { font-size: 12px; padding: 0; height: 100%; }
         }
 
-        /* 拖曳浮窗：手機版專屬 */
+        /* 電腦版預設隱藏手機元素 */
+        #mobileTrigger { display: none; }
+
+        /* 拖曳浮窗 */
         #mobileDraggable {
-            position: fixed; top: 10%; right: 20px; width: 300px;
-            background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            position: fixed; top: 10%; right: 20px; width: 280px;
+            background: white; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.15);
             z-index: 100; display: none; flex-direction: column; border: 2px solid #f1f1f1;
             touch-action: none;
         }
@@ -73,69 +82,68 @@
             border-radius: 18px 18px 0 0; font-weight: bold; display: flex; justify-content: space-between;
         }
         
-        /* 6x6 選單佈局 */
         .card-grid-container {
             display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 12px;
         }
 
-        /* 浮窗按鈕 */
+        /* 浮窗按鈕圖示 */
         #mobileTrigger {
             position: fixed; bottom: 90px; right: 20px; width: 60px; height: 60px;
             background: var(--m-pink); color: white; border-radius: 50%; z-index: 45;
             box-shadow: 0 8px 20px rgba(212, 163, 115, 0.4);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-weight: black; font-size: 18px; line-height: 1;
+            flex-direction: column; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 20px; line-height: 1; border: none;
         }
-        #mobileTrigger span { font-size: 10px; margin-top: 2px; }
+        #mobileTrigger span { font-size: 10px; margin-top: 2px; font-weight: bold; }
 
-        /* 自定義彈窗 */
+        /* 清除確認彈窗 */
         .custom-alert {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1000; display: none;
-            align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.4); z-index: 1000; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(2px);
         }
         .alert-box {
-            background: white; padding: 25px; border-radius: 25px; width: 85%; max-width: 320px;
-            text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            background: white; padding: 25px; border-radius: 30px; width: 85%; max-width: 320px;
+            text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.2);
         }
     </style>
 </head>
 <body>
 
     <div class="layout-container">
-        <div id="leftPanel" class="bg-white border-r flex flex-col p-4 gap-4 shadow-sm z-10">
+        <div id="leftPanel" class="bg-white border-r flex flex-col p-4 gap-3 shadow-sm z-10">
             <button onclick="location.href='portal.html'" class="py-3 bg-slate-700 text-white rounded-2xl font-bold">🏠 返回</button>
-            <div class="h-[2px] bg-slate-50 hidden md:block"></div>
-            <button id="undoButton" class="flex-1 border-2 border-slate-100 rounded-2xl hover:bg-slate-50 font-bold">↩️ 回退</button>
-            <button id="redoButton" class="flex-1 border-2 border-slate-100 rounded-2xl hover:bg-slate-50 font-bold">↪️ 重做</button>
-            <button id="clearAllButton" class="flex-1 bg-orange-50 text-orange-600 border-2 border-orange-100 rounded-2xl font-black">🗑️ 清除</button>
+            <div class="h-[1px] bg-slate-100 hidden md:block"></div>
+            <button id="undoButton" class="flex-1 border-2 border-slate-50 rounded-2xl hover:bg-slate-100 font-bold transition">↩️ 回退</button>
+            <button id="redoButton" class="flex-1 border-2 border-slate-50 rounded-2xl hover:bg-slate-100 font-bold transition">↪️ 重做</button>
+            <button id="clearAllButton" class="flex-1 bg-orange-50 text-orange-600 border-2 border-orange-100 rounded-2xl font-black transition">🗑️ 清除</button>
         </div>
 
         <div id="mainScrollArea">
-            <div class="max-w-xl mx-auto space-y-12">
+            <div class="max-w-xl mx-auto space-y-10">
                 <section>
-                    <p class="grid-label px-2">📋 比例 3 x 2</p>
-                    <div id="grid3x2" class="grid grid-cols-3 gap-2 bg-white/50 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 3/2;"></div>
+                    <p class="text-[11px] font-black text-slate-400 mb-2 px-2 tracking-widest uppercase">Ratio 3 x 2</p>
+                    <div id="grid3x2" class="grid grid-cols-3 gap-2 bg-white/60 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 3/2;"></div>
                 </section>
                 <section>
-                    <p class="grid-label px-2">📋 比例 4 x 3</p>
-                    <div id="grid4x3" class="grid grid-cols-4 gap-2 bg-white/50 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 4/3;"></div>
+                    <p class="text-[11px] font-black text-slate-400 mb-2 px-2 tracking-widest uppercase">Ratio 4 x 3</p>
+                    <div id="grid4x3" class="grid grid-cols-4 gap-2 bg-white/60 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 4/3;"></div>
                 </section>
                 <section>
-                    <p class="grid-label px-2">📋 比例 4 x 4</p>
-                    <div id="grid4x4" class="grid grid-cols-4 gap-2 bg-white/50 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 1/1;"></div>
+                    <p class="text-[11px] font-black text-slate-400 mb-2 px-2 tracking-widest uppercase">Ratio 4 x 4</p>
+                    <div id="grid4x4" class="grid grid-cols-4 gap-2 bg-white/60 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 1/1;"></div>
                 </section>
                 <section>
-                    <p class="grid-label px-2">📋 比例 5 x 4</p>
-                    <div id="grid5x4" class="grid grid-cols-5 gap-2 bg-white/50 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 5/4;"></div>
+                    <p class="text-[11px] font-black text-slate-400 mb-2 px-2 tracking-widest uppercase">Ratio 5 x 4</p>
+                    <div id="grid5x4" class="grid grid-cols-5 gap-2 bg-white/60 p-2 rounded-2xl shadow-inner" style="aspect-ratio: 5/4;"></div>
                 </section>
             </div>
         </div>
 
         <div id="rightPanel" class="bg-white border-l p-6 flex flex-col overflow-hidden">
-            <h2 class="text-xl font-black text-slate-700 mb-6 flex items-center gap-2">🏮 牌面庫 <span class="text-xs bg-slate-100 px-2 py-1 rounded-full">6x6</span></h2>
-            <div id="cardMenu" class="card-grid-container overflow-y-auto pr-2"></div>
-            <div id="activeName" class="mt-6 p-4 bg-slate-50 text-slate-600 font-bold rounded-2xl text-center border-2 border-dashed">請點選一張牌</div>
+            <h2 class="text-xl font-black text-slate-700 mb-6 flex items-center gap-2">🏮 牌面庫</h2>
+            <div id="cardMenu" class="card-grid-container overflow-y-auto pr-2 custom-scroll"></div>
+            <div id="activeName" class="mt-6 p-4 bg-slate-50 text-slate-500 font-bold rounded-2xl text-center border-2 border-dashed">請點選牌面</div>
         </div>
     </div>
 
@@ -145,36 +153,72 @@
             <button onclick="toggleMobileMenu()" class="text-xl px-2">✕</button>
         </div>
         <div id="mobileCardMenu" class="card-grid-container"></div>
-        <div id="mobileActiveName" class="py-2 text-center text-xs font-bold text-slate-400 bg-slate-50 rounded-b-2xl">未選取</div>
+        <div id="mobileActiveName" class="py-2 text-center text-[10px] font-black text-slate-400 bg-slate-50 rounded-b-2xl">未選取物品</div>
     </div>
 
-    <button id="mobileTrigger" class="md:hidden" onclick="toggleMobileMenu()">
-        <b>牌</b><span>MENU</span>
+    <button id="mobileTrigger" onclick="toggleMobileMenu()">
+        牌<span>選單</span>
     </button>
 
     <div id="clearConfirmModal" class="custom-alert">
         <div class="alert-box">
-            <h3 class="text-lg font-black mb-2">確定全部清除？</h3>
-            <p class="text-sm text-slate-500 mb-4">清空後無法透過撤銷恢復紀錄</p>
-            <div class="flex items-center justify-center gap-2 mb-6 text-xs text-slate-400">
-                <input type="checkbox" id="skipConfirmCheck"> <label for="skipConfirmCheck">下次不再顯示</label>
+            <h3 class="text-lg font-black text-slate-800 mb-2">確定全部清除？</h3>
+            <p class="text-xs text-slate-400 mb-6">清空後當前進度將消失</p>
+            <div class="flex items-center justify-center gap-2 mb-6 text-xs text-slate-500">
+                <input type="checkbox" id="skipConfirmCheck" class="w-4 h-4 accent-orange-500"> 
+                <label for="skipConfirmCheck">下次不再詢問</label>
             </div>
             <div class="flex gap-3">
-                <button onclick="closeClearModal(false)" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold">取消</button>
-                <button onclick="closeClearModal(true)" class="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg">清空</button>
+                <button onclick="closeClearModal(false)" class="flex-1 py-3 bg-slate-100 rounded-2xl font-bold text-slate-600">取消</button>
+                <button onclick="closeClearModal(true)" class="flex-1 py-3 bg-orange-500 text-white rounded-2xl font-bold shadow-lg shadow-orange-200">清空</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 核心數據 (35張)
-        const cardData = [];
-        for(let i=1; i<=35; i++){ cardData.push({id:`c${i}`, name:`物品${i}`, img:`https://placehold.co/100x100/f1f1f1/888?text=${i}`}); }
+        // 恢復您原始的 35 張牌數據
+        const cardData = [
+            { name: "紫玉", url: "https://i.postimg.cc/RhYxh9M7/zi-yu.jpg" },
+            { name: "堇書", url: "https://i.postimg.cc/rsH2sc8t/jin-shu.jpg" },
+            { name: "捉鬼師", url: "https://i.postimg.cc/Y00wtjww/zhuo-gui-shi.jpg" },
+            { name: "小師妹", url: "https://i.postimg.cc/cJ7WmVm4/xiao-shi-mei.jpg" },
+            { name: "馬湘蘭", url: "https://i.postimg.cc/T1sv1GR1/ma-xiang-lan.jpg" },
+            { name: "牛郎", url: "https://i.postimg.cc/9MWhNJ8r/niu-lang.jpg" },
+            { name: "花郎", url: "https://i.postimg.cc/85tS8M9w/hua-lang.jpg" },
+            { name: "采詩官", url: "https://i.postimg.cc/3NNH3WQb/cai-shi-guan.jpg" },
+            { name: "董小宛", url: "https://i.postimg.cc/SQ1hDLWN/dong-xiao-wan.jpg" },
+            { name: "精衛", url: "https://i.postimg.cc/ZYsSVPrd/jing-wei.jpg" },
+            { name: "織女", url: "https://i.postimg.cc/SQ1hDLW9/zhi-nu.jpg" },
+            { name: "花藝師", url: "https://i.postimg.cc/fLBN4mp6/hua-yi-shi.jpg" },
+            { name: "李香君", url: "https://i.postimg.cc/hjSB3pyb/li-xiang-jun.jpg" },
+            { name: "小蝴蝶", url: "https://i.postimg.cc/mDbs68XB/xiao-hu-die.jpg" },
+            { name: "手工少女", url: "https://i.postimg.cc/HxpgPBZW/shou-gong-shao-nu.jpg" },
+            { name: "卞玉京", url: "https://i.postimg.cc/PxtjF23d/bian-yu-jing.jpg" },
+            { name: "王后婦好", url: "https://i.postimg.cc/B6q0wMYP/wang-hou-fu-hao.jpg" },
+            { name: "小鹿女", url: "https://i.postimg.cc/qRkTZjbr/xiao-lu-nu.jpg" },
+            { name: "嫦娥", url: "https://i.postimg.cc/y6pHvhFg/chang-e.jpg" },
+            { name: "新娘之妹", url: "https://i.postimg.cc/FFC4DbjN/xin-niang-zhi-mei.jpg" },
+            { name: "狐妖掌櫃", url: "https://i.postimg.cc/fLBN4mpt/hu-yao-zhang-gui.jpg" },
+            { name: "女魃", url: "https://i.postimg.cc/43vG5r5f/nu-ba.jpg" },
+            { name: "新娘", url: "https://i.postimg.cc/PJ7nJhty/xin-niang.jpg" },
+            { name: "靈夜貓女", url: "https://i.postimg.cc/NfywVy4M/ling-ye-mao-nu.jpg" },
+            { name: "塗山氏", url: "https://i.postimg.cc/mknWkRbS/tu-shan-shi.jpg" },
+            { name: "寇白門", url: "https://i.postimg.cc/6qPxqw9R/kou-bai-men.jpg" },
+            { name: "苗疆聖女", url: "https://i.postimg.cc/4yyTXnRD/miao-jiang-sheng-nu.jpg" },
+            { name: "馴鷹少女", url: "https://i.postimg.cc/WpYvXmMD/xun-ying-shao-nu.jpg" },
+            { name: "小木匠", url: "https://i.postimg.cc/LskSTrTH/xiao-mu-jiang.jpg" },
+            { name: "馴馬師", url: "https://i.postimg.cc/wx4p05h3/xun-ma-shi.jpg" },
+            { name: "驛使", url: "https://i.postimg.cc/7Ptkm1g0/yi-shi.jpg" },
+            { name: "捕快", url: "https://i.postimg.cc/L55MmhM9/bu-kuai.jpg" },
+            { name: "西湖船孃", url: "https://i.postimg.cc/4dJgFBLc/xi-hu-chuan-niang.jpg" },
+            { name: "荒野鈴蘭", url: "https://i.postimg.cc/MHLJHxWK/huang-ye-ling-lan.jpg" },
+            { name: "古國公主", url: "https://i.postimg.cc/vBQsS3qV/gu-guo-gong-zhu.jpg" }
+        ];
 
         let currentSelected = null;
         let history = [];
         let historyIndex = -1;
-        let skipConfirm = false; // 存在內存，重整會失效
+        let skipConfirm = false; // 頁面內紀錄，重整重啟會失效
 
         window.onload = () => {
             renderMenus();
@@ -189,9 +233,9 @@
             cardData.forEach(card => {
                 const btn = document.createElement('div');
                 btn.className = 'card-btn p-1';
-                btn.innerHTML = `<img src="${card.img}" class="w-full h-full object-contain">`;
+                btn.innerHTML = `<img src="${card.img}" title="${card.name}">`;
                 btn.onclick = (e) => {
-                    e.stopPropagation(); // 阻止冒泡，確保不觸發視窗關閉
+                    e.stopPropagation();
                     currentSelected = card;
                     document.getElementById('activeName').innerText = card.name;
                     document.getElementById('mobileActiveName').innerText = card.name;
@@ -221,7 +265,7 @@
             }
         }
 
-        // 清除邏輯
+        // 清除紀錄與自定義視窗
         document.getElementById('clearAllButton').onclick = () => {
             if (skipConfirm) { performClear(); return; }
             document.getElementById('clearConfirmModal').style.display = 'flex';
@@ -240,7 +284,7 @@
             saveState();
         }
 
-        // 歷史紀錄
+        // 歷史紀錄系統
         function saveState() {
             const state = Array.from(document.querySelectorAll('.card-slot')).map(s => s.innerHTML);
             history = history.slice(0, historyIndex + 1);
@@ -254,13 +298,11 @@
             state.forEach((html, i) => slots[i].innerHTML = html);
         }
 
-        // 手機選單切換
         function toggleMobileMenu() {
             const m = document.getElementById('mobileDraggable');
             m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
         }
 
-        // 拖曳邏輯 (修正版)
         function setupDraggable() {
             const el = document.getElementById('mobileDraggable');
             const handle = el.querySelector('.drag-handle');
