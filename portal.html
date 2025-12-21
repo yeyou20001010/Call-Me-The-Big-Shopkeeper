@@ -6,16 +6,26 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <title>活動工具箱 - 主選單</title>
 </head>
-<body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all duration-500">
+<body class="bg-slate-50 min-h-screen p-4 md:p-12">
     <div class="max-w-4xl mx-auto">
+        <div id="announceBox" class="hidden mb-8 bg-amber-50 border-l-8 border-amber-400 p-6 rounded-2xl shadow-sm">
+            <div class="flex items-center gap-4">
+                <span class="text-2xl">📢</span>
+                <div>
+                    <p class="text-[10px] font-bold text-amber-500 uppercase tracking-widest">系統公告</p>
+                    <p id="announceDisplay" class="text-amber-900 font-black"></p>
+                </div>
+            </div>
+        </div>
+
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 bg-white p-8 rounded-[2.5rem] shadow-sm gap-4 border border-slate-100">
             <div>
                 <h1 id="userName" class="text-3xl font-black text-slate-800">載入中...</h1>
-                <p id="userRole" class="text-slate-400 font-bold tracking-widest text-sm"></p>
+                <p id="userRole" class="text-slate-400 font-bold tracking-widest text-sm uppercase"></p>
             </div>
             <div class="flex gap-2">
-                <button onclick="openChangePwdModal()" class="px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl font-black hover:bg-indigo-100 transition shadow-sm">修改密碼</button>
-                <button onclick="logout()" class="px-6 py-3 bg-slate-100 text-slate-500 rounded-2xl font-black hover:bg-slate-200 transition shadow-sm">登出</button>
+                <button id="changePwdBtn" onclick="openModal('pwdModal')" class="hidden px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl font-black hover:bg-indigo-100 transition">修改密碼</button>
+                <button onclick="logout()" class="px-6 py-3 bg-slate-100 text-slate-500 rounded-2xl font-black hover:bg-slate-200 transition">登出</button>
             </div>
         </div>
 
@@ -23,33 +33,35 @@
             <div onclick="location.href='stamina.html'" class="group p-8 bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all cursor-pointer border-b-8 border-indigo-500 active:scale-95">
                 <div class="text-4xl mb-4">⚡</div>
                 <h3 class="text-xl font-black text-slate-800">體力監控中心</h3>
-                <p class="text-slate-400 font-bold text-sm">Stamina Real-time Monitor</p>
+                <p class="text-slate-400 font-bold text-sm uppercase">Stamina Monitor</p>
             </div>
         </div>
 
         <div id="adminPanel" class="hidden mt-10">
             <h2 class="text-slate-400 font-black text-xs tracking-widest mb-4 ml-4">ADMINISTRATOR TOOLS</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button onclick="location.href='config.html'" class="p-6 bg-slate-800 text-white rounded-[2rem] font-black hover:bg-slate-700 transition flex items-center justify-center gap-3">
-                    ⚙️ 修改系統配置
-                </button>
-                <button onclick="location.href='user_management.html'" class="p-6 bg-slate-800 text-white rounded-[2rem] font-black hover:bg-slate-700 transition shadow-lg">
-                    👥 用戶名單管理
-                </button>
-                <button id="superAdminBtn" onclick="location.href='test_version.html'" class="hidden p-6 bg-indigo-900 text-white rounded-[2rem] font-black border-2 border-indigo-400 hover:bg-indigo-800 transition shadow-lg md:col-span-2">
-                    🚀 測試版本更新入口 (僅限超級管理員)
-                </button>
+                <button id="configBtn" onclick="location.href='config.html'" class="hidden p-6 bg-slate-800 text-white rounded-[2rem] font-black hover:bg-slate-700 transition">⚙️ 修改系統配置</button>
+                <button id="userManageBtn" onclick="location.href='user_management.html'" class="hidden p-6 bg-slate-800 text-white rounded-[2rem] font-black hover:bg-slate-700 transition">👥 用戶名單管理</button>
+                <button id="superAdminBtn" onclick="location.href='test_version.html'" class="hidden p-6 bg-indigo-900 text-white rounded-[2rem] font-black border-2 border-indigo-400 md:col-span-2">🚀 測試版本更新入口</button>
             </div>
+        </div>
+    </div>
+
+    <div id="msgModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-6 z-[100] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center border border-slate-100">
+            <div id="msgIcon" class="text-4xl mb-4">✅</div>
+            <h3 id="msgTitle" class="text-xl font-black mb-2 text-slate-800">提示</h3>
+            <p id="msgText" class="text-slate-500 font-bold mb-6"></p>
+            <button onclick="closeModal('msgModal')" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black">我知道了</button>
         </div>
     </div>
 
     <div id="pwdModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-6 z-50 backdrop-blur-sm">
         <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center">
-            <h3 class="text-xl font-black mb-2 text-slate-800">更新登入密碼</h3>
-            <p class="text-slate-400 text-sm mb-6 font-bold">已通過驗證，請輸入新密碼</p>
-            <div class="space-y-4 mb-6">
+            <h3 class="text-xl font-black mb-2 text-slate-800">更新密碼</h3>
+            <div class="space-y-4 my-6">
                 <input id="newPwd" type="password" placeholder="輸入新密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-                <input id="confirmPwd" type="password" placeholder="再次確認新密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
+                <input id="confirmPwd" type="password" placeholder="確認新密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
             </div>
             <div class="flex gap-3">
                 <button onclick="closeModal('pwdModal')" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">取消</button>
@@ -58,9 +70,18 @@
         </div>
     </div>
 
+    <div id="recoveryModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-6 z-[60] backdrop-blur-md">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl text-center border-4 border-indigo-500">
+            <div class="text-5xl mb-6">🛡️</div>
+            <h3 class="text-2xl font-black mb-2 text-slate-800">安全救援碼</h3>
+            <p class="text-slate-400 font-bold mb-6">這是您的專屬救援碼，若忘記密碼可用此重置。請務必截圖保存！</p>
+            <div id="recoveryDisplay" class="bg-slate-100 p-6 rounded-2xl text-3xl font-black text-indigo-600 tracking-widest mb-8 border-2 border-dashed border-indigo-200"></div>
+            <button onclick="closeModal('recoveryModal')" class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg">我已保存，進入系統</button>
+        </div>
+    </div>
+
     <script>
-        // 請確保此網址為您的 GAS 部署網址
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec"; 
+        const SCRIPT_URL = "您的GAS網址"; 
 
         window.onload = function() {
             const data = JSON.parse(sessionStorage.getItem('gameData'));
@@ -68,36 +89,67 @@
 
             document.getElementById('userName').innerText = "掌櫃, " + data.user.name;
             document.getElementById('userRole').innerText = "Access Level: " + data.user.role;
+
+            // 1. 公告顯示
+            if(data.config && data.config.AnnounceText) {
+                document.getElementById('announceBox').classList.remove('hidden');
+                document.getElementById('announceDisplay').innerText = data.config.AnnounceText;
+            }
             
-            // 權限判定
-            if(data.user.level >= 10) {
+            // 2. 權限與按鈕顯示邏輯
+            if(data.user.level === 99) {
+                // SuperAdmin: 全部功能 + 隱藏修改密碼
                 document.getElementById('adminPanel').classList.remove('hidden');
-                if(data.user.level === 99) {
-                    document.getElementById('superAdminBtn').classList.remove('hidden');
-                }
+                document.getElementById('configBtn').classList.remove('hidden');
+                document.getElementById('userManageBtn').classList.remove('hidden');
+                document.getElementById('superAdminBtn').classList.remove('hidden');
+            } else if(data.user.level >= 10) {
+                // Admin: 僅名單管理 + 顯示修改密碼
+                document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('userManageBtn').classList.remove('hidden');
+                document.getElementById('changePwdBtn').classList.remove('hidden');
+            } else {
+                // User: 僅顯示修改密碼
+                document.getElementById('changePwdBtn').classList.remove('hidden');
+            }
+
+            // 3. 救援碼生成通知
+            if(String(data.isNewRecovery) === "true") {
+                document.getElementById('recoveryDisplay').innerText = data.recoveryCode;
+                openModal('recoveryModal');
             }
         };
 
-        function openChangePwdModal() { document.getElementById('pwdModal').classList.replace('hidden', 'flex'); }
+        function openModal(id) { document.getElementById(id).classList.replace('hidden', 'flex'); }
         function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
+
+        function showMsg(title, text, isSuccess = true) {
+            document.getElementById('msgIcon').innerText = isSuccess ? "✅" : "❌";
+            document.getElementById('msgTitle').innerText = title;
+            document.getElementById('msgText').innerText = text;
+            openModal('msgModal');
+        }
 
         async function submitNewPwd() {
             const data = JSON.parse(sessionStorage.getItem('gameData'));
             const newPwd = document.getElementById('newPwd').value;
             const confirmPwd = document.getElementById('confirmPwd').value;
 
-            if(!newPwd || newPwd !== confirmPwd) return alert("密碼輸入不一致或不得為空");
+            if(!newPwd || newPwd !== confirmPwd) return showMsg("錯誤", "密碼不一致或為空", false);
 
             try {
                 const res = await fetch(`${SCRIPT_URL}?action=updatePassword&userId=${data.user.userId}&newPassword=${newPwd}`);
                 const result = await res.json();
-                alert(result.msg);
-                if(result.success) closeModal('pwdModal');
-            } catch(e) { alert("更新失敗，請檢查網路"); }
+                if(result.success) {
+                    showMsg("成功", result.msg, true);
+                    closeModal('pwdModal');
+                } else {
+                    showMsg("失敗", result.msg, false);
+                }
+            } catch(e) { showMsg("錯誤", "連線失敗", false); }
         }
 
         function logout() { sessionStorage.clear(); location.href = "index.html"; }
     </script>
 </body>
 </html>
-
