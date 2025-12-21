@@ -13,136 +13,71 @@
                 <span class="text-3xl">🏮</span>
             </div>
             <h1 class="text-2xl font-black text-slate-800">大掌櫃工具箱</h1>
-            <p class="text-slate-400 text-sm font-bold tracking-widest">LOGIN SYSTEM</p>
+            <p class="text-slate-400 text-sm font-bold tracking-widest uppercase">Login System</p>
         </div>
 
         <div class="space-y-4">
-            <div>
-                <label class="block text-xs font-black text-slate-400 mb-2 ml-2">掌櫃 ID </label>
-                <input id="userId" type="text" placeholder="請輸入UserID" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold transition-all">
-            </div>
-            <div>
-                <label class="block text-xs font-black text-slate-400 mb-2 ml-2">密碼 </label>
-                <input id="password" type="password" placeholder="請輸入密碼" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold transition-all">
-            </div>
-            
-            <button id="loginBtn" onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg transition-all transform active:scale-95">進入系統</button>
-            
-            <div class="flex justify-between px-2 text-xs font-bold text-slate-400">
-                <button onclick="openResetModal()" class="hover:text-indigo-500 transition-colors">忘記密碼？</button>
-                <button onclick="openChangeModal()" class="hover:text-indigo-500 transition-colors">修改密碼</button>
-            </div>
+            <input id="userId" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+            <input id="password" type="password" placeholder="密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+            <button onclick="login()" id="loginBtn" class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-indigo-700 transition active:scale-95">登入系統</button>
+            <button onclick="openResetModal()" class="w-full text-slate-400 text-sm font-bold hover:text-indigo-500 transition">忘記密碼？使用救援碼重置</button>
         </div>
     </div>
 
-    <div id="msgModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[100] backdrop-blur-sm p-4">
-        <div class="bg-white rounded-[2rem] p-8 max-w-xs w-full text-center shadow-2xl border border-slate-100">
-            <div id="msgIcon" class="text-4xl mb-4">⚠️</div>
-            <p id="msgText" class="text-slate-700 font-black text-lg mb-6"></p>
-            <button onclick="closeMsg()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">我知道了</button>
-        </div>
-    </div>
-
-    <div id="actionModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
-        <div class="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl">
-            <h3 id="modalTitle" class="text-xl font-black text-slate-800 mb-2">標題</h3>
-            <p id="modalSub" class="text-xs text-slate-400 font-bold mb-6">描述文字</p>
-            <div id="modalInputs" class="space-y-4 mb-6"></div>
-            <div class="flex gap-2">
-                <button onclick="closeAction()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">取消</button>
-                <button id="modalConfirmBtn" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg">提交</button>
+    <div id="resetModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-6 z-50 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+            <h3 class="text-xl font-black mb-2 text-slate-800 text-center">重置密碼</h3>
+            <p class="text-slate-400 text-sm mb-6 font-bold text-center">密碼將被重設為預設值：umbd</p>
+            <div class="space-y-4 mb-6">
+                <input id="res_uid" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
+                <input id="res_code" type="text" placeholder="救援碼 (6碼)" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeReset()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">取消</button>
+                <button onclick="submitReset()" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black shadow-md">確認重置</button>
             </div>
         </div>
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_XXXXXXXXXXXX/exec"; 
 
-        function showMsg(text, icon = "⚠️") {
-            document.getElementById('msgIcon').innerText = icon;
-            document.getElementById('msgText').innerText = text;
-            document.getElementById('msgModal').classList.replace('hidden', 'flex');
-        }
-        function closeMsg() { document.getElementById('msgModal').classList.replace('flex', 'hidden'); }
+        async function login() {
+            const uid = document.getElementById('userId').value;
+            const pwd = document.getElementById('password').value;
+            if(!uid || !pwd) return alert("請輸入完整資料");
 
-        async function handleLogin() {
-            const userId = document.getElementById('userId').value;
-            const password = document.getElementById('password').value;
             const btn = document.getElementById('loginBtn');
-
-            if(!userId || !password) return showMsg("欄位不可為空");
-
-            btn.disabled = true;
             btn.innerText = "驗證中...";
+            btn.disabled = true;
 
             try {
-                const response = await fetch(`${SCRIPT_URL}?userId=${userId}&password=${password}`);
-                const data = await response.json();
-
-                if (data.success) {
+                const res = await fetch(`${SCRIPT_URL}?userId=${uid}&password=${pwd}`);
+                const data = await res.json();
+                if(data.success) {
                     sessionStorage.setItem('gameData', JSON.stringify(data));
                     location.href = "portal.html";
                 } else {
-                    showMsg(data.msg, "❌");
+                    alert(data.msg);
+                    btn.innerText = "登入系統";
                     btn.disabled = false;
-                    btn.innerText = "進入系統";
                 }
-            } catch (e) {
-                showMsg("連線發生錯誤");
-                btn.disabled = false;
-                btn.innerText = "進入系統";
-            }
+            } catch(e) { alert("連線超時"); btn.disabled = false; }
         }
 
-        // 修改密碼 UI
-        function openChangeModal() {
-            const container = document.getElementById('modalInputs');
-            document.getElementById('modalTitle').innerText = "修改密碼";
-            document.getElementById('modalSub').innerText = "請輸入舊密碼與新密碼";
-            container.innerHTML = `
-                <input id="act_uid" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-                <input id="act_old" type="password" placeholder="目前密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-                <input id="act_new" type="password" placeholder="新密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-            `;
-            document.getElementById('modalConfirmBtn').onclick = submitChange;
-            document.getElementById('actionModal').classList.replace('hidden', 'flex');
-        }
-
-        async function submitChange() {
-            const uid = document.getElementById('act_uid').value;
-            const oldP = document.getElementById('act_old').value;
-            const newP = document.getElementById('act_new').value;
-            if(!uid || !oldP || !newP) return showMsg("請填寫所有欄位");
-
-            const res = await fetch(`${SCRIPT_URL}?action=changePassword&userId=${uid}&password=${oldP}&newPassword=${newP}`);
-            const data = await res.json();
-            showMsg(data.msg, data.success ? "✅" : "❌");
-            if(data.success) closeAction();
-        }
-
-        // 救援密碼 UI
-        function openResetModal() {
-            const container = document.getElementById('modalInputs');
-            document.getElementById('modalTitle').innerText = "重置密碼";
-            document.getElementById('modalSub').innerText = "密碼將被重設為 umbd";
-            container.innerHTML = `
-                <input id="act_uid" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-                <input id="act_rec" type="text" placeholder="救援碼 (6碼)" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-            `;
-            document.getElementById('modalConfirmBtn').onclick = submitReset;
-            document.getElementById('actionModal').classList.replace('hidden', 'flex');
-        }
+        function openResetModal() { document.getElementById('resetModal').classList.replace('hidden', 'flex'); }
+        function closeReset() { document.getElementById('resetModal').classList.replace('flex', 'hidden'); }
 
         async function submitReset() {
-            const uid = document.getElementById('act_uid').value;
-            const rec = document.getElementById('act_rec').value;
-            const res = await fetch(`${SCRIPT_URL}?action=reset&userId=${uid}&recovery=${rec}`);
-            const data = await res.json();
-            showMsg(data.msg, data.success ? "✅" : "❌");
-            if(data.success) closeAction();
-        }
+            const uid = document.getElementById('res_uid').value;
+            const code = document.getElementById('res_code').value;
+            if(!uid || !code) return alert("請填寫 ID 與救援碼");
 
-        function closeAction() { document.getElementById('actionModal').classList.replace('flex', 'hidden'); }
+            const res = await fetch(`${SCRIPT_URL}?action=reset&userId=${uid}&recovery=${code}`);
+            const data = await res.json();
+            alert(data.msg);
+            if(data.success) closeReset();
+        }
     </script>
 </body>
 </html>
