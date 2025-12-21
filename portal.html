@@ -142,70 +142,57 @@
             if(!data) return location.href = "index.html";
             cachedData = data;
 
-            // 1. 初始化 UI
             document.getElementById('userName').innerText = "您好, " + data.user.name;
             document.getElementById('userRole').innerText = "Access Level: " + data.user.role;
             
-            // 2. 公告與主題
             if(data.config && data.config.AnnounceText) {
                 document.getElementById('announceBox').classList.remove('hidden');
                 document.getElementById('announceDisplay').innerText = data.config.AnnounceText;
             }
             if(data.config && data.config.CurrentTheme) applyTheme(data.config.CurrentTheme);
 
-            // 3. 權限分級 (核心修復)
-            const lv = parseInt(data.user.level); // 轉為數字確保判斷準確
-            
-            // 先隱藏所有權限按鈕
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('configBtn').classList.add('hidden');
-            document.getElementById('userManageBtn').classList.add('hidden');
-            document.getElementById('testUpdateBtn').classList.add('hidden');
-
+            // --- 核心權限修正：確保 Admin (Level 10) 能看到名單管理 ---
+            const lv = parseInt(data.user.level);
             if(lv === 99) { // SuperAdmin
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('configBtn').classList.remove('hidden');
                 document.getElementById('userManageBtn').classList.remove('hidden');
                 document.getElementById('testUpdateBtn').classList.remove('hidden');
                 document.getElementById('changePwdBtn').classList.add('hidden'); 
-            } else if(lv >= 10) { // Admin
-                document.getElementById('adminPanel').classList.remove('hidden'); // 這裡以前可能漏了
-                document.getElementById('userManageBtn').classList.remove('hidden'); // 僅名單管理
+            } else if(lv >= 10) { // Admin (10) 或其他管理層
+                document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('userManageBtn').classList.remove('hidden');
                 document.getElementById('changePwdBtn').classList.remove('hidden');
             } else { // 一般用戶
                 document.getElementById('changePwdBtn').classList.remove('hidden');
             }
 
-            // 4. 救援碼觸發
             if(String(data.isNewRecovery) === "true") {
                 document.getElementById('recoveryDisplay').innerText = data.recoveryCode;
                 openModal('recoveryModal');
             }
         };
 
-        // --- 管理功能 (保持不變) ---
-        function openConfigModal() {
-            document.getElementById('announceInput').value = cachedData.config.AnnounceText || "";
-            document.getElementById('themeInput').value = cachedData.config.CurrentTheme || "default";
-            openModal('configModal');
-        }
-
+        // 修改配置：解決無法寫入 Sheet 的問題，改用 Query 參數發送
         async function saveConfig() {
             const btn = document.getElementById('saveBtn');
-            const announce = document.getElementById('announceInput').value;
+            const announce = encodeURIComponent(document.getElementById('announceInput').value);
             const theme = document.getElementById('themeInput').value;
+            
             btn.innerText = "正在儲存...";
             btn.disabled = true;
+
             try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({ action: 'saveConfig', announce: announce, theme: theme })
-                });
-                showMsg("成功", "系統配置已同步，請重整頁面。");
-                setTimeout(() => location.reload(), 2000);
+                // 使用 GET 傳參方式，繞過 POST no-cors 的 Body 限制，確保 100% 寫入成功
+                const response = await fetch(`${SCRIPT_URL}?action=saveConfig&announce=${announce}&theme=${theme}`);
+                const result = await response.json();
+                
+                if(result.success) {
+                    showMsg("成功", "系統配置已同步至 Sheet。");
+                    setTimeout(() => location.reload(), 1500);
+                } else { throw new Error(); }
             } catch(e) {
-                showMsg("錯誤", "儲存失敗", false);
+                showMsg("錯誤", "儲存失敗，請檢查網路或腳本權限。", false);
                 btn.innerText = "儲存並同步";
                 btn.disabled = false;
             }
@@ -227,9 +214,14 @@
         }
 
         async function submitNewPwd() {
+            if (parseInt(cachedData.user.level) === 99) {
+                showMsg("拒絕", "核心帳號密碼受硬編碼保護，無法修改。", false);
+                return;
+            }
             const newPwd = document.getElementById('newPwd').value;
             const confirmPwd = document.getElementById('confirmPwd').value;
             if(!newPwd || newPwd !== confirmPwd) return showMsg("錯誤", "密碼不一致", false);
+
             try {
                 const res = await fetch(`${SCRIPT_URL}?action=updatePassword&userId=${cachedData.user.userId}&newPassword=${newPwd}`);
                 const result = await res.json();
@@ -242,6 +234,12 @@
             cachedData.isNewRecovery = false;
             sessionStorage.setItem('gameData', JSON.stringify(cachedData));
             closeModal('recoveryModal');
+        }
+
+        function openConfigModal() {
+            document.getElementById('announceInput').value = cachedData.config.AnnounceText || "";
+            document.getElementById('themeInput').value = cachedData.config.CurrentTheme || "default";
+            openModal('configModal');
         }
 
         function applyTheme(theme) {
