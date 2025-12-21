@@ -61,7 +61,7 @@
                     <button onclick="changeSort(1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❯</button>
                 </div>
                 <button onclick="openManageModal()" class="bg-[#B8B0A5] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">👥 名單管理</button>
-                <button onclick="clearAllMonitoring()" class="bg-[#AF7A7D] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">🗑️ 全部清空</button>
+                <button onclick="askClearAll()" class="bg-[#AF7A7D] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">🗑️ 全部清空</button>
                 <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">返回選單</button>
             </div>
         </div>
@@ -84,6 +84,18 @@
                 <div id="emptyDisplay" class="hidden text-center py-40 bg-[#FBFBF9] rounded-[3rem] border-4 border-dashed border-[#D7D3CC]">
                     <p class="text-[#D7D3CC] font-black text-2xl">目前無進行中的監測項目</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="customPromptModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-[100] backdrop-blur-md">
+        <div class="bg-[#FBFBF9] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-white/20">
+            <h3 id="promptTitle" class="text-xl font-black mb-4 text-[#5E548E]">標題</h3>
+            <p id="promptSub" class="text-sm font-bold text-[#8E9AAF] mb-4"></p>
+            <input id="promptInput" type="text" class="w-full p-4 bg-white border border-[#D7D3CC] rounded-2xl font-bold mb-6 outline-none focus:ring-2 focus:ring-[#FF9D6F]">
+            <div class="flex gap-3">
+                <button onclick="closeModal('customPromptModal')" class="flex-1 py-4 bg-[#D7D3CC] text-white rounded-2xl font-black hover:brightness-95">取消</button>
+                <button id="promptConfirmBtn" class="flex-1 py-4 bg-[#FF9D6F] text-white rounded-2xl font-black hover:brightness-95">確認</button>
             </div>
         </div>
     </div>
@@ -122,7 +134,7 @@
 
         window.onload = function() {
             const data = JSON.parse(sessionStorage.getItem('gameData'));
-            if(!data) return location.href = "index.html";
+            if(!data) return location.href = "index.html"; // 確保安全與資料初始化
             activities = data.activities;
             const select = document.getElementById('activitySelect');
             activities.forEach((act, idx) => {
@@ -133,47 +145,62 @@
                 const act = activities[select.value];
                 document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / 1 體`;
                 document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
-                const btn = document.getElementById('btnSelectAll');
-                if(btn) btn.innerText = "勾選所有人物";
             };
             select.dispatchEvent(new Event('change'));
             renderMonitoring();
             setInterval(renderMonitoring, 1000);
         };
 
-        function changeSort(dir) {
-            sortMode = (sortMode + dir + 4) % 4;
-            document.getElementById('sortModeText').innerText = sortTexts[sortMode];
-            renderMonitoring();
+        // --- 自定義彈窗邏輯 ---
+        function openCustomPrompt(title, sub, defaultVal, isConfirmOnly, onConfirm) {
+            document.getElementById('promptTitle').innerText = title;
+            document.getElementById('promptSub').innerText = sub;
+            const inp = document.getElementById('promptInput');
+            inp.style.display = isConfirmOnly ? 'none' : 'block';
+            inp.value = defaultVal || "";
+            document.getElementById('customPromptModal').classList.replace('hidden', 'flex');
+            document.getElementById('promptConfirmBtn').onclick = () => {
+                onConfirm(inp.value);
+                closeModal('customPromptModal');
+            };
         }
 
-        function getGroupNameByCharId(id) { 
-            for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } 
-            return "未分類"; 
-        }
-
-        // 新增：單筆刷新體力的函數
         function quickUpdateStamina(monitorIdx, maxStamina) {
-            const newVal = prompt(`請輸入最新的體力值 (目前上限: ${maxStamina}):`, "0");
-            if (newVal === null) return; // 取消
-            
-            const staminaNum = parseInt(newVal);
-            if (isNaN(staminaNum) || staminaNum < 0) {
-                alert("請輸入有效的數字");
-                return;
-            }
-            
-            // 限制輸入不能超過上限
-            const finalStamina = Math.min(staminaNum, maxStamina);
-            
-            // 更新數據：重置開始時間為「現在」，並設定初始體力
-            monitors[monitorIdx].initStamina = finalStamina;
-            monitors[monitorIdx].startTime = Date.now();
-            
-            saveActive();
-            renderMonitoring();
+            openCustomPrompt("快速刷新體力", `目前活動上限：${maxStamina}`, "0", false, (val) => {
+                const num = parseInt(val);
+                if (isNaN(num) || num < 0) return;
+                monitors[monitorIdx].initStamina = Math.min(num, maxStamina);
+                monitors[monitorIdx].startTime = Date.now();
+                saveActive(); renderMonitoring();
+            });
         }
 
+        function editGroupName(gid) {
+            const group = db.groups.find(g => g.id === gid);
+            openCustomPrompt("編輯群組名稱", "請輸入新名稱：", group.name, false, (newName) => {
+                if (newName && newName.trim()) { group.name = newName.trim(); saveDB(); renderManageUI(); }
+            });
+        }
+
+        function askClearAll() {
+            openCustomPrompt("確定清空？", "這將移除所有正在監測的時鐘。", "", true, () => {
+                monitors = []; saveActive(); renderMonitoring();
+            });
+        }
+
+        function askClearGroup(gid) {
+            openCustomPrompt("清空成員？", "將移除此群組內所有人物。", "", true, () => {
+                db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI();
+            });
+        }
+
+        function askRemoveGroup(gi) {
+            openCustomPrompt("刪除群組？", "此操作無法復原。", "", true, () => {
+                db.groups.splice(gi,1); saveDB(); renderManageUI();
+            });
+        }
+
+        // --- 核心算圖與 UI 渲染 ---
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
             if(monitors.length === 0) { 
@@ -200,19 +227,11 @@
                 const cardClass = m.isFull ? 'card-full-highlight' : 'card-standard';
                 const textColor = m.isFull ? 'text-full-green' : 'text-status-pink';
                 const ringColor = m.isFull ? '#02C874' : '#FF9D6F';
-                
                 let countdownText = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
-                
                 let fullTimeLabel = "狀態：體力已充滿";
                 if(!m.isFull) {
                     const d = new Date(now + m.remSec * 1000);
-                    const Y = d.getFullYear();
-                    const M = (d.getMonth() + 1).toString().padStart(2,'0');
-                    const D = d.getDate().toString().padStart(2,'0');
-                    const h = d.getHours().toString().padStart(2,'0');
-                    const min = d.getMinutes().toString().padStart(2,'0');
-                    const s = d.getSeconds().toString().padStart(2,'0');
-                    fullTimeLabel = `預計回滿：${Y}/${M}/${D} ${h}:${min}:${s}`;
+                    fullTimeLabel = `預計回滿：${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}`;
                 }
 
                 return `
@@ -224,17 +243,18 @@
                     </div>
                     <div class="flex items-start justify-between mb-6">
                         <h4 class="text-2xl font-black text-[#6D6875] tracking-tight">${m.charName}</h4>
-                        <div onclick="quickUpdateStamina(${m.originalIdx}, ${m.actMax})" class="relative w-20 h-20 shrink-0 cursor-pointer hover:scale-105 transition-transform" title="點擊快速刷新體力">
-                            <svg class="w-20 h-20"><circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/>
+                        <div onclick="quickUpdateStamina(${m.originalIdx}, ${m.actMax})" class="relative w-20 h-20 shrink-0 cursor-pointer group/ring">
+                            <svg class="w-20 h-20 group-hover/ring:scale-110 transition-transform"><circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/>
                             <circle style="stroke: ${ringColor}" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/></svg>
                             <div class="absolute inset-0 flex flex-col items-center justify-center font-black">
                                 <span class="text-xl text-[#6D6875]">${m.current}</span>
                                 <span class="text-[8px] text-[#A5A5A5] mt-1">目前體力</span>
                             </div>
+                            <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#5E548E] text-white text-[8px] px-2 py-0.5 rounded-full opacity-0 group-hover/ring:opacity-100 transition-opacity whitespace-nowrap z-20">✎ 點擊刷新</div>
                         </div>
                     </div>
                     <div class="bg-white/40 p-5 rounded-[1.5rem] border border-[#D7D3CC]/30">
-                        <p class="text-[10px] font-black text-[#A5A5A5] mb-1">實時體力狀態</p>
+                        <p class="text-[10px] font-black text-[#A5A5A5] mb-1 uppercase tracking-widest">實時體力狀態</p>
                         <p class="text-3xl font-black ${textColor} tracking-tighter mb-1">${countdownText}</p>
                         <p class="text-[11px] font-bold text-[#8E9AAF]">${fullTimeLabel}</p>
                     </div>
@@ -242,35 +262,29 @@
             }).join('');
         }
 
-        let dragInfo = null;
-        function handleDragStart(e, gid, mi) { 
-            dragInfo = { gid, mi }; 
-            e.currentTarget.classList.add('dragging'); 
-        }
-        function handleDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
-
+        // --- 名單管理與拖曳邏輯 ---
         function renderManageUI() {
             const area = document.getElementById('groupListArea');
             area.innerHTML = db.groups.map((g, gi) => `
                 <div class="bg-[#F4F2EE] p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
                     <div class="flex justify-between items-center mb-4">
-                        <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
+                        <div class="flex items-center gap-2 cursor-pointer group/gtitle" onclick="editGroupName('${g.id}')">
+                            <span class="text-xl font-black text-[#6D6875] group-hover/gtitle:text-[#FF9D6F] transition-colors">${g.name}</span>
+                            <span class="text-[10px] text-[#8E9AAF] opacity-0 group-hover/gtitle:opacity-100 transition-opacity">✎ 改名</span>
+                        </div>
                         <div class="flex gap-2">
-                            <button onclick="clearGroup('${g.id}')" class="text-xs text-[#AF7A7D] border border-[#AF7A7D] px-2 py-1 rounded-lg font-black">清空成員</button>
-                            ${g.id !== 'default' ? `<button onclick="removeGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black">刪除群組</button>` : ''}
+                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] border border-[#AF7A7D] px-2 py-1 rounded-lg font-black bg-white">清空成員</button>
+                            ${g.id !== 'default' ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black">刪除群組</button>` : ''}
                         </div>
                     </div>
                     <div class="flex gap-2 mb-4">
-                        <input type="text" placeholder="人物名稱" class="flex-1 p-2 rounded-xl text-sm border-none shadow-inner char-input">
+                        <input type="text" placeholder="人物名稱" class="flex-1 p-2 rounded-xl text-sm border-none shadow-inner char-input outline-none">
                         <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-4 rounded-xl text-xs font-black">新增</button>
                     </div>
                     <div class="grid grid-cols-2 gap-3 min-h-[40px] member-list" data-gid="${g.id}">
                         ${g.members.map((m, mi) => `
-                            <div draggable="true" 
-                                 ondragstart="handleDragStart(event, '${g.id}', ${mi})" 
-                                 ondragend="handleDragEnd(event)" 
-                                 data-mi="${mi}"
-                                 class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between border border-[#D7D3CC] cursor-move">
+                            <div draggable="true" ondragstart="handleDragStart(event, '${g.id}', ${mi})" data-mi="${mi}"
+                                 class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between border border-[#D7D3CC] cursor-move hover:border-[#FF9D6F] transition-colors">
                                 <span>${m.name}</span>
                                 <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-red-400">✕</button>
                             </div>`).join('')}
@@ -278,51 +292,38 @@
                 </div>`).join('');
             
             document.querySelectorAll('.drop-zone').forEach(zone => {
-                zone.addEventListener('dragover', e => { 
-                    e.preventDefault(); 
-                    zone.classList.add('drag-over'); 
-                });
+                zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
                 zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
                 zone.addEventListener('drop', e => {
-                    e.preventDefault(); 
-                    zone.classList.remove('drag-over');
-                    const targetGid = zone.dataset.gid;
-                    if (!dragInfo) return;
-
+                    e.preventDefault(); zone.classList.remove('drag-over');
+                    const targetGid = zone.dataset.gid; if (!dragInfo) return;
                     const sGroup = db.groups.find(g => g.id === dragInfo.gid);
                     const tGroup = db.groups.find(g => g.id === targetGid);
                     const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
-
                     const dropTarget = e.target.closest('.member-item');
                     if (dropTarget && dropTarget.parentNode.dataset.gid === targetGid) {
-                        const targetMi = parseInt(dropTarget.dataset.mi);
-                        tGroup.members.splice(targetMi, 0, movingItem);
-                    } else {
-                        tGroup.members.push(movingItem);
-                    }
-
-                    saveDB(); 
-                    renderManageUI();
-                    dragInfo = null;
+                        tGroup.members.splice(parseInt(dropTarget.dataset.mi), 0, movingItem);
+                    } else { tGroup.members.push(movingItem); }
+                    saveDB(); renderManageUI(); dragInfo = null;
                 });
             });
         }
 
-        function toggleAllCheckboxes() {
-            const cbs = document.querySelectorAll('.char-cb');
-            const btn = document.getElementById('btnSelectAll');
-            const allChecked = Array.from(cbs).every(c => c.checked);
-            cbs.forEach(c => c.checked = !allChecked);
-            btn.innerText = !allChecked ? "取消所有勾選" : "勾選所有人物";
-        }
-        function toggleGroupCheckboxes(btn) {
-            const wrapper = btn.closest('.group-wrapper');
-            const cbs = wrapper.querySelectorAll('.char-cb');
-            const allChecked = Array.from(cbs).every(c => c.checked);
-            cbs.forEach(c => c.checked = !allChecked);
-            btn.innerText = allChecked ? "本組全選" : "取消全選";
-        }
-        function openBatchModal() {
+        // --- 輔助函數 ---
+        let dragInfo = null;
+        function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; }
+        function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
+        function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
+        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
+        function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
+        function addGroup() { const n = document.getElementById('newGroupName').value; if(n){ db.groups.push({id:'g'+Date.now(), name:n, members:[]}); document.getElementById('newGroupName').value=""; saveDB(); renderManageUI(); }}
+        function addMemberInLine(btn, gid) { const inp = btn.previousElementSibling; if(inp.value){ db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); }}
+        function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
+        function removeMonitor(idx) { monitors.splice(idx,1); saveActive(); renderMonitoring(); }
+        function getGroupNameByCharId(id) { for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } return "未分類"; }
+        function changeSort(dir) { sortMode = (sortMode + dir + 4) % 4; document.getElementById('sortModeText').innerText = sortTexts[sortMode]; renderMonitoring(); }
+        
+        function openBatchModal() { 
             const actIdx = document.getElementById('activitySelect').value;
             const act = activities[actIdx];
             document.getElementById('currentActName').innerText = "當前活動：" + act.name;
@@ -337,17 +338,18 @@
                             <div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-[#D7D3CC]">
                                 <input type="checkbox" class="char-cb" data-name="${m.name}" data-id="${m.id}">
                                 <span class="flex-1 font-black text-[#6D6875]">${m.name}</span>
-                                <input type="number" class="stamina-input w-20 p-2 bg-[#F4F2EE] rounded-lg text-center font-black" 
-                                       value="0" min="0" max="${act.maxStamina}" oninput="this.value = Math.max(0, Math.min(${act.maxStamina}, this.value))">
+                                <input type="number" class="stamina-input w-20 p-2 bg-[#F4F2EE] rounded-lg text-center font-black" value="0" min="0" max="${act.maxStamina}">
                             </div>`).join('')}
                     </div>
                 </div>`).join('');
             document.getElementById('batchModal').classList.replace('hidden', 'flex');
         }
+        function toggleAllCheckboxes() { const cbs = document.querySelectorAll('.char-cb'); const all = Array.from(cbs).every(c=>c.checked); cbs.forEach(c=>c.checked=!all); document.getElementById('btnSelectAll').innerText = !all ? "取消所有勾選" : "勾選所有人物"; }
+        function toggleGroupCheckboxes(btn) { const cbs = btn.closest('.group-wrapper').querySelectorAll('.char-cb'); const all = Array.from(cbs).every(c=>c.checked); cbs.forEach(c=>c.checked=!all); btn.innerText = all ? "本組全選" : "取消全選"; }
         function submitBatch() {
             const actIdx = document.getElementById('activitySelect').value;
             const rows = document.querySelectorAll('#batchInputList input[type="checkbox"]:checked');
-            if(rows.length === 0) return alert("未勾選人物");
+            if(rows.length === 0) return;
             rows.forEach(cb => {
                 const row = cb.closest('.bg-white');
                 const val = parseInt(row.querySelector('.stamina-input').value) || 0;
@@ -357,17 +359,6 @@
             });
             saveActive(); closeModal('batchModal'); renderMonitoring();
         }
-        function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
-        function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
-        function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
-        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
-        function addGroup() { const n = document.getElementById('newGroupName').value; if(n){ db.groups.push({id:'g'+Date.now(), name:n, members:[]}); document.getElementById('newGroupName').value=""; saveDB(); renderManageUI(); }}
-        function addMemberInLine(btn, gid) { const inp = btn.previousElementSibling; if(inp.value){ db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); }}
-        function removeGroup(gi) { if(confirm("刪除群組？")) { db.groups.splice(gi,1); saveDB(); renderManageUI(); }}
-        function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
-        function clearGroup(gid) { if(confirm("清空成員？")) { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); } }
-        function removeMonitor(idx) { monitors.splice(idx,1); saveActive(); renderMonitoring(); }
-        function clearAllMonitoring() { if(confirm("確定清空所有監測？")) { monitors=[]; saveActive(); renderMonitoring(); }}
     </script>
 </body>
 </html>
