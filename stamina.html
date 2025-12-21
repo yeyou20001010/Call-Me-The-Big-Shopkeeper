@@ -43,7 +43,6 @@
         @keyframes blinker { 50% { opacity: 0.3; } }
         .animate-guide { animation: blinker 2s linear infinite; }
         
-        /* 鉛筆圖示轉向 */
         .fat-pencil { 
             display: inline-block; 
             transform: scaleX(-1); 
@@ -53,7 +52,6 @@
         }
         .fat-pencil:hover { transform: scaleX(-1) scale(1.3) rotate(-10deg); }
 
-        /* 拖曳中的樣式 */
         .member-item.dragging {
             opacity: 0.4;
             border: 2px dashed #FF9D6F;
@@ -126,12 +124,10 @@
         <div class="bg-[#FBFBF9] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl relative flex flex-col max-h-[90vh] border border-[#D7D3CC]">
             <button onclick="closeModal('manageModal')" class="absolute top-10 right-10 text-[#D7D3CC] text-3xl hover:text-[#6D6875]">✕</button>
             <h3 class="text-2xl font-black mb-6 text-[#5E548E]">名單與群組管理</h3>
-            
             <div class="flex gap-3 mb-8 bg-white p-2 rounded-2xl border border-[#D7D3CC]">
                 <input id="newGroupName" type="text" placeholder="輸入新群組名稱..." class="flex-1 bg-transparent p-4 outline-none font-bold">
                 <button onclick="addGroup()" class="bg-[#8E9AAF] text-white px-8 rounded-xl font-black hover:bg-[#7D7684]">建立群組</button>
             </div>
-
             <div id="groupListArea" class="overflow-y-auto flex-1 space-y-6 pr-2"></div>
         </div>
     </div>
@@ -141,12 +137,10 @@
             <button onclick="closeModal('batchModal')" class="absolute top-10 right-10 text-[#D7D3CC] text-3xl">✕</button>
             <h3 class="text-2xl font-black mb-2 text-[#5E548E]">批量加入監測</h3>
             <p id="batchActName" class="text-sm font-bold text-[#8E9AAF] mb-4"></p>
-            
             <div class="flex justify-end gap-3 mb-4">
                 <button onclick="toggleAllBatch(true)" class="text-xs font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-lg">全選</button>
                 <button onclick="toggleAllBatch(false)" class="text-xs font-black text-[#AF7A7D] bg-red-50 px-3 py-1 rounded-lg">取消全選</button>
             </div>
-
             <div id="batchInputList" class="overflow-y-auto flex-1 space-y-6 mb-8 pr-2"></div>
             <button onclick="submitBatch()" class="w-full bg-[#8E9AAF] text-white py-6 rounded-[2rem] text-xl font-black shadow-lg hover:bg-[#7D7684]">確認並開始監測</button>
         </div>
@@ -159,22 +153,31 @@
         let sortMode = 0; 
         const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
 
+        // 【核心修正】確保頁面加載時初始化資料
         window.onload = function() {
             const gameData = JSON.parse(sessionStorage.getItem('gameData'));
             if(!gameData) return location.href = "index.html"; 
+            
             activities = gameData.activities;
             const select = document.getElementById('activitySelect');
             activities.forEach((act, idx) => {
-                const opt = document.createElement('option'); opt.value = idx; opt.textContent = act.name;
+                const opt = document.createElement('option'); 
+                opt.value = idx; 
+                opt.textContent = act.name;
                 select.appendChild(opt);
             });
+
             select.onchange = () => {
                 const act = activities[select.value];
                 document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / 1 體`;
                 document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
             };
+            
+            // 觸發初始顯示
             select.dispatchEvent(new Event('change'));
             renderMonitoring();
+            
+            // 啟動即時更新定時器
             setInterval(renderMonitoring, 1000);
         };
 
@@ -208,7 +211,6 @@
                 const textColor = m.isFull ? 'text-full-green' : 'text-status-pink';
                 let countdownText = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
                 
-                // 修改時間格式為 YYYY/MM/DD HH:mm
                 let fullTimeLabel = "狀態：體力已充滿";
                 if(!m.isFull) {
                     const d = new Date(now + m.remSec * 1000);
@@ -222,7 +224,7 @@
 
                 return `
                 <div class="${m.isFull?'card-full-highlight':'card-standard'} p-8 rounded-[2.5rem] flex flex-col relative transition-all duration-500 shadow-sm">
-                    <button onclick=\"removeMonitor('${m.charId}', ${m.actIdx})\" class=\"absolute top-6 right-8 text-[#D7D3CC] hover:text-[#AF7A7D] text-2xl transition-colors\">✕</button>
+                    <button onclick="removeMonitor('${m.charId}', ${m.actIdx})" class="absolute top-6 right-8 text-[#D7D3CC] hover:text-[#AF7A7D] text-2xl transition-colors">✕</button>
                     <div class="flex gap-2 mb-3">
                         <span class="tag-label">${m.actName}</span>
                         <span class="tag-label">${m.groupName}</span>
@@ -231,10 +233,10 @@
                         <h4 class="text-2xl font-black text-[#6D6875]">${m.charName}</h4>
                         <div class="flex flex-col items-center">
                             <span class="text-[9px] font-black text-[#A5A5A5] uppercase mb-1">目前體力</span>
-                            <div onclick=\"quickUpdateStamina('${m.charId}', ${m.actIdx}, ${m.actMax})\" class="relative w-20 h-20 cursor-pointer active:scale-90 transition-transform">
+                            <div onclick="quickUpdateStamina('${m.charId}', ${m.actIdx}, ${m.actMax})" class="relative w-20 h-20 cursor-pointer active:scale-90 transition-transform">
                                 <svg class="w-20 h-20">
                                     <circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/>
-                                    <circle style=\"stroke: ${ringColor}\" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/>
+                                    <circle style="stroke: ${ringColor}" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/>
                                 </svg>
                                 <div class="absolute inset-0 flex flex-col items-center justify-center font-black">
                                     <span class="text-xl text-[#6D6875] leading-none">${m.current}</span>
@@ -259,58 +261,50 @@
                     <div class="flex justify-between items-center mb-4">
                         <div class="flex items-center gap-3">
                             <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
-                            <button onclick=\"editGroupName('${g.id}')\" class="fat-pencil">✏️</button>
+                            <button onclick="editGroupName('${g.id}')" class="fat-pencil">✏️</button>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick=\"askClearGroup('${g.id}')\" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-2 py-1 rounded-lg font-black hover:bg-red-50 transition-colors">清空</button>
-                            ${g.id !== 'default' ? `<button onclick=\"askRemoveGroup(${gi})\" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors">刪除</button>` : ''}
+                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-2 py-1 rounded-lg font-black hover:bg-red-50 transition-colors">清空</button>
+                            ${g.id !== 'default' ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors">刪除</button>` : ''}
                         </div>
                     </div>
                     <div class="flex gap-2 mb-4">
                         <input type="text" placeholder="新增人物..." class="flex-1 p-3 rounded-xl text-sm font-bold border-none shadow-inner outline-none focus:ring-2 focus:ring-[#8E9AAF]">
-                        <button onclick=\"addMemberInLine(this, '${g.id}')\" class="bg-[#8E9AAF] text-white px-5 rounded-xl text-xs font-black">新增</button>
+                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-5 rounded-xl text-xs font-black">新增</button>
                     </div>
                     <div class="grid grid-cols-2 gap-3 min-h-[50px] member-list" data-gid="${g.id}">
                         ${g.members.map((m, mi) => `
                             <div draggable="true" 
-                                 ondragstart=\"handleDragStart(event, '${g.id}', ${mi})\" 
-                                 ondragend=\"handleDragEnd(event)\"
+                                 ondragstart="handleDragStart(event, '${g.id}', ${mi})" 
+                                 ondragend="handleDragEnd(event)"
                                  class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between items-center border border-[#D7D3CC] cursor-move shadow-sm hover:shadow-md transition-all">
                                 <span>${m.name}</span>
-                                <button onclick=\"removeMember('${g.id}', ${mi})\" class="text-[#D7D3CC] hover:text-[#AF7A7D]">✕</button>
+                                <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-[#AF7A7D]">✕</button>
                             </div>`).join('')}
                     </div>
                 </div>`).join('');
             setupDragAndDrop();
         }
 
-        // --- 拖曳排序邏輯 (核心修正：支援上下左右) ---
+        // --- 拖曳排序邏輯 ---
         let dragInfo = null;
-
         function handleDragStart(e, gid, mi) {
             dragInfo = { gid, mi };
             e.target.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
         }
-
         function handleDragEnd(e) {
             e.target.classList.remove('dragging');
             document.querySelectorAll('.drop-zone').forEach(z => z.style.border = "1px solid #D7D3CC");
         }
-
         function setupDragAndDrop() {
             const zones = document.querySelectorAll('.drop-zone');
-            
             zones.forEach(zone => {
                 zone.ondragover = e => {
                     e.preventDefault();
                     zone.style.border = "2px dashed #FF9D6F";
                 };
-
-                zone.ondragleave = () => {
-                    zone.style.border = "1px solid #D7D3CC";
-                };
-
+                zone.ondragleave = () => zone.style.border = "1px solid #D7D3CC";
                 zone.ondrop = e => {
                     e.preventDefault();
                     zone.style.border = "1px solid #D7D3CC";
@@ -320,16 +314,13 @@
                     const sGroup = db.groups.find(g => g.id === dragInfo.gid);
                     const tGroup = db.groups.find(g => g.id === targetGid);
                     
-                    // 取得被移動的成員
                     const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
                     
-                    // 尋找最近的插入位置 (修正：讓上下左右拖曳都能準確判斷)
                     const listContainer = zone.querySelector('.member-list');
                     const siblings = [...listContainer.querySelectorAll('.member-item:not(.dragging)')];
                     
                     const nextSibling = siblings.find(sibling => {
                         const box = sibling.getBoundingClientRect();
-                        // 判斷鼠標是否在該元素的中間線之前 (包含水平垂直)
                         return e.clientY < box.top + box.height / 2 || (e.clientY < box.bottom && e.clientX < box.left + box.width / 2);
                     });
 
@@ -348,19 +339,18 @@
             });
         }
 
-        // --- 批量加入 (保留全選功能) ---
+        // --- 批量加入 ---
         function openBatchModal() {
             const actIdx = document.getElementById('activitySelect').value;
             const act = activities[actIdx];
             document.getElementById('batchActName').innerText = `正在為「${act.name}」分配人物`;
-            
             document.getElementById('batchInputList').innerHTML = db.groups.map(g => `
                 <div class="bg-[#F4F2EE] p-5 rounded-[2rem] border border-[#D7D3CC]">
                     <div class="flex justify-between items-center mb-4 border-b border-[#D7D3CC] pb-2">
                         <span class="font-black text-[#6D6875]">${g.name}</span>
                         <div class="flex gap-2">
-                            <button onclick=\"toggleGroupBatch('${g.id}', true)\" class="text-[10px] font-black text-indigo-500 hover:underline">全選此組</button>
-                            <button onclick=\"toggleGroupBatch('${g.id}', false)\" class="text-[10px] font-black text-[#AF7A7D] hover:underline">取消</button>
+                            <button onclick="toggleGroupBatch('${g.id}', true)" class="text-[10px] font-black text-indigo-500 hover:underline">全選此組</button>
+                            <button onclick="toggleGroupBatch('${g.id}', false)" class="text-[10px] font-black text-[#AF7A7D] hover:underline">取消</button>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 gap-2" data-batch-gid="${g.id}">
@@ -412,7 +402,7 @@
             renderMonitoring();
         }
 
-        // --- 其餘基礎功能 (維持不變) ---
+        // --- 基礎通用功能 ---
         function quickUpdateStamina(charId, actIdx, maxStamina) {
             openCustomPrompt("快速刷新體力", `輸入 ${getCharName(charId)} 的目前體力 (上限：${maxStamina})`, "0", false, (val) => {
                 const num = parseInt(val);
