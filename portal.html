@@ -8,7 +8,6 @@
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all duration-500" id="mainBody">
     <div class="max-w-4xl mx-auto">
-        
         <div id="announceBox" class="hidden mb-8 bg-amber-50 border-l-8 border-amber-400 p-6 rounded-2xl shadow-sm">
             <div class="flex items-center gap-4">
                 <span class="text-2xl">📢</span>
@@ -24,7 +23,7 @@
                 <h1 id="userName" class="text-3xl font-black text-slate-800 italic">載入中...</h1>
                 <p id="userRole" class="text-blue-500 font-bold text-xs uppercase tracking-[0.2em] mt-1"></p>
             </div>
-            <button onclick="logout()" class="px-6 py-2 rounded-xl text-slate-300 font-bold hover:bg-red-50 hover:text-red-500 transition-all text-sm">安全登出</button>
+            <button onclick="logout()" class="px-6 py-2 rounded-xl text-slate-300 font-bold hover:text-red-500 transition-all text-sm">安全登出</button>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -46,9 +45,8 @@
         </div>
 
         <div id="adminPanel" class="hidden mt-12 p-8 bg-slate-900 rounded-[2.5rem] text-white shadow-2xl">
-            <h2 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mb-6 text-indigo-300">Administrator Console</h2>
             <div class="flex flex-wrap gap-4">
-                <button onclick="openConfigModal()" class="bg-indigo-600 hover:bg-indigo-500 px-8 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-indigo-900/50">修改系統配置</button>
+                <button onclick="openConfigModal()" class="bg-indigo-600 hover:bg-indigo-500 px-8 py-3 rounded-2xl text-sm font-bold transition-all">修改系統配置</button>
                 <button id="superAdminBtn" onclick="openUserModal()" class="hidden bg-slate-700 hover:bg-slate-600 px-8 py-3 rounded-2xl text-sm font-bold transition-all">用戶名單管理</button>
             </div>
         </div>
@@ -59,50 +57,8 @@
             <div class="text-5xl mb-6">🛡️</div>
             <h3 class="text-2xl font-black text-slate-800 mb-2">您的專屬救援碼</h3>
             <p class="text-slate-400 text-sm mb-8">忘記密碼時這是唯一找回帳號的方式。<br><span class="text-red-500 font-bold">請立即截圖存檔，本視窗僅出現一次！</span></p>
-            <div id="recoveryDisplay" class="bg-slate-100 text-4xl font-mono font-black py-6 rounded-3xl tracking-[0.2em] text-blue-600 mb-8 select-all italic"></div>
-            <button onclick="closeModal('recoveryModal')" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold hover:bg-black transition shadow-xl shadow-blue-100">我已存檔，進入系統</button>
-        </div>
-    </div>
-
-    <div id="configModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative">
-            <button onclick="closeModal('configModal')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600 text-2xl font-bold">✕</button>
-            <h3 class="text-2xl font-black mb-6 text-slate-800">配置同步</h3>
-            <div class="space-y-5">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">公告內容</label>
-                    <textarea id="announceInput" class="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm focus:border-indigo-500 outline-none bg-slate-50" rows="3"></textarea>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">介面主題</label>
-                    <select id="themeInput" class="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm font-bold bg-slate-50 outline-none">
-                        <option value="default">預設藍白</option>
-                        <option value="christmas">聖誕紅</option>
-                        <option value="dark">極致黑</option>
-                    </select>
-                </div>
-            </div>
-            <div class="flex gap-4 mt-8">
-                <button onclick="closeModal('configModal')" class="flex-1 py-4 text-slate-400 font-bold text-sm">取消退出</button>
-                <button onclick="saveConfig()" id="saveBtn" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold text-sm shadow-xl">儲存並同步</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="userModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-2xl rounded-[3rem] p-8 shadow-2xl flex flex-col max-h-[80vh] relative">
-            <button onclick="closeModal('userModal')" class="absolute top-8 right-8 text-slate-300 hover:text-slate-600 text-2xl font-bold">✕</button>
-            <h3 class="text-2xl font-black mb-6 text-slate-800">用戶名單管理</h3>
-            <div class="overflow-y-auto flex-1 pr-2">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="text-[10px] font-bold text-slate-400 border-b uppercase">
-                            <th class="pb-4">名稱</th><th class="pb-4">驗證 ID</th><th class="pb-4">角色</th>
-                        </tr>
-                    </thead>
-                    <tbody id="userTableBody" class="text-sm"></tbody>
-                </table>
-            </div>
+            <div id="recoveryDisplay" class="bg-slate-100 text-4xl font-mono font-black py-6 rounded-3xl tracking-[0.2em] text-blue-600 mb-8 italic"></div>
+            <button onclick="closeModal('recoveryModal')" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold hover:bg-black transition shadow-xl">我已存檔，進入系統</button>
         </div>
     </div>
 
@@ -115,63 +71,34 @@
             if(!data) return location.href = "index.html";
             cachedData = data;
 
-            // 修正為親切稱呼
+            // 1. 顯示親切稱呼
             document.getElementById('userName').innerText = "掌櫃, " + data.user.name;
             document.getElementById('userRole').innerText = "Access Level: " + data.user.role;
             
-            if(data.config.AnnounceText) {
+            // 2. 顯示公告
+            if(data.config && data.config.AnnounceText) {
                 document.getElementById('announceBox').classList.remove('hidden');
                 document.getElementById('announceDisplay').innerText = data.config.AnnounceText;
             }
 
+            // 3. 處理管理權限
             if(data.user.level >= 10) {
                 document.getElementById('adminPanel').classList.remove('hidden');
                 if(data.user.level === 99) document.getElementById('superAdminBtn').classList.remove('hidden');
             }
 
-            if(data.config.CurrentTheme) applyTheme(data.config.CurrentTheme);
-
-            // 偵測是否配發新救援碼
-            if(data.isNewRecovery) {
+            // 4. 【修復重點】檢查救援碼彈窗觸發
+            // 使用 String 轉換確保 boolean 判斷準確
+            if(String(data.isNewRecovery) === "true") {
                 document.getElementById('recoveryDisplay').innerText = data.recoveryCode;
-                document.getElementById('recoveryModal').classList.replace('hidden', 'flex');
+                document.getElementById('recoveryModal').classList.remove('hidden');
+                document.getElementById('recoveryModal').classList.add('flex');
             }
         };
 
-        function saveConfig() {
-            const btn = document.getElementById('saveBtn');
-            const announce = document.getElementById('announceInput').value;
-            const theme = document.getElementById('themeInput').value;
-            btn.innerText = "正在儲存..."; btn.disabled = true;
-
-            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ announce, theme }) })
-            .then(() => { alert("存檔成功！"); location.reload(); });
+        function closeModal(id) { 
+            document.getElementById(id).classList.replace('flex', 'hidden'); 
         }
-
-        function openUserModal() {
-            const tbody = document.getElementById('userTableBody');
-            tbody.innerHTML = cachedData.allUsers.map(u => `
-                <tr class="border-b border-slate-50 hover:bg-slate-50">
-                    <td class="py-4 font-bold text-slate-700">${u.name}</td>
-                    <td class="py-4 text-slate-400 font-mono text-xs">${u.id}</td>
-                    <td class="py-4 text-xs font-bold ${u.role==='Admin'?'text-indigo-500':'text-slate-400'}">${u.role}</td>
-                </tr>`).join('');
-            document.getElementById('userModal').classList.replace('hidden', 'flex');
-        }
-
-        function applyTheme(theme) {
-            const body = document.getElementById('mainBody');
-            if(theme === 'christmas') body.className = "bg-red-50 min-h-screen p-4 md:p-12 transition-all duration-500";
-            else if(theme === 'dark') body.className = "bg-slate-900 min-h-screen p-4 md:p-12 transition-all duration-500 text-white";
-        }
-
-        function openConfigModal() {
-            document.getElementById('announceInput').value = cachedData.config.AnnounceText || "";
-            document.getElementById('themeInput').value = cachedData.config.CurrentTheme || "default";
-            document.getElementById('configModal').classList.replace('hidden', 'flex');
-        }
-
-        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
         function logout() { sessionStorage.clear(); location.href = "index.html"; }
     </script>
 </body>
