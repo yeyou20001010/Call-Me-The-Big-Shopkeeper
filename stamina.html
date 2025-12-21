@@ -7,17 +7,47 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;900&family=Varela+Round&display=swap" rel="stylesheet">
     <title>體力監控中心</title>
     <style>
-        :root { --highlight-pink: #FF9D6F; --full-green: #02C874; --morandi-bg: #FBFBF9; --tag-bg: #F0EFEB; }
-        body { font-family: 'Varela Round', 'Noto Sans TC', sans-serif; background-color: #EAE8E4; color: #6D6875; }
+        :root {
+            --highlight-pink: #FF9D6F; 
+            --full-green: #02C874;     
+            --morandi-bg: #FBFBF9;
+            --tag-bg: #F0EFEB;
+        }
+        body { 
+            font-family: 'Varela Round', 'Noto Sans TC', sans-serif;
+            background-color: #EAE8E4; 
+            color: #6D6875;
+        }
         .card-standard { background-color: var(--morandi-bg); border: 1px solid #D7D3CC; }
-        .card-full-highlight { background-color: var(--morandi-bg) !important; border: 4px solid var(--full-green) !important; box-shadow: 0 4px 15px rgba(2, 200, 116, 0.15); }
+        .card-full-highlight { 
+            background-color: var(--morandi-bg) !important; 
+            border: 4px solid var(--full-green) !important; 
+            box-shadow: 0 4px 15px rgba(2, 200, 116, 0.15);
+        }
         .text-status-pink { color: var(--highlight-pink); } 
         .text-full-green { color: var(--full-green); }
-        .tag-label { background-color: var(--tag-bg); color: #5E548E; border: 1px solid #D7D3CC; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 900; }
+        .tag-label {
+            background-color: var(--tag-bg);
+            color: #5E548E;
+            border: 1px solid #D7D3CC;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 900;
+        }
         .progress-ring-circle { transition: stroke-dashoffset 0.8s ease-out; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        
+        /* 閃爍動畫：引導點擊 */
         @keyframes blinker { 50% { opacity: 0.3; } }
         .animate-guide { animation: blinker 2s linear infinite; }
-        .fat-pencil { display: inline-block; transform: scaleX(-1); transition: all 0.2s; cursor: pointer; font-size: 1.2rem; }
+
+        /* 可愛鉛筆動效 */
+        .fat-pencil { 
+            display: inline-block; 
+            transform: scaleX(-1); /* 讓筆尖朝左 */
+            transition: all 0.2s;
+            cursor: pointer;
+        }
         .fat-pencil:hover { transform: scaleX(-1) scale(1.3) rotate(-10deg); }
     </style>
 </head>
@@ -31,6 +61,7 @@
                     <p class="text-xs font-bold text-[#8E9AAF] tracking-widest">STAMINA MONITOR</p>
                 </div>
             </div>
+            
             <div class="flex gap-3 flex-wrap justify-center items-center">
                 <div class="flex items-center bg-[#F0EFEB] rounded-2xl p-1 border border-[#D7D3CC]">
                     <button onclick="changeSort(-1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❮</button>
@@ -55,9 +86,10 @@
                         <p>速率：<span id="rateDetail" class="text-[#8E9AAF]">--</span></p>
                         <p>上限：<span id="maxDetail" class="text-[#8E9AAF]">--</span></p>
                     </div>
-                    <button onclick="openBatchModal()" class="w-full mt-8 bg-[#8E9AAF] text-white py-5 rounded-[2rem] text-lg font-black shadow-md">🚀 批量加入監測</button>
+                    <button onclick="openBatchModal()" class="w-full mt-8 bg-[#8E9AAF] text-white py-5 rounded-[2rem] text-lg font-black shadow-md hover:brightness-95 transition-all">🚀 批量加入監測</button>
                 </div>
             </div>
+
             <div class="xl:col-span-3">
                 <div id="monitorGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                 <div id="emptyDisplay" class="hidden text-center py-40 bg-[#FBFBF9] rounded-[3rem] border-4 border-dashed border-[#D7D3CC]">
@@ -68,10 +100,10 @@
     </div>
 
     <div id="customPromptModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-[100] backdrop-blur-md">
-        <div class="bg-[#FBFBF9] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative">
+        <div class="bg-[#FBFBF9] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-white/20">
             <h3 id="promptTitle" class="text-xl font-black mb-4 text-[#5E548E]"></h3>
             <p id="promptSub" class="text-sm font-bold text-[#8E9AAF] mb-4"></p>
-            <input id="promptInput" type="text" class="w-full p-4 bg-white border border-[#D7D3CC] rounded-2xl font-bold mb-6">
+            <input id="promptInput" type="text" class="w-full p-4 bg-white border border-[#D7D3CC] rounded-2xl font-bold mb-6 outline-none focus:ring-2 focus:ring-[#FF9D6F]">
             <div class="flex gap-3">
                 <button onclick="closeModal('customPromptModal')" class="flex-1 py-4 bg-[#D7D3CC] text-white rounded-2xl font-black">取消</button>
                 <button id="promptConfirmBtn" class="flex-1 py-4 bg-[#FF9D6F] text-white rounded-2xl font-black">確認</button>
@@ -81,11 +113,11 @@
 
     <div id="manageModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-50 backdrop-blur-md">
         <div class="bg-[#FBFBF9] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl relative flex flex-col max-h-[90vh]">
-            <button onclick="closeModal('manageModal')" class="absolute top-10 right-10 text-[#D7D3CC] text-3xl">✕</button>
+            <button onclick="closeModal('manageModal')" class="absolute top-10 right-10 text-[#D7D3CC] hover:text-[#6D6875] text-3xl">✕</button>
             <h3 class="text-2xl font-black mb-6">名單與群組管理</h3>
             <div class="flex gap-3 mb-8">
                 <input id="newGroupName" type="text" placeholder="新群組名稱..." class="flex-1 bg-white border border-[#D7D3CC] p-4 rounded-2xl outline-none font-bold">
-                <button onclick="addGroup()" class="bg-[#8E9AAF] text-white px-8 rounded-2xl font-black">建立群組</button>
+                <button onclick="addGroup()" class="bg-[#8E9AAF] text-white px-8 rounded-2xl font-black shadow-sm">建立群組</button>
             </div>
             <div id="groupListArea" class="overflow-y-auto flex-1 space-y-6"></div>
         </div>
@@ -93,10 +125,14 @@
 
     <div id="batchModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-50 backdrop-blur-md">
         <div class="bg-[#FBFBF9] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl relative flex flex-col max-h-[90vh]">
-            <button onclick="closeModal('batchModal')" class="absolute top-10 right-10 text-[#D7D3CC] text-3xl">✕</button>
+            <button onclick="closeModal('batchModal')" class="absolute top-10 right-10 text-[#D7D3CC] hover:text-[#6D6875] text-3xl">✕</button>
             <h3 class="text-2xl font-black mb-2">批量加入監測</h3>
-            <div id="batchInputList" class="overflow-y-auto flex-1 space-y-6 mb-8 mt-4"></div>
-            <button onclick="submitBatch()" class="w-full bg-[#8E9AAF] text-white py-6 rounded-[2rem] text-xl font-black">確認並開始監測</button>
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <p id="currentActName" class="text-base font-bold text-[#FF9D6F]"></p>
+                <button onclick="toggleAllCheckboxes()" id="btnSelectAll" class="bg-white border border-[#D7D3CC] px-4 py-2 rounded-xl font-black text-xs">全選</button>
+            </div>
+            <div id="batchInputList" class="overflow-y-auto flex-1 space-y-6 mb-8"></div>
+            <button onclick="submitBatch()" class="w-full bg-[#8E9AAF] text-white py-6 rounded-[2rem] text-xl font-black shadow-lg">確認並開始監測</button>
         </div>
     </div>
 
@@ -151,11 +187,10 @@
                 const ringColor = m.isFull ? '#02C874' : '#FF9D6F';
                 const textColor = m.isFull ? 'text-full-green' : 'text-status-pink';
                 let countdownText = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
-                
                 let fullTimeLabel = "狀態：體力已充滿";
                 if(!m.isFull) {
                     const d = new Date(now + m.remSec * 1000);
-                    fullTimeLabel = `預計回滿：${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+                    fullTimeLabel = `預計回滿：${(d.getMonth()+1)}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
                 }
 
                 return `
@@ -166,14 +201,18 @@
                         <span class="tag-label">${m.groupName}</span>
                     </div>
                     <div class="flex items-start justify-between mb-6">
-                        <h4 class="text-2xl font-black text-[#6D6875]">${m.charName}</h4>
+                        <h4 class="text-2xl font-black text-[#6D6875] tracking-tight">${m.charName}</h4>
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-black text-[#A5A5A5] uppercase mb-1">目前體力</span>
-                            <div onclick="quickUpdateStamina('${m.charId}', ${m.actIdx}, ${m.actMax})" class="relative w-20 h-20 cursor-pointer active:scale-90 transition-transform">
-                                <svg class="w-20 h-20"><circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/><circle style="stroke: ${ringColor}" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/></svg>
+                            <span class="text-[9px] font-black text-[#A5A5A5] uppercase tracking-tighter mb-1">目前體力</span>
+                            <div onclick="quickUpdateStamina('${m.charId}', ${m.actIdx}, ${m.actMax})" 
+                                 class="relative w-20 h-20 shrink-0 cursor-pointer group/ring active:scale-90 transition-transform">
+                                <svg class="w-20 h-20 group-hover/ring:scale-110 transition-transform">
+                                    <circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/>
+                                    <circle style="stroke: ${ringColor}" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/>
+                                </svg>
                                 <div class="absolute inset-0 flex flex-col items-center justify-center font-black">
                                     <span class="text-xl text-[#6D6875] leading-none">${m.current}</span>
-                                    <span class="text-[7px] text-[#A5A5A5] mt-1 animate-guide">✏️ 刷新</span>
+                                    <span class="text-[7px] text-[#A5A5A5] mt-1 animate-guide">✎ 點擊刷新</span>
                                 </div>
                             </div>
                         </div>
@@ -193,21 +232,21 @@
                     <div class="flex justify-between items-center mb-4">
                         <div class="flex items-center gap-3 group/title">
                             <span class="text-xl font-black text-[#6D6875] group-hover/title:text-[#FF9D6F] transition-colors">${g.name}</span>
-                            <button onclick="editGroupName('${g.id}')" class="fat-pencil">✏️</button>
+                            <button onclick="editGroupName('${g.id}')" class="text-2xl fat-pencil" title="修改群組名稱">✏️</button>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-2 py-1 rounded-lg font-black">清空成員</button>
+                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] border border-[#AF7A7D] px-2 py-1 rounded-lg font-black bg-white">清空成員</button>
                             ${g.id !== 'default' ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black">刪除</button>` : ''}
                         </div>
                     </div>
                     <div class="flex gap-2 mb-4">
-                        <input type="text" placeholder="新增人物..." class="flex-1 p-3 rounded-xl text-sm font-bold border-none shadow-inner">
+                        <input type="text" placeholder="輸入人物名稱" class="flex-1 p-3 rounded-xl text-sm char-input outline-none font-bold border-none shadow-inner">
                         <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-5 rounded-xl text-xs font-black">新增</button>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 min-h-[50px] member-list" data-gid="${g.id}">
+                    <div class="grid grid-cols-2 gap-3 min-h-[40px] member-list" data-gid="${g.id}">
                         ${g.members.map((m, mi) => `
                             <div draggable="true" ondragstart="handleDragStart(event, '${g.id}', ${mi})"
-                                 class="bg-white p-3 rounded-xl text-sm font-black flex justify-between items-center border border-[#D7D3CC] cursor-move shadow-sm">
+                                 class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between items-center border border-[#D7D3CC] cursor-move">
                                 <span>${m.name}</span>
                                 <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-red-400">✕</button>
                             </div>`).join('')}
@@ -216,30 +255,30 @@
             setupDragAndDrop();
         }
 
-        let dragInfo = null;
-        function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; }
-        function setupDragAndDrop() {
-            document.querySelectorAll('.drop-zone').forEach(zone => {
-                zone.ondragover = e => { e.preventDefault(); zone.style.border = "2px dashed #FF9D6F"; };
-                zone.ondragleave = () => { zone.style.border = "1px solid #D7D3CC"; };
-                zone.ondrop = e => {
-                    e.preventDefault();
-                    zone.style.border = "1px solid #D7D3CC";
-                    if(!dragInfo) return;
-                    const targetGid = zone.dataset.gid;
-                    const sGroup = db.groups.find(g => g.id === dragInfo.gid);
-                    const tGroup = db.groups.find(g => g.id === targetGid);
-                    const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
-                    tGroup.members.push(movingItem);
-                    saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null;
-                };
+        // --- 核心邏輯與輔助函數 ---
+        function quickUpdateStamina(charId, actIdx, maxStamina) {
+            openCustomPrompt("快速刷新體力", `請輸入目前體力 (上限：${maxStamina})`, "0", false, (val) => {
+                const num = parseInt(val);
+                if (isNaN(num) || num < 0) return;
+                const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
+                if(idx > -1) { monitors[idx].initStamina = Math.min(num, maxStamina); monitors[idx].startTime = Date.now(); saveActive(); renderMonitoring(); }
             });
         }
-
-        // --- 其餘功能邏輯 ---
-        function quickUpdateStamina(charId, actIdx, maxStamina) { openCustomPrompt("快速刷新體力", `輸入目前體力 (上限：${maxStamina})`, "0", false, (val) => { const num = parseInt(val); if (isNaN(num) || num < 0) return; const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx); if(idx > -1) { monitors[idx].initStamina = Math.min(num, maxStamina); monitors[idx].startTime = Date.now(); saveActive(); renderMonitoring(); } }); }
-        function editGroupName(gid) { const group = db.groups.find(g => g.id === gid); openCustomPrompt("編輯群組名稱", "請輸入新名稱：", group.name, false, (n) => { if(n && n.trim() !== ""){ group.name = n.trim(); saveDB(); renderManageUI(); renderMonitoring(); } }); }
-        function openCustomPrompt(t, s, d, c, f) { document.getElementById('promptTitle').innerText = t; document.getElementById('promptSub').innerText = s; const inp = document.getElementById('promptInput'); inp.style.display = c ? 'none' : 'block'; inp.value = d || ""; document.getElementById('customPromptModal').classList.replace('hidden', 'flex'); document.getElementById('promptConfirmBtn').onclick = () => { f(inp.value); closeModal('customPromptModal'); }; }
+        function editGroupName(gid) {
+            const group = db.groups.find(g => g.id === gid);
+            openCustomPrompt("編輯群組名稱", "請輸入新名稱：", group.name, false, (n) => { 
+                if(n && n.trim() !== ""){ group.name = n.trim(); saveDB(); renderManageUI(); renderMonitoring(); }
+            });
+        }
+        function openCustomPrompt(title, sub, defaultVal, isConfirmOnly, onConfirm) {
+            document.getElementById('promptTitle').innerText = title;
+            document.getElementById('promptSub').innerText = sub;
+            const inp = document.getElementById('promptInput');
+            inp.style.display = isConfirmOnly ? 'none' : 'block';
+            inp.value = defaultVal || "";
+            document.getElementById('customPromptModal').classList.replace('hidden', 'flex');
+            document.getElementById('promptConfirmBtn').onclick = () => { onConfirm(inp.value); closeModal('customPromptModal'); };
+        }
         function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
         function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
         function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
@@ -249,12 +288,56 @@
         function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
         function getGroupNameByCharId(id) { for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } return "未分類"; }
         function changeSort(dir) { sortMode = (sortMode + dir + 4) % 4; document.getElementById('sortModeText').innerText = sortTexts[sortMode]; renderMonitoring(); }
-        function askClearAll() { openCustomPrompt("確定清空？", "這將移除所有監測中的項目。", "", true, () => { monitors = []; saveActive(); renderMonitoring(); }); }
-        function askClearGroup(gid) { openCustomPrompt("清空成員？", "將清空此群組人物。", "", true, () => { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); }); }
-        function askRemoveGroup(gi) { openCustomPrompt("刪除群組？", "不可復原。", "", true, () => { db.groups.splice(gi,1); saveDB(); renderManageUI(); }); }
+        function askClearAll() { openCustomPrompt("確定清空？", "這將移除所有正在監測的項目。", "", true, () => { monitors = []; saveActive(); renderMonitoring(); }); }
+        function askClearGroup(gid) { openCustomPrompt("清空成員？", "將移除此群組內所有人物。", "", true, () => { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); }); }
+        function askRemoveGroup(gi) { openCustomPrompt("刪除群組？", "此操作無法復原。", "", true, () => { db.groups.splice(gi,1); saveDB(); renderManageUI(); }); }
         function removeMonitor(charId, actIdx) { monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); saveActive(); renderMonitoring(); }
-        function openBatchModal() { const actIdx = document.getElementById('activitySelect').value; const act = activities[actIdx]; document.getElementById('batchInputList').innerHTML = db.groups.map(g => `<div class="bg-[#F4F2EE] p-5 rounded-[2rem] mb-4"><span class="font-black text-[#8E9AAF] text-sm">${g.name}</span><div class="mt-3 space-y-2">${g.members.map(m => `<div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm"><input type="checkbox" class="char-cb w-5 h-5 accent-[#FF9D6F]" data-name="${m.name}" data-id="${m.id}"><span class="flex-1 font-black text-[#6D6875]">${m.name}</span><input type="number" class="stamina-input w-16 p-2 bg-[#F4F2EE] rounded-lg text-center font-black" value="0"></div>`).join('')}</div></div>`).join(''); document.getElementById('batchModal').classList.replace('hidden', 'flex'); }
-        function submitBatch() { const actIdx = document.getElementById('activitySelect').value; document.querySelectorAll('#batchInputList input[type="checkbox"]:checked').forEach(cb => { const row = cb.closest('.flex'); const val = parseInt(row.querySelector('.stamina-input').value) || 0; const charId = cb.dataset.id; const data = { charId: charId, charName: cb.dataset.name, actIdx: actIdx, initStamina: val, startTime: Date.now() }; const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx); if(idx > -1) monitors[idx] = data; else monitors.push(data); }); saveActive(); closeModal('batchModal'); renderMonitoring(); }
+        function openBatchModal() { 
+            const actIdx = document.getElementById('activitySelect').value;
+            const act = activities[actIdx];
+            document.getElementById('currentActName').innerText = "目標活動：" + act.name;
+            document.getElementById('batchInputList').innerHTML = db.groups.map(g => `
+                <div class="bg-[#F4F2EE] p-5 rounded-[2rem] group-wrapper">
+                    <div class="flex justify-between mb-4 items-center">
+                        <span class="font-black text-[#8E9AAF] text-sm">${g.name}</span>
+                        <button onclick="toggleGroupCheckboxes(this)" class="text-xs text-[#8E9AAF] border px-2 py-1 rounded-lg font-black bg-white">本組全選</button>
+                    </div>
+                    <div class="space-y-3">
+                        ${g.members.map(m => `
+                            <div class="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#D7D3CC]">
+                                <input type="checkbox" class="char-cb w-5 h-5 accent-[#FF9D6F]" data-name="${m.name}" data-id="${m.id}">
+                                <span class="flex-1 font-black text-[#6D6875]">${m.name}</span>
+                                <input type="number" class="stamina-input w-16 p-2 bg-[#F4F2EE] rounded-lg text-center font-black" value="0" min="0" max="${act.maxStamina}">
+                            </div>`).join('')}
+                    </div>
+                </div>`).join('');
+            document.getElementById('batchModal').classList.replace('hidden', 'flex');
+        }
+        function toggleAllCheckboxes() { const cbs = document.querySelectorAll('.char-cb'); const all = Array.from(cbs).every(c=>c.checked); cbs.forEach(c=>c.checked=!all); document.getElementById('btnSelectAll').innerText = !all ? "取消全選" : "全選"; }
+        function toggleGroupCheckboxes(btn) { const cbs = btn.closest('.group-wrapper').querySelectorAll('.char-cb'); const all = Array.from(cbs).every(c=>c.checked); cbs.forEach(c=>c.checked=!all); btn.innerText = all ? "本組全選" : "取消全選"; }
+        function submitBatch() {
+            const actIdx = document.getElementById('activitySelect').value;
+            const rows = document.querySelectorAll('#batchInputList input[type="checkbox"]:checked');
+            rows.forEach(cb => {
+                const row = cb.closest('.flex');
+                const val = parseInt(row.querySelector('.stamina-input').value) || 0;
+                const charId = cb.dataset.id;
+                const data = { charId: charId, charName: cb.dataset.name, actIdx: actIdx, initStamina: val, startTime: Date.now() };
+                const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
+                if(idx > -1) monitors[idx] = data; else monitors.push(data);
+            });
+            saveActive(); closeModal('batchModal'); renderMonitoring();
+        }
+        let dragInfo = null;
+        function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; }
+        function setupDragAndDrop() {
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.ondragover = e => { e.preventDefault(); zone.style.border = "2px dashed #FF9D6F"; };
+                zone.ondragleave = () => zone.style.border = "1px solid #D7D3CC";
+                zone.ondrop = e => { e.preventDefault(); zone.style.border = "1px solid #D7D3CC"; if (!dragInfo) return; const targetGid = zone.dataset.gid; if(dragInfo.gid === targetGid) return; const sGroup = db.groups.find(g => g.id === dragInfo.gid); const tGroup = db.groups.find(g => g.id === targetGid); const [movingItem] = sGroup.members.splice(dragInfo.mi, 1); tGroup.members.push(movingItem); saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null; };
+            });
+        }
     </script>
 </body>
 </html>
+
