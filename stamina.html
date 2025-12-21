@@ -43,14 +43,26 @@
         @keyframes blinker { 50% { opacity: 0.3; } }
         .animate-guide { animation: blinker 2s linear infinite; }
         
-        .fat-pencil { 
-            display: inline-block; 
-            transform: scaleX(-1); 
+        /* 胖胖筆圖示樣式 */
+        .fat-pencil-btn { 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            background: #EAE8E4;
+            border-radius: 8px;
             transition: all 0.2s; 
             cursor: pointer;
-            font-size: 1.2rem;
+            border: 1px solid #D7D3CC;
+            color: #6D6875;
         }
-        .fat-pencil:hover { transform: scaleX(-1) scale(1.3) rotate(-10deg); }
+        .fat-pencil-btn:hover { 
+            transform: scale(1.1); 
+            background: #FFF;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            color: #FF9D6F;
+        }
 
         .member-item.dragging {
             opacity: 0.4;
@@ -153,7 +165,6 @@
         let sortMode = 0; 
         const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
 
-        // 【核心修正】確保頁面加載時初始化資料
         window.onload = function() {
             const gameData = JSON.parse(sessionStorage.getItem('gameData'));
             if(!gameData) return location.href = "index.html"; 
@@ -173,11 +184,8 @@
                 document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
             };
             
-            // 觸發初始顯示
             select.dispatchEvent(new Event('change'));
             renderMonitoring();
-            
-            // 啟動即時更新定時器
             setInterval(renderMonitoring, 1000);
         };
 
@@ -253,19 +261,26 @@
             }).join('');
         }
 
-        // --- 名單管理 UI ---
+        // --- 名單管理 UI (核心修改：鎖定未分類、加入 SVG 筆圖示) ---
         function renderManageUI() {
             const area = document.getElementById('groupListArea');
-            area.innerHTML = db.groups.map((g, gi) => `
+            area.innerHTML = db.groups.map((g, gi) => {
+                const isDefault = g.id === 'default';
+                return `
                 <div class="bg-[#F4F2EE] p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
                     <div class="flex justify-between items-center mb-4">
                         <div class="flex items-center gap-3">
                             <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
-                            <button onclick="editGroupName('${g.id}')" class="fat-pencil">✏️</button>
+                            ${!isDefault ? `
+                            <button onclick="editGroupName('${g.id}')" class="fat-pencil-btn">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1);">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                </svg>
+                            </button>` : ''}
                         </div>
                         <div class="flex gap-2">
                             <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-2 py-1 rounded-lg font-black hover:bg-red-50 transition-colors">清空</button>
-                            ${g.id !== 'default' ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors">刪除</button>` : ''}
+                            ${!isDefault ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors">刪除</button>` : ''}
                         </div>
                     </div>
                     <div class="flex gap-2 mb-4">
@@ -282,11 +297,11 @@
                                 <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-[#AF7A7D]">✕</button>
                             </div>`).join('')}
                     </div>
-                </div>`).join('');
+                </div>`;
+            }).join('');
             setupDragAndDrop();
         }
 
-        // --- 拖曳排序邏輯 ---
         let dragInfo = null;
         function handleDragStart(e, gid, mi) {
             dragInfo = { gid, mi };
@@ -300,46 +315,33 @@
         function setupDragAndDrop() {
             const zones = document.querySelectorAll('.drop-zone');
             zones.forEach(zone => {
-                zone.ondragover = e => {
-                    e.preventDefault();
-                    zone.style.border = "2px dashed #FF9D6F";
-                };
+                zone.ondragover = e => { e.preventDefault(); zone.style.border = "2px dashed #FF9D6F"; };
                 zone.ondragleave = () => zone.style.border = "1px solid #D7D3CC";
                 zone.ondrop = e => {
                     e.preventDefault();
                     zone.style.border = "1px solid #D7D3CC";
                     if (!dragInfo) return;
-
                     const targetGid = zone.dataset.gid;
                     const sGroup = db.groups.find(g => g.id === dragInfo.gid);
                     const tGroup = db.groups.find(g => g.id === targetGid);
-                    
                     const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
-                    
                     const listContainer = zone.querySelector('.member-list');
                     const siblings = [...listContainer.querySelectorAll('.member-item:not(.dragging)')];
-                    
                     const nextSibling = siblings.find(sibling => {
                         const box = sibling.getBoundingClientRect();
                         return e.clientY < box.top + box.height / 2 || (e.clientY < box.bottom && e.clientX < box.left + box.width / 2);
                     });
-
                     if (nextSibling) {
                         const nextIdx = tGroup.members.findIndex(m => m.name === nextSibling.querySelector('span').innerText);
                         tGroup.members.splice(nextIdx, 0, movingItem);
                     } else {
                         tGroup.members.push(movingItem);
                     }
-
-                    saveDB();
-                    renderManageUI();
-                    renderMonitoring();
-                    dragInfo = null;
+                    saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null;
                 };
             });
         }
 
-        // --- 批量加入 ---
         function openBatchModal() {
             const actIdx = document.getElementById('activitySelect').value;
             const act = activities[actIdx];
@@ -362,47 +364,30 @@
                                     <span class="text-[10px] font-black text-[#A5A5A5]">起始體力</span>
                                     <input type="number" class="stamina-input w-20 p-2 bg-[#F4F2EE] rounded-lg text-center font-black outline-none border-none focus:ring-2 focus:ring-[#8E9AAF]" value="0">
                                 </div>
-                            </div>
-                        `).join('')}
+                            </div>`).join('')}
                     </div>
-                </div>
-            `).join('');
+                </div>`).join('');
             document.getElementById('batchModal').classList.replace('hidden', 'flex');
         }
 
-        function toggleAllBatch(checked) {
-            document.querySelectorAll('.char-cb').forEach(cb => cb.checked = checked);
-        }
-
-        function toggleGroupBatch(gid, checked) {
-            document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => cb.checked = checked);
-        }
+        function toggleAllBatch(checked) { document.querySelectorAll('.char-cb').forEach(cb => cb.checked = checked); }
+        function toggleGroupBatch(gid, checked) { document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => cb.checked = checked); }
 
         function submitBatch() {
             const actIdx = document.getElementById('activitySelect').value;
             const cbs = document.querySelectorAll('.char-cb:checked');
             if (cbs.length === 0) return alert('請選擇至少一位人物');
-
             cbs.forEach(cb => {
                 const row = cb.closest('.flex');
                 const val = parseInt(row.querySelector('.stamina-input').value) || 0;
                 const charId = cb.dataset.id;
-                const data = {
-                    charId: charId,
-                    charName: cb.dataset.name,
-                    actIdx: actIdx,
-                    initStamina: val,
-                    startTime: Date.now()
-                };
+                const data = { charId: charId, charName: cb.dataset.name, actIdx: actIdx, initStamina: val, startTime: Date.now() };
                 const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
                 if(idx > -1) monitors[idx] = data; else monitors.push(data);
             });
-            saveActive();
-            closeModal('batchModal');
-            renderMonitoring();
+            saveActive(); closeModal('batchModal'); renderMonitoring();
         }
 
-        // --- 基礎通用功能 ---
         function quickUpdateStamina(charId, actIdx, maxStamina) {
             openCustomPrompt("快速刷新體力", `輸入 ${getCharName(charId)} 的目前體力 (上限：${maxStamina})`, "0", false, (val) => {
                 const num = parseInt(val);
@@ -411,8 +396,7 @@
                 if(idx > -1) {
                     monitors[idx].initStamina = Math.min(num, maxStamina);
                     monitors[idx].startTime = Date.now();
-                    saveActive();
-                    renderMonitoring();
+                    saveActive(); renderMonitoring();
                 }
             });
         }
@@ -448,4 +432,3 @@
     </script>
 </body>
 </html>
-
