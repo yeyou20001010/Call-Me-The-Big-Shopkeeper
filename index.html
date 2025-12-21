@@ -9,49 +9,74 @@
 <body class="bg-slate-100 flex items-center justify-center min-h-screen">
     <div class="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-sm text-center">
         <div class="text-5xl mb-6">🔐</div>
-        <h1 class="text-2xl font-bold mb-8 text-slate-800 tracking-wider">叫我大掌櫃登入</h1>
-        <input id="userId" type="password" placeholder="請輸入掌櫃 ID" class="w-full border-2 border-slate-200 p-4 rounded-xl mb-6 text-center text-lg focus:border-blue-500 outline-none transition">
+        <h1 class="text-2xl font-bold mb-2 text-slate-800 tracking-wider">大掌櫃工具箱</h1>
+        <p class="text-slate-400 text-xs mb-8">請輸入您的帳號密碼</p>
+        
+        <input id="userId" type="text" placeholder="掌櫃 ID" class="w-full border-2 border-slate-100 p-4 rounded-xl mb-3 text-center focus:border-blue-500 outline-none transition bg-slate-50">
+        <input id="password" type="password" placeholder="密碼 (初始為 umbd)" class="w-full border-2 border-slate-100 p-4 rounded-xl mb-6 text-center focus:border-blue-500 outline-none transition bg-slate-50">
+        
         <button onclick="login()" id="btnText" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition shadow-lg">登入系統</button>
+        
+        <button onclick="toggleModal('forgetModal', true)" class="mt-6 text-slate-400 text-xs hover:text-blue-500 transition">忘記密碼？點此重置</button>
+    </div>
+
+    <div id="forgetModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
+            <h3 class="text-xl font-black mb-2">找回密碼</h3>
+            <p class="text-slate-400 text-xs mb-6">輸入 ID 與您的救援碼，密碼將還原為 umbd</p>
+            <input id="resetID" type="text" placeholder="您的掌櫃 ID" class="w-full border border-slate-200 p-4 rounded-xl mb-3 outline-none">
+            <input id="resetRecovery" type="text" placeholder="您的 6 位救援碼" class="w-full border border-slate-200 p-4 rounded-xl mb-6 outline-none">
+            <div class="flex gap-2">
+                <button onclick="toggleModal('forgetModal', false)" class="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold">取消</button>
+                <button onclick="submitReset()" id="resetBtn" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold">確認重置</button>
+            </div>
+        </div>
     </div>
 
     <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec"; // <--- 記得填入
+
         function login() {
             const id = document.getElementById('userId').value;
-            if(!id) {
-                alert("請輸入 ID");
-                return;
-            }
+            const pwd = document.getElementById('password').value;
+            if(!id || !pwd) return alert("請完整輸入 ID 與密碼");
+
             const btn = document.getElementById('btnText');
             btn.innerText = "驗證中...";
             btn.disabled = true;
 
-            // 請更換為你的 GAS Web App URL
-            const scriptUrl = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec"; 
-
-            fetch(`${scriptUrl}?userId=${id}`)
-                .then(response => response.json())
+            fetch(`${SCRIPT_URL}?userId=${id}&password=${pwd}`)
+                .then(res => res.json())
                 .then(res => {
                     if(res.success) {
                         sessionStorage.setItem('gameData', JSON.stringify(res));
                         location.href = "portal.html"; 
                     } else {
                         alert("登入失敗：" + res.msg);
-                        btn.innerText = "登入系統";
-                        btn.disabled = false;
+                        btn.innerText = "登入系統"; btn.disabled = false;
                     }
-                })
-                .catch(err => {
-                    alert("連線錯誤，請檢查網路或 GAS 部署設定");
-                    btn.innerText = "登入系統";
-                    btn.disabled = false;
+                }).catch(() => { alert("網路錯誤"); btn.innerText = "登入系統"; btn.disabled = false; });
+        }
+
+        function submitReset() {
+            const id = document.getElementById('resetID').value;
+            const rec = document.getElementById('resetRecovery').value;
+            if(!id || !rec) return alert("請輸入完整資訊");
+
+            document.getElementById('resetBtn').innerText = "處理中...";
+            fetch(`${SCRIPT_URL}?action=reset&userId=${id}&recovery=${rec}`)
+                .then(res => res.json())
+                .then(res => {
+                    alert(res.msg);
+                    if(res.success) location.reload();
+                    else document.getElementById('resetBtn').innerText = "確認重置";
                 });
+        }
+
+        function toggleModal(id, show) {
+            document.getElementById(id).classList.toggle('hidden', !show);
+            document.getElementById(id).classList.toggle('flex', show);
         }
     </script>
 </body>
-
 </html>
-
-
-
-
-
