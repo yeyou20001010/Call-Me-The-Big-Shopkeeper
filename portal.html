@@ -153,16 +153,23 @@
             }
             if(data.config && data.config.CurrentTheme) applyTheme(data.config.CurrentTheme);
 
-            // 3. 權限分級
-            const lv = data.user.level;
+            // 3. 權限分級 (核心修復)
+            const lv = parseInt(data.user.level); // 轉為數字確保判斷準確
+            
+            // 先隱藏所有權限按鈕
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('configBtn').classList.add('hidden');
+            document.getElementById('userManageBtn').classList.add('hidden');
+            document.getElementById('testUpdateBtn').classList.add('hidden');
+
             if(lv === 99) { // SuperAdmin
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('configBtn').classList.remove('hidden');
                 document.getElementById('userManageBtn').classList.remove('hidden');
                 document.getElementById('testUpdateBtn').classList.remove('hidden');
-                document.getElementById('changePwdBtn').classList.add('hidden'); // 隱藏修改密碼
+                document.getElementById('changePwdBtn').classList.add('hidden'); 
             } else if(lv >= 10) { // Admin
-                document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('adminPanel').classList.remove('hidden'); // 這裡以前可能漏了
                 document.getElementById('userManageBtn').classList.remove('hidden'); // 僅名單管理
                 document.getElementById('changePwdBtn').classList.remove('hidden');
             } else { // 一般用戶
@@ -176,7 +183,7 @@
             }
         };
 
-        // --- 管理功能 ---
+        // --- 管理功能 (保持不變) ---
         function openConfigModal() {
             document.getElementById('announceInput').value = cachedData.config.AnnounceText || "";
             document.getElementById('themeInput').value = cachedData.config.CurrentTheme || "default";
@@ -187,10 +194,8 @@
             const btn = document.getElementById('saveBtn');
             const announce = document.getElementById('announceInput').value;
             const theme = document.getElementById('themeInput').value;
-            
             btn.innerText = "正在儲存...";
             btn.disabled = true;
-
             try {
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
@@ -207,7 +212,6 @@
         }
 
         function openUserModal() {
-            // 注意：GAS 需要在 getInitialData 中回傳 allUsers 陣列
             const tbody = document.getElementById('userTableBody');
             if(cachedData.allUsers) {
                 tbody.innerHTML = cachedData.allUsers.map(u => `
@@ -222,12 +226,10 @@
             openModal('userModal');
         }
 
-        // --- 基礎功能 ---
         async function submitNewPwd() {
             const newPwd = document.getElementById('newPwd').value;
             const confirmPwd = document.getElementById('confirmPwd').value;
             if(!newPwd || newPwd !== confirmPwd) return showMsg("錯誤", "密碼不一致", false);
-
             try {
                 const res = await fetch(`${SCRIPT_URL}?action=updatePassword&userId=${cachedData.user.userId}&newPassword=${newPwd}`);
                 const result = await res.json();
@@ -262,5 +264,3 @@
     </script>
 </body>
 </html>
-
-
