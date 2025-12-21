@@ -6,14 +6,13 @@
     <title>大掌櫃工具箱 - 翻牌工具</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 莫蘭迪與圓潤風格定義 */
+        /* 可愛柔和風格定義 */
         :root {
-            --m-green: #a3b18a;
-            --m-blue: #9eb3c2;
-            --m-pink: #e29595; /* 醒目的莫蘭迪粉紅 */
-            --m-bg: #f8f9fa;
-            --m-btn-bg: #eef2f6;
-            --m-btn-border: #9eb3c2;
+            --soft-bg: #fdfaf6;      /* 淺米色預設 */
+            --soft-blue: #b9d8eb;    /* 柔藍 */
+            --soft-green: #cfe1b9;   /* 嫩綠 */
+            --soft-pink: #f4cccc;    /* 粉桃 */
+            --m-bg: #fdfcfb;
             --m-font: "Yuanti SC", "YouYuan", "Microsoft JhengHei", "Rounded Mplus 1c", sans-serif;
         }
 
@@ -21,7 +20,7 @@
             height: 100vh; overflow: hidden; 
             font-family: var(--m-font); 
             background: var(--m-bg); 
-            color: #4a4a4a; 
+            color: #5a5a5a; 
         }
         
         .layout-container { display: grid; grid-template-columns: 140px 1fr 400px; height: 100vh; }
@@ -34,57 +33,65 @@
         }
         #mainScrollArea::-webkit-scrollbar { display: none; }
 
-        /* 宮格優化：讓牌面盡量撐滿 */
+        /* 宮格優化：適應長邊不裁切 */
         .card-slot { 
-            border: 2px dashed #d1d5db; border-radius: 12px; aspect-ratio: 1/1; 
+            border: 2px dashed #e2e8f0; border-radius: 12px; aspect-ratio: 1/1; 
             display: flex; align-items: center; justify-content: center; 
             cursor: pointer; background: #fff; transition: all 0.3s;
-            overflow: hidden; padding: 0px; /* 移除間距讓圖更大 */
+            overflow: hidden; padding: 2px; /* 留一點點內邊距讓圖更精緻 */
         }
-        .card-slot:hover { border-color: var(--m-blue); background: #fdfaf6; }
-        .card-slot img { width: 100%; height: 100%; object-fit: cover; } /* cover 能保證填滿，若不希望切到邊邊可用 contain */
+        .card-slot:hover { border-color: var(--soft-blue); background: var(--soft-bg); }
+        .card-slot img { width: 100%; height: 100%; object-fit: contain; } /* 適應長邊，不裁切 */
 
-        /* 左側功能鈕：圓潤可愛化 */
+        /* 左側按鈕：配色邏輯反轉 (預設白/淺米 -> 懸停變色) */
         .btn-action {
-            border: 3px solid var(--m-btn-border);
-            border-radius: 30px; /* 超圓弧 */
-            background: var(--m-btn-bg);
-            color: #5d707f;
+            border: 3px solid #e2e8f0;
+            border-radius: 35px;
+            background: #ffffff; /* 預設白色 */
+            color: #888;
             transition: all 0.2s;
             font-weight: 900;
-            font-size: 20px; /* 大字體 */
+            font-size: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 0px #cbd5e1;
+            box-shadow: 0 4px 0px #f1f1f1;
         }
-        .btn-action:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 6px 0px #cbd5e1; }
-        .btn-action:active { transform: translateY(2px); box-shadow: none; }
+        /* 懸停變色：回退變藍 */
+        #undoButton:hover { background: var(--soft-blue); color: white; border-color: #9abed3; box-shadow: 0 4px 0px #86a9be; }
+        /* 懸停變色：重做變綠 */
+        #redoButton:hover { background: var(--soft-green); color: white; border-color: #b3c79b; box-shadow: 0 4px 0px #9caf82; }
+        /* 懸停變色：清除變粉 */
+        #clearAllButton:hover { background: var(--soft-pink); color: white; border-color: #e0b0b0; box-shadow: 0 4px 0px #c69393; }
 
-        .btn-danger {
-            background: #fff0f0;
-            border-color: var(--m-pink);
-            color: #c36a6a;
-            box-shadow: 0 4px 0px #e2b1b1;
-        }
-        .btn-danger:hover { background: #ffe4e4; box-shadow: 0 6px 0px #e2b1b1; }
+        .btn-action:active { transform: translateY(2px); box-shadow: none !important; }
 
-        /* 牌面庫按鈕優化 */
+        /* 牌面庫按鈕 */
         .card-btn {
-            aspect-ratio: 1/1; border-radius: 8px; background: white; border: 2px solid #f1f1f1;
+            aspect-ratio: 1/1; border-radius: 10px; background: white; border: 2px solid #f1f1f1;
             cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
-            overflow: hidden; padding: 1px; /* 極小間距 */
+            overflow: hidden; padding: 1px;
         }
         .card-btn img { width: 100%; height: 100%; object-fit: contain; }
-        .card-btn.active { border-color: #d4a373; border-width: 3px; transform: scale(0.95); }
+        .card-btn.active { border-color: #f6ad55; border-width: 3px; transform: scale(0.95); background: var(--soft-bg); }
 
-        /* 6x6 選單間距縮小 */
         .card-grid-container { 
             display: grid; grid-template-columns: repeat(6, 1fr); 
-            gap: 4px; padding: 8px; 
+            gap: 6px; padding: 8px; 
         }
 
-        /* 手機版與浮窗設定 */
+        /* 手機浮窗觸發按鈕：調整文字比例 */
+        #mobileTrigger {
+            position: fixed; bottom: 100px; right: 20px; width: 75px; height: 75px;
+            background: #f6ad55; color: white; border-radius: 50%; z-index: 45;
+            box-shadow: 0 8px 20px rgba(246, 173, 85, 0.4);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            font-weight: 900; border: 4px solid #fff;
+            line-height: 1;
+        }
+        #mobileTrigger .main-text { font-size: 28px; margin-top: 2px; }
+        #mobileTrigger .sub-text { font-size: 10px; opacity: 0.9; margin-top: -2px; }
+
         @media (max-width: 768px) {
             .layout-container { grid-template-columns: 1fr; }
             #rightPanel { display: none !important; }
@@ -92,17 +99,9 @@
             #leftPanel { 
                 position: fixed; bottom: 0; left: 0; width: 100%; height: 80px; 
                 flex-direction: row !important; padding: 12px; z-index: 50;
-                background: white; border-top: 3px solid #f1f1f1; border-radius: 25px 25px 0 0;
+                background: white; border-top: 3px solid #f1f1f1; border-radius: 30px 30px 0 0;
             }
-            #leftPanel button { font-size: 16px; border-radius: 20px; box-shadow: 0 3px 0px #cbd5e1; }
-        }
-
-        #mobileTrigger {
-            position: fixed; bottom: 100px; right: 20px; width: 68px; height: 68px;
-            background: #d4a373; color: white; border-radius: 50%; z-index: 45;
-            box-shadow: 0 8px 15px rgba(212, 163, 115, 0.4);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 24px; border: none;
+            #leftPanel button { font-size: 16px; border-radius: 20px; box-shadow: 0 3px 0px #eee; }
         }
     </style>
 </head>
@@ -110,43 +109,43 @@
 
     <div class="layout-container">
         <div id="leftPanel" class="bg-white border-r flex flex-col p-4 gap-4 shadow-sm z-10">
-            <button onclick="location.href='portal.html'" class="py-3 bg-slate-700 text-white rounded-[25px] font-black text-lg">🏠 返回</button>
+            <button onclick="location.href='portal.html'" class="py-3 bg-slate-500 text-white rounded-[25px] font-black text-lg hover:bg-slate-600 transition-colors">🏠 返回</button>
             <div class="h-[2px] bg-slate-100 hidden md:block"></div>
             <button id="undoButton" class="btn-action flex-[2]">↩️回退</button>
             <button id="redoButton" class="btn-action flex-[2]">↪️重做</button>
-            <button id="clearAllButton" class="btn-action btn-danger flex-1">🗑️全部清除</button>
+            <button id="clearAllButton" class="btn-action flex-1">🗑️清除</button>
         </div>
 
         <div id="mainScrollArea">
             <div class="max-w-xl mx-auto space-y-8">
                 <section>
-                    <p class="text-sm font-black text-slate-400 mb-2 px-2 tracking-widest">輪次1-2 (3 x 2)</p>
-                    <div id="grid3x2" class="grid grid-cols-3 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner" style="aspect-ratio: 3/2;"></div>
+                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest">輪次1-2 (3 x 2)</p>
+                    <div id="grid3x2" class="grid grid-cols-3 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 3/2;"></div>
                 </section>
                 <section>
-                    <p class="text-sm font-black text-slate-400 mb-2 px-2 tracking-widest">輪次3-5 (4 x 3)</p>
-                    <div id="grid4x3" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner" style="aspect-ratio: 4/3;"></div>
+                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest">輪次3-5 (4 x 3)</p>
+                    <div id="grid4x3" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 4/3;"></div>
                 </section>
                 <section>
-                    <p class="text-sm font-black text-slate-400 mb-2 px-2 tracking-widest">輪次6-8 (4 x 4)</p>
-                    <div id="grid4x4" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner" style="aspect-ratio: 1/1;"></div>
+                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest">輪次6-8 (4 x 4)</p>
+                    <div id="grid4x4" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 1/1;"></div>
                 </section>
                 <section>
-                    <p class="text-sm font-black text-slate-400 mb-2 px-2 tracking-widest">輪次9-10 (5 x 4)</p>
-                    <div id="grid5x4" class="grid grid-cols-5 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner" style="aspect-ratio: 5/4;"></div>
+                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest">輪次9-10 (5 x 4)</p>
+                    <div id="grid5x4" class="grid grid-cols-5 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 5/4;"></div>
                 </section>
             </div>
         </div>
 
         <div id="rightPanel" class="bg-white border-l p-4 flex flex-col overflow-hidden">
-            <h2 class="text-xl font-black text-slate-700 mb-4 px-2 italic"> 🎴花牌庫</h2>
+            <h2 class="text-xl font-black text-slate-700 mb-4 px-2 italic">🎴 花牌庫</h2>
             <div id="cardMenu" class="card-grid-container overflow-y-auto pr-1"></div>
-            <div id="activeName" class="mt-4 p-3 bg-orange-50 text-orange-700 font-black rounded-2xl text-center border-2 border-orange-100">請選取牌面</div>
+            <div id="activeName" class="mt-4 p-3 bg-slate-50 text-slate-400 font-black rounded-2xl text-center border-2 border-slate-100">請選取牌面</div>
         </div>
     </div>
 
     <div id="mobileDraggable" style="position:fixed; top:10%; right:20px; width:300px; background:white; border-radius:25px; box-shadow:0 20px 50px rgba(0,0,0,0.2); z-index:100; display:none; flex-direction:column; border:3px solid #f1f1f1;">
-        <div class="drag-handle" style="padding:15px; background:var(--m-blue); color:white; border-radius:22px 22px 0 0; cursor:move; font-weight:bold; display:flex; justify-content:space-between;">
+        <div class="drag-handle" style="padding:15px; background:var(--soft-blue); color:white; border-radius:22px 22px 0 0; cursor:move; font-weight:bold; display:flex; justify-content:space-between;">
             <span>翻牌選單</span>
             <button onclick="toggleMobileMenu()" class="font-bold">✕</button>
         </div>
@@ -154,7 +153,10 @@
         <div id="mobileActiveName" class="py-3 text-center text-sm font-black text-slate-400 bg-slate-50 rounded-b-[22px]">未選取</div>
     </div>
 
-    <button id="mobileTrigger" onclick="toggleMobileMenu()">牌<span>選單</span></button>
+    <button id="mobileTrigger" onclick="toggleMobileMenu()">
+        <span class="main-text">牌</span>
+        <span class="sub-text">選單</span>
+    </button>
 
     <div id="clearConfirmModal" class="fixed inset-0 bg-black/40 z-[1000] hidden items-center justify-center backdrop-blur-sm">
         <div class="bg-white p-8 rounded-[35px] w-[85%] max-w-[340px] text-center shadow-2xl">
@@ -166,7 +168,7 @@
             </div>
             <div class="flex gap-4">
                 <button onclick="closeClearModal(false)" class="flex-1 py-3 bg-slate-100 rounded-full font-black text-slate-500">取消</button>
-                <button onclick="closeClearModal(true)" class="flex-1 py-3 bg-pink-400 text-white rounded-full font-black shadow-lg">清空</button>
+                <button onclick="closeClearModal(true)" class="flex-1 py-3 bg-pink-300 text-white rounded-full font-black shadow-lg">清空</button>
             </div>
         </div>
     </div>
@@ -326,4 +328,3 @@
     </script>
 </body>
 </html>
-
