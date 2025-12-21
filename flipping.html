@@ -33,38 +33,53 @@
         }
         #mainScrollArea::-webkit-scrollbar { display: none; }
 
-        /* 宮格優化：適應長邊不裁切 */
+        /* 宮格優化 */
         .card-slot { 
             border: 2px dashed #e2e8f0; border-radius: 12px; aspect-ratio: 1/1; 
             display: flex; align-items: center; justify-content: center; 
             cursor: pointer; background: #fff; transition: all 0.3s;
-            overflow: hidden; padding: 2px; /* 留一點點內邊距讓圖更精緻 */
+            overflow: hidden; padding: 2px;
         }
         .card-slot:hover { border-color: var(--soft-blue); background: var(--soft-bg); }
-        .card-slot img { width: 100%; height: 100%; object-fit: contain; } /* 適應長邊，不裁切 */
+        .card-slot img { width: 100%; height: 100%; object-fit: contain; }
 
-        /* 左側按鈕：配色邏輯反轉 (預設白/淺米 -> 懸停變色) */
+        /* --- 左側按鈕：彩色高亮邏輯 --- */
         .btn-action {
-            border: 3px solid #e2e8f0;
+            border: 3px solid #fff; /* 白色邊框 */
             border-radius: 35px;
-            background: #ffffff; /* 預設白色 */
-            color: #888;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             font-weight: 900;
             font-size: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 0px #f1f1f1;
+            box-shadow: 0 4px 0px rgba(0,0,0,0.05);
+            cursor: pointer;
         }
-        /* 懸停變色：回退變藍 */
-        #undoButton:hover { background: var(--soft-blue); color: white; border-color: #9abed3; box-shadow: 0 4px 0px #86a9be; }
-        /* 懸停變色：重做變綠 */
-        #redoButton:hover { background: var(--soft-green); color: white; border-color: #b3c79b; box-shadow: 0 4px 0px #9caf82; }
-        /* 懸停變色：清除變粉 */
-        #clearAllButton:hover { background: var(--soft-pink); color: white; border-color: #e0b0b0; box-shadow: 0 4px 0px #c69393; }
 
-        .btn-action:active { transform: translateY(2px); box-shadow: none !important; }
+        /* 預設底色與文字色 (使用您原本設定的深色系文字，增加易讀性) */
+        #undoButton { background: var(--soft-blue); color: #5d7e93; }
+        #redoButton { background: var(--soft-green); color: #6e8354; }
+        #clearAllButton { background: var(--soft-pink); color: #9c6c6c; }
+
+        /* 懸停高亮效果：不變白，改為「增亮」+「同色光暈」 */
+        #undoButton:hover { 
+            filter: brightness(1.1); 
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(185, 216, 235, 0.7); 
+        }
+        #redoButton:hover { 
+            filter: brightness(1.1); 
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(207, 225, 185, 0.7); 
+        }
+        #clearAllButton:hover { 
+            filter: brightness(1.1); 
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(244, 204, 204, 0.7); 
+        }
+
+        .btn-action:active { transform: scale(0.95); box-shadow: none !important; }
 
         /* 牌面庫按鈕 */
         .card-btn {
@@ -80,17 +95,17 @@
             gap: 6px; padding: 8px; 
         }
 
-        /* 手機浮窗觸發按鈕：調整文字比例 */
+        /* 手機浮窗觸發按鈕 */
         #mobileTrigger {
-            position: fixed; bottom: 100px; right: 20px; width: 75px; height: 75px;
+            position: fixed; bottom: 100px; right: 20px; width: 80px; height: 80px;
             background: #f6ad55; color: white; border-radius: 50%; z-index: 45;
             box-shadow: 0 8px 20px rgba(246, 173, 85, 0.4);
             display: none; flex-direction: column; align-items: center; justify-content: center;
             font-weight: 900; border: 4px solid #fff;
-            line-height: 1;
+            line-height: 1.2;
         }
-        #mobileTrigger .main-text { font-size: 28px; margin-top: 2px; }
-        #mobileTrigger .sub-text { font-size: 10px; opacity: 0.9; margin-top: -2px; }
+        #mobileTrigger .main-text { font-size: 30px; letter-spacing: 2px; }
+        #mobileTrigger .sub-text { font-size: 11px; opacity: 0.95; margin-top: -2px; }
 
         @media (max-width: 768px) {
             .layout-container { grid-template-columns: 1fr; }
@@ -119,19 +134,19 @@
         <div id="mainScrollArea">
             <div class="max-w-xl mx-auto space-y-8">
                 <section>
-                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest">輪次1-2 (3 x 2)</p>
+                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest text-center">輪次1-2 (3 x 2)</p>
                     <div id="grid3x2" class="grid grid-cols-3 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 3/2;"></div>
                 </section>
                 <section>
-                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest">輪次3-5 (4 x 3)</p>
+                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest text-center">輪次3-5 (4 x 3)</p>
                     <div id="grid4x3" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 4/3;"></div>
                 </section>
                 <section>
-                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest">輪次6-8 (4 x 4)</p>
+                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest text-center">輪次6-8 (4 x 4)</p>
                     <div id="grid4x4" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 1/1;"></div>
                 </section>
                 <section>
-                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest">輪次9-10 (5 x 4)</p>
+                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest text-center">輪次9-10 (5 x 4)</p>
                     <div id="grid5x4" class="grid grid-cols-5 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 5/4;"></div>
                 </section>
             </div>
