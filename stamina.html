@@ -43,7 +43,6 @@
         @keyframes blinker { 50% { opacity: 0.3; } }
         .animate-guide { animation: blinker 2s linear infinite; }
         
-        /* 胖胖筆圖示樣式 */
         .fat-pencil-btn { 
             display: inline-flex;
             align-items: center;
@@ -133,13 +132,15 @@
     </div>
 
     <div id="manageModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-50 backdrop-blur-md">
-        <div class="bg-[#FBFBF9] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl relative flex flex-col max-h-[90vh] border border-[#D7D3CC]">
-            <button onclick="closeModal('manageModal')" class="absolute top-10 right-10 text-[#D7D3CC] text-3xl hover:text-[#6D6875]">✕</button>
+        <div class="bg-[#FBFBF9] w-full max-w-2xl rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl relative flex flex-col max-h-[90vh] border border-[#D7D3CC]">
+            <button onclick="closeModal('manageModal')" class="absolute top-6 right-6 md:top-10 md:right-10 text-[#D7D3CC] text-3xl hover:text-[#6D6875]">✕</button>
             <h3 class="text-2xl font-black mb-6 text-[#5E548E]">名單與群組管理</h3>
-            <div class="flex gap-3 mb-8 bg-white p-2 rounded-2xl border border-[#D7D3CC]">
-                <input id="newGroupName" type="text" placeholder="輸入新群組名稱..." class="flex-1 bg-transparent p-4 outline-none font-bold">
-                <button onclick="addGroup()" class="bg-[#8E9AAF] text-white px-8 rounded-xl font-black hover:bg-[#7D7684]">建立群組</button>
+            
+            <div class="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl border border-[#D7D3CC]">
+                <input id="newGroupName" type="text" placeholder="輸入新群組名稱..." class="flex-1 min-w-[150px] bg-transparent p-4 outline-none font-bold">
+                <button onclick="addGroup()" class="bg-[#8E9AAF] text-white px-6 md:px-8 py-3 rounded-xl font-black hover:bg-[#7D7684] transition-all active:scale-95 whitespace-nowrap">建立群組</button>
             </div>
+            
             <div id="groupListArea" class="overflow-y-auto flex-1 space-y-6 pr-2"></div>
         </div>
     </div>
@@ -261,14 +262,14 @@
             }).join('');
         }
 
-        // --- 名單管理 UI (核心修改：鎖定未分類、加入 SVG 筆圖示) ---
+        // --- 名單管理 UI 修正版 ---
         function renderManageUI() {
             const area = document.getElementById('groupListArea');
             area.innerHTML = db.groups.map((g, gi) => {
                 const isDefault = g.id === 'default';
                 return `
-                <div class="bg-[#F4F2EE] p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
-                    <div class="flex justify-between items-center mb-4">
+                <div class="bg-[#F4F2EE] p-5 md:p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
                         <div class="flex items-center gap-3">
                             <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
                             ${!isDefault ? `
@@ -279,22 +280,24 @@
                             </button>` : ''}
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-2 py-1 rounded-lg font-black hover:bg-red-50 transition-colors">清空</button>
-                            ${!isDefault ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-2 py-1 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors">刪除</button>` : ''}
+                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-red-50 transition-colors whitespace-nowrap">清空</button>
+                            ${!isDefault ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors whitespace-nowrap">刪除</button>` : ''}
                         </div>
                     </div>
-                    <div class="flex gap-2 mb-4">
-                        <input type="text" placeholder="新增人物..." class="flex-1 p-3 rounded-xl text-sm font-bold border-none shadow-inner outline-none focus:ring-2 focus:ring-[#8E9AAF]">
-                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-5 rounded-xl text-xs font-black">新增</button>
+                    
+                    <div class="flex flex-wrap gap-2 mb-4 bg-white/50 p-1.5 rounded-xl border border-dashed border-[#D7D3CC]">
+                        <input type="text" placeholder="新增人物..." class="flex-1 min-w-[120px] p-3 rounded-lg text-sm font-bold border-none bg-white shadow-inner outline-none focus:ring-2 focus:ring-[#8E9AAF]">
+                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-5 py-2.5 rounded-lg text-xs font-black transition-all active:scale-95 whitespace-nowrap">新增</button>
                     </div>
+
                     <div class="grid grid-cols-2 gap-3 min-h-[50px] member-list" data-gid="${g.id}">
                         ${g.members.map((m, mi) => `
                             <div draggable="true" 
                                  ondragstart="handleDragStart(event, '${g.id}', ${mi})" 
                                  ondragend="handleDragEnd(event)"
                                  class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between items-center border border-[#D7D3CC] cursor-move shadow-sm hover:shadow-md transition-all">
-                                <span>${m.name}</span>
-                                <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-[#AF7A7D]">✕</button>
+                                <span class="truncate pr-2">${m.name}</span>
+                                <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-[#AF7A7D] flex-shrink-0">✕</button>
                             </div>`).join('')}
                     </div>
                 </div>`;
