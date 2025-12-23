@@ -287,4 +287,151 @@
                     
                     <div class="flex flex-wrap gap-2 mb-4 bg-white/50 p-1.5 rounded-xl border border-dashed border-[#D7D3CC]">
                         <input type="text" placeholder="新增人物..." class="flex-1 min-w-[120px] p-3 rounded-lg text-sm font-bold border-none bg-white shadow-inner outline-none focus:ring-2 focus:ring-[#8E9AAF]">
-                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-
+                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-5 py-2.5 rounded-lg text-xs font-black transition-all active:scale-95 whitespace-nowrap">新增</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 min-h-[50px] member-list" data-gid="${g.id}">
+                        ${g.members.map((m, mi) => `
+                            <div draggable="true" 
+                                 ondragstart="handleDragStart(event, '${g.id}', ${mi})" 
+                                 ondragend="handleDragEnd(event)"
+                                 class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between items-center border border-[#D7D3CC] cursor-move shadow-sm hover:shadow-md transition-all">
+                                <span class="truncate pr-2">${m.name}</span>
+                                <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-[#AF7A7D] flex-shrink-0">✕</button>
+                            </div>`).join('')}
+                    </div>
+                </div>`;
+            }).join('');
+            setupDragAndDrop();
+        }
+
+        let dragInfo = null;
+        function handleDragStart(e, gid, mi) {
+            dragInfo = { gid, mi };
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.drop-zone').forEach(z => z.style.border = "1px solid #D7D3CC");
+        }
+        function setupDragAndDrop() {
+            const zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(zone => {
+                zone.ondragover = e => { e.preventDefault(); zone.style.border = "2px dashed #FF9D6F"; };
+                zone.ondragleave = () => zone.style.border = "1px solid #D7D3CC";
+                zone.ondrop = e => {
+                    e.preventDefault();
+                    zone.style.border = "1px solid #D7D3CC";
+                    if (!dragInfo) return;
+                    const targetGid = zone.dataset.gid;
+                    const sGroup = db.groups.find(g => g.id === dragInfo.gid);
+                    const tGroup = db.groups.find(g => g.id === targetGid);
+                    const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
+                    const listContainer = zone.querySelector('.member-list');
+                    const siblings = [...listContainer.querySelectorAll('.member-item:not(.dragging)')];
+                    const nextSibling = siblings.find(sibling => {
+                        const box = sibling.getBoundingClientRect();
+                        return e.clientY < box.top + box.height / 2 || (e.clientY < box.bottom && e.clientX < box.left + box.width / 2);
+                    });
+                    if (nextSibling) {
+                        const nextIdx = tGroup.members.findIndex(m => m.name === nextSibling.querySelector('span').innerText);
+                        tGroup.members.splice(nextIdx, 0, movingItem);
+                    } else {
+                        tGroup.members.push(movingItem);
+                    }
+                    saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null;
+                };
+            });
+        }
+
+        function openBatchModal() {
+            const actIdx = document.getElementById('activitySelect').value;
+            const act = activities[actIdx];
+            document.getElementById('batchActName').innerText = `正在為「${act.name}」分配人物`;
+            document.getElementById('batchInputList').innerHTML = db.groups.map(g => `
+                <div class="bg-[#F4F2EE] p-5 rounded-[2rem] border border-[#D7D3CC]">
+                    <div class="flex justify-between items-center mb-4 border-b border-[#D7D3CC] pb-2">
+                        <span class="font-black text-[#6D6875]">${g.name}</span>
+                        <div class="flex gap-2">
+                            <button onclick="toggleGroupBatch('${g.id}', true)" class="text-[10px] font-black text-indigo-500 hover:underline">全選此組</button>
+                            <button onclick="toggleGroupBatch('${g.id}', false)" class="text-[10px] font-black text-[#AF7A7D] hover:underline">取消</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-2" data-batch-gid="${g.id}">
+                        ${g.members.map(m => `
+                            <div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
+                                <input type="checkbox" class="char-cb w-6 h-6 accent-[#FF9D6F]" data-name="${m.name}" data-id="${m.id}">
+                                <span class="flex-1 font-black text-[#6D6875]">${m.name}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-black text-[#A5A5A5]">起始體力</span>
+                                    <input type="number" class="stamina-input w-20 p-2 bg-[#F4F2EE] rounded-lg text-center font-black outline-none border-none focus:ring-2 focus:ring-[#8E9AAF]" value="0">
+                                </div>
+                            </div>`).join('')}
+                    </div>
+                </div>`).join('');
+            document.getElementById('batchModal').classList.replace('hidden', 'flex');
+        }
+
+        function toggleAllBatch(checked) { document.querySelectorAll('.char-cb').forEach(cb => cb.checked = checked); }
+        function toggleGroupBatch(gid, checked) { document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => cb.checked = checked); }
+
+        function submitBatch() {
+            const actIdx = document.getElementById('activitySelect').value;
+            const cbs = document.querySelectorAll('.char-cb:checked');
+            if (cbs.length === 0) return alert('請選擇至少一位人物');
+            cbs.forEach(cb => {
+                const row = cb.closest('.flex');
+                const val = parseInt(row.querySelector('.stamina-input').value) || 0;
+                const charId = cb.dataset.id;
+                const data = { charId: charId, charName: cb.dataset.name, actIdx: actIdx, initStamina: val, startTime: Date.now() };
+                const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
+                if(idx > -1) monitors[idx] = data; else monitors.push(data);
+            });
+            saveActive(); closeModal('batchModal'); renderMonitoring();
+        }
+
+        function quickUpdateStamina(charId, actIdx, maxStamina) {
+            openCustomPrompt("快速刷新體力", `輸入 ${getCharName(charId)} 的目前體力 (上限：${maxStamina})`, "0", false, (val) => {
+                const num = parseInt(val);
+                if (isNaN(num) || num < 0) return;
+                const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
+                if(idx > -1) {
+                    monitors[idx].initStamina = Math.min(num, maxStamina);
+                    monitors[idx].startTime = Date.now();
+                    saveActive(); renderMonitoring();
+                }
+            });
+        }
+        function getCharName(id) { for(let g of db.groups) { const m = g.members.find(m=>m.id===id); if(m) return m.name; } return "未知"; }
+        function editGroupName(gid) {
+            const group = db.groups.find(g => g.id === gid);
+            openCustomPrompt("編輯群組名稱", "請輸入新名稱：", group.name, false, (n) => {
+                if(n && n.trim() !== ""){ group.name = n.trim(); saveDB(); renderManageUI(); renderMonitoring(); }
+            });
+        }
+        function openCustomPrompt(t, s, d, c, f) {
+            document.getElementById('promptTitle').innerText = t;
+            document.getElementById('promptSub').innerText = s;
+            const inp = document.getElementById('promptInput');
+            inp.style.display = c ? 'none' : 'block';
+            inp.value = d || "";
+            document.getElementById('customPromptModal').classList.replace('hidden', 'flex');
+            document.getElementById('promptConfirmBtn').onclick = () => { f(inp.value); closeModal('customPromptModal'); };
+        }
+        function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
+        function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
+        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
+        function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
+        function addGroup() { const n = document.getElementById('newGroupName').value; if(n){ db.groups.push({id:'g'+Date.now(), name:n, members:[]}); document.getElementById('newGroupName').value=""; saveDB(); renderManageUI(); }}
+        function addMemberInLine(btn, gid) { const inp = btn.previousElementSibling; if(inp.value){ db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); }}
+        function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
+        function getGroupNameByCharId(id) { for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } return "未分類"; }
+        function changeSort(dir) { sortMode = (sortMode + dir + 4) % 4; document.getElementById('sortModeText').innerText = sortTexts[sortMode]; renderMonitoring(); }
+        function askClearAll() { openCustomPrompt("確定清空？", "這將移除主介面上所有正在監控的體力項目。", "", true, () => { monitors = []; saveActive(); renderMonitoring(); }); }
+        function askClearGroup(gid) { openCustomPrompt("清空成員？", "將移除此群組內的所有人物。", "", true, () => { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); }); }
+        function askRemoveGroup(gi) { openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", true, () => { db.groups.splice(gi,1); saveDB(); renderManageUI(); }); }
+        function removeMonitor(charId, actIdx) { monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); saveActive(); renderMonitoring(); }
+    </script>
+</body>
+</html>
