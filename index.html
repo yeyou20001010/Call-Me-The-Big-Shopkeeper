@@ -65,8 +65,8 @@
             if(!uid || !pwd) return showMsg("提示", "請輸入 ID 與密碼", false);
 
             // --- SuperAdmin 硬編碼校驗邏輯 ---
-            if (uid === "yeyou20001010") { // 您的 SuperAdmin ID
-                if (pwd !== "onlyforyeyou") { // <--- 填入您原本寫死的密碼
+            if (uid === "dapus") { // 您的 SuperAdmin ID
+                if (pwd !== "spspadad") { // <--- 填入您原本寫死的密碼
                     return showMsg("登入失敗", "核心帳號驗證失敗，請檢查密碼。", false);
                 }
             }
@@ -103,6 +103,7 @@
     </script>
 </body>
 </html>
+
 
 
 
