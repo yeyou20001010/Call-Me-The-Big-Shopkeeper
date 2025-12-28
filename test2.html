@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>大掌櫃工具箱 - 翻牌工具</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -12,7 +13,8 @@
             --soft-green: #cfe1b9;
             --soft-pink: #f4cccc;
             --m-bg: #fdfcfb;
-            --m-font: "Yuanti SC", "YouYuan", "Microsoft JhengHei", "Rounded Mplus 1c", sans-serif;
+            /* 優先使用圓潤字體 */
+            --m-font: "Rounded Mplus 1c", "Hiragino Sans GB", "Microsoft JhengHei", "Noto Sans JP", sans-serif;
         }
 
         body, html { 
@@ -78,17 +80,26 @@
         .card-btn img { width: 100%; height: 100%; object-fit: contain; }
         .card-btn.active { border-color: #f6ad55; border-width: 3px; transform: scale(0.95); background: var(--soft-bg); }
 
-        /* 手機版浮窗按鈕字體大小調整 */
+        /* 手機浮窗按鈕：整合舊版字型大小與圓體設定 */
         #mobileTrigger {
             position: fixed; bottom: 100px; right: 20px; width: 80px; height: 80px;
             background: #cd94b0; color: white; border-radius: 50%; z-index: 45;
             box-shadow: 0 8px 20px rgba(205, 148, 176, 0.4);
             display: none; flex-direction: column; align-items: center; justify-content: center;
             font-weight: 900; border: 4px solid #fff;
-            line-height: 1.2;
+            line-height: 1;
         }
-        #mobileTrigger .main-text { font-size: 26px; } /* 牌字變大 */
-        #mobileTrigger .sub-text { font-size: 11px; font-weight: 700; opacity: 0.9; } /* Menu變小 */
+        #mobileTrigger .main-text { 
+            font-size: 30px; 
+            letter-spacing: 2px; 
+            font-family: "Noto Sans JP", sans-serif; /* 確保圓潤感 */
+        }
+        #mobileTrigger .sub-text { 
+            font-size: 11px; 
+            opacity: 0.95; 
+            margin-top: -2px; 
+            font-family: var(--m-font);
+        }
 
         @media (max-width: 768px) {
             .layout-container { grid-template-columns: 1fr; }
@@ -172,7 +183,6 @@
     </div>
 
     <script>
-        // ... (中間 cardData 部分維持不變) ...
         const cardData = [
             { name: "紫玉", img: "https://i.postimg.cc/RhYxh9M7/zi-yu.jpg" },
             { name: "堇書", img: "https://i.postimg.cc/rsH2sc8t/jin-shu.jpg" },
@@ -216,6 +226,11 @@
         let historyIndex = -1;
 
         window.onload = () => {
+            // 【整合修正】偵測重新整理：如果是重新整理，清空 skipClearConfirm
+            if (performance.getEntriesByType("navigation")[0]?.type === 'reload') {
+                sessionStorage.removeItem('skipClearConfirm');
+            }
+
             renderMenus();
             initGrids();
             loadSavedState();
@@ -280,9 +295,8 @@
             }
         }
 
-        // --- 核心修改部分 ---
+        // --- 清除邏輯 ---
         document.getElementById('clearAllButton').onclick = () => {
-            // 檢查當前分頁的 sessionStorage
             const skipStored = sessionStorage.getItem('skipClearConfirm');
             if (skipStored === 'true') { 
                 performClear(); 
@@ -293,8 +307,6 @@
 
         function closeClearModal(confirm) {
             if (confirm) {
-                // 如果勾選了「不再詢問」，存入 sessionStorage
-                // sessionStorage 只要重新整理或關閉分頁就會消失
                 if (document.getElementById('skipConfirmCheck').checked) {
                     sessionStorage.setItem('skipClearConfirm', 'true');
                 }
@@ -302,7 +314,6 @@
             }
             document.getElementById('clearConfirmModal').style.display = 'none';
         }
-        // ------------------
 
         function performClear() {
             document.querySelectorAll('.card-slot').forEach(s => s.innerHTML = '');
