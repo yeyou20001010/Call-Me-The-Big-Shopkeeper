@@ -22,7 +22,6 @@
             color: #5a5a5a; 
         }
         
-        /* 調整 PC 版右側寬度以容納 7 欄 */
         .layout-container { display: grid; grid-template-columns: 140px 1fr 480px; height: 100vh; }
 
         #mainScrollArea {
@@ -42,7 +41,6 @@
         .card-slot:hover { border-color: var(--soft-blue); background: var(--soft-bg); }
         .card-slot img { width: 100%; height: 100%; object-fit: contain; }
 
-        /* 左側按鈕 */
         .btn-action {
             border: 3px solid #fff;
             border-radius: 35px;
@@ -55,6 +53,7 @@
             box-shadow: 0 4px 0px rgba(0,0,0,0.05);
             cursor: pointer;
         }
+
         #undoButton { background: var(--soft-blue); color: #5d7e93; }
         #redoButton { background: var(--soft-green); color: #6e8354; }
         #clearAllButton { background: var(--soft-pink); color: #9c6c6c; }
@@ -64,10 +63,9 @@
         #clearAllButton:hover { filter: brightness(1.1); transform: scale(1.05); box-shadow: 0 0 15px rgba(244, 204, 204, 0.7); }
         .btn-action:active { transform: scale(0.95); box-shadow: none !important; }
 
-        /* 牌面庫 7 欄配置 */
         .card-grid-container { 
             display: grid; 
-            grid-template-columns: repeat(7, 1fr); /* 7 欄 */
+            grid-template-columns: repeat(7, 1fr); 
             gap: 4px; 
             padding: 8px; 
         }
@@ -80,10 +78,9 @@
         .card-btn img { width: 100%; height: 100%; object-fit: contain; }
         .card-btn.active { border-color: #f6ad55; border-width: 3px; transform: scale(0.95); background: var(--soft-bg); }
 
-        /* 手機浮窗 */
         #mobileTrigger {
             position: fixed; bottom: 100px; right: 20px; width: 80px; height: 80px;
-            background: #d4af5f; color: white; border-radius: 50%; z-index: 45;
+            background: #fbbc72; color: white; border-radius: 50%; z-index: 45;
             box-shadow: 0 8px 20px rgba(246, 173, 85, 0.4);
             display: none; flex-direction: column; align-items: center; justify-content: center;
             font-weight: 900; border: 4px solid #fff;
@@ -212,12 +209,11 @@
         let currentSelected = null;
         let history = [];
         let historyIndex = -1;
-        let skipConfirm = false;
 
         window.onload = () => {
             renderMenus();
             initGrids();
-            loadSavedState(); // 載入本地記憶
+            loadSavedState();
             setupDraggable();
         };
 
@@ -259,23 +255,19 @@
             }
         }
 
-        // 核心功能：保存狀態到 localStorage
         function saveState() {
             const state = Array.from(document.querySelectorAll('.card-slot')).map(s => s.innerHTML);
             history = history.slice(0, historyIndex + 1);
             history.push(state);
             historyIndex++;
-            // 存入瀏覽器快取
             localStorage.setItem('flipGameData', JSON.stringify(state));
         }
 
-        // 核心功能：從 localStorage 載入狀態
         function loadSavedState() {
             const saved = localStorage.getItem('flipGameData');
             if (saved) {
                 const state = JSON.parse(saved);
                 applyState(state);
-                // 同步歷史紀錄防止回退失效
                 history = [state];
                 historyIndex = 0;
             } else {
@@ -283,14 +275,21 @@
             }
         }
 
+        // 修改後的清除邏輯：使用 sessionStorage 記住「不再詢問」
         document.getElementById('clearAllButton').onclick = () => {
-            if (skipConfirm) { performClear(); return; }
+            const skipStored = sessionStorage.getItem('skipClearConfirm');
+            if (skipStored === 'true') { 
+                performClear(); 
+                return; 
+            }
             document.getElementById('clearConfirmModal').style.display = 'flex';
         };
 
         function closeClearModal(confirm) {
             if (confirm) {
-                if (document.getElementById('skipConfirmCheck').checked) skipConfirm = true;
+                if (document.getElementById('skipConfirmCheck').checked) {
+                    sessionStorage.setItem('skipClearConfirm', 'true');
+                }
                 performClear();
             }
             document.getElementById('clearConfirmModal').style.display = 'none';
@@ -298,7 +297,7 @@
 
         function performClear() {
             document.querySelectorAll('.card-slot').forEach(s => s.innerHTML = '');
-            localStorage.removeItem('flipGameData'); // 同時清除本地快取
+            localStorage.removeItem('flipGameData');
             saveState();
         }
 
@@ -310,7 +309,6 @@
             state.forEach((html, i) => {
                 if(slots[i]) slots[i].innerHTML = html;
             });
-            // 切換狀態時同步更新快取
             localStorage.setItem('flipGameData', JSON.stringify(state));
         }
 
