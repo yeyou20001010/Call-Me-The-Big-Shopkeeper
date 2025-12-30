@@ -57,6 +57,28 @@
         </div>
     </div>
 
+    <div id="userModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl rounded-[3rem] p-8 shadow-2xl flex flex-col max-h-[80vh] relative border border-slate-100">
+            <button onclick="closeModal('userModal')" class="absolute top-8 right-8 text-slate-300 hover:text-slate-600 text-2xl font-bold">✕</button>
+            <h3 class="text-2xl font-black mb-6 text-slate-800">權限管理</h3>
+            <div class="overflow-y-auto flex-1 pr-2">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-[10px] font-bold text-slate-400 border-b uppercase">
+                            <th class="pb-4">名稱</th>
+                            <th class="pb-4">驗證 ID</th>
+                            <th class="pb-4">角色</th>
+                            <th id="th-recovery" class="pb-4 hidden">救援碼</th>
+                            <th id="th-default" class="pb-4 hidden">預設密碼</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody" class="text-sm"></tbody>
+                </table>
+            </div>
+            <button onclick="closeModal('userModal')" class="mt-6 w-full py-4 bg-slate-100 rounded-2xl font-bold text-slate-400 hover:bg-slate-200 transition">關閉視窗</button>
+        </div>
+    </div>
+
     <div id="configModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
         <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-slate-100">
             <button onclick="closeModal('configModal')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600 text-2xl font-bold">✕</button>
@@ -82,21 +104,26 @@
         </div>
     </div>
 
-    <div id="userModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-2xl rounded-[3rem] p-8 shadow-2xl flex flex-col max-h-[80vh] relative border border-slate-100">
-            <button onclick="closeModal('userModal')" class="absolute top-8 right-8 text-slate-300 hover:text-slate-600 text-2xl font-bold">✕</button>
-            <h3 class="text-2xl font-black mb-6 text-slate-800">權限管理</h3>
-            <div class="overflow-y-auto flex-1 pr-2">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="text-[10px] font-bold text-slate-400 border-b uppercase">
-                            <th class="pb-4">名稱</th><th class="pb-4">驗證 ID</th><th class="pb-4">角色</th>
-                        </tr>
-                    </thead>
-                    <tbody id="userTableBody" class="text-sm"></tbody>
-                </table>
+    <div id="pwdModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-6 z-50 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center">
+            <h3 class="text-xl font-black mb-2 text-slate-800">更新密碼</h3>
+            <div class="space-y-4 my-6">
+                <input id="newPwd" type="password" placeholder="輸入新密碼" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500">
+                <input id="confirmPwd" type="password" placeholder="確認新密碼" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500">
             </div>
-            <button onclick="closeModal('userModal')" class="mt-6 w-full py-4 bg-slate-100 rounded-2xl font-bold text-slate-400 hover:bg-slate-200 transition">關閉視窗</button>
+            <div class="flex gap-3">
+                <button onclick="closeModal('pwdModal')" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">取消</button>
+                <button onclick="submitNewPwd()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-md">確認修改</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="msgModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-6 z-[100] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center border border-slate-100">
+            <div id="msgIcon" class="text-4xl mb-4">✅</div>
+            <h3 id="msgTitle" class="text-xl font-black mb-2 text-slate-800">提示</h3>
+            <p id="msgText" class="text-slate-500 font-bold mb-6"></p>
+            <button onclick="closeModal('msgModal')" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black">我知道了</button>
         </div>
     </div>
 
@@ -126,39 +153,6 @@
         </div>
     </div>
 
-    <div id="pwdModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-6 z-50 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center">
-            <h3 class="text-xl font-black mb-2 text-slate-800">更新密碼</h3>
-            <div class="space-y-4 my-6">
-                <input id="newPwd" type="password" placeholder="輸入新密碼" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500">
-                <input id="confirmPwd" type="password" placeholder="確認新密碼" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500">
-            </div>
-            <div class="flex gap-3">
-                <button onclick="closeModal('pwdModal')" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">取消</button>
-                <button onclick="submitNewPwd()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-md">確認修改</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="msgModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-6 z-[100] backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center border border-slate-100">
-            <div id="msgIcon" class="text-4xl mb-4">✅</div>
-            <h3 id="msgTitle" class="text-xl font-black mb-2 text-slate-800">提示</h3>
-            <p id="msgText" class="text-slate-500 font-bold mb-6"></p>
-            <button onclick="closeModal('msgModal')" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black">我知道了</button>
-        </div>
-    </div>
-
-    <div id="recoveryModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-6 z-[60] backdrop-blur-md">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl text-center border-4 border-indigo-500">
-            <div class="text-5xl mb-6">🛡️</div>
-            <h3 class="text-2xl font-black mb-2 text-slate-800">安全救援碼</h3>
-            <p class="text-slate-400 font-bold mb-6 text-sm">這是唯一一次顯示您的救援碼，請截圖保存！</p>
-            <div id="recoveryDisplay" class="bg-slate-100 p-6 rounded-2xl text-3xl font-black text-indigo-600 tracking-widest mb-8 border-2 border-dashed border-indigo-200"></div>
-            <button onclick="confirmRecovery()" class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg">我已保存，進入系統</button>
-        </div>
-    </div>
-
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec"; 
         let cachedData = null;
@@ -180,31 +174,48 @@
             const lv = parseInt(data.user.level);
             const role = data.user.role;
 
-            // 權限分流邏輯
-            if(lv === 99) { // SuperAdmin (dapus)
+            // 權限分流顯示面板
+            if(lv === 99) {
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('configBtn').classList.remove('hidden');
                 document.getElementById('userManageBtn').classList.remove('hidden');
                 document.getElementById('testHubBtn').classList.remove('hidden'); 
-                document.getElementById('changePwdBtn').classList.add('hidden'); // 超級管理員不透過此修改密碼
-            } else if(lv >= 10) { // Admin
+                document.getElementById('changePwdBtn').classList.add('hidden'); // SuperAdmin 透過後台改
+            } else if(lv >= 10) {
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('userManageBtn').classList.remove('hidden');
                 document.getElementById('changePwdBtn').classList.remove('hidden');
-            } else { // User 或 Test
-                // 如果是 Test 角色，隱藏修改密碼按鈕
-                if(role === "Test") {
-                    document.getElementById('changePwdBtn').classList.add('hidden');
-                } else {
-                    document.getElementById('changePwdBtn').classList.remove('hidden');
-                }
-            }
-
-            if(String(data.isNewRecovery) === "true") {
-                document.getElementById('recoveryDisplay').innerText = data.recoveryCode;
-                openModal('recoveryModal');
+            } else {
+                if(role !== "Test") document.getElementById('changePwdBtn').classList.remove('hidden');
             }
         };
+
+        // 核心：權限表格動態渲染
+        function openUserModal() {
+            const tbody = document.getElementById('userTableBody');
+            const userLv = parseInt(cachedData.user.level);
+
+            // 動態表頭控制
+            if(userLv >= 10) document.getElementById('th-recovery').classList.remove('hidden');
+            if(userLv === 99) document.getElementById('th-default').classList.remove('hidden');
+
+            if(cachedData.allUsers) {
+                tbody.innerHTML = cachedData.allUsers.map(u => {
+                    let row = `
+                        <td class="py-4 font-bold text-slate-700">${u.name}</td>
+                        <td class="py-4 text-slate-400 font-mono text-xs">${u.id}</td>
+                        <td class="py-4 text-xs font-bold ${u.role==='Admin'||u.role==='SuperAdmin'?'text-indigo-500':'text-slate-400'}">${u.role}</td>
+                    `;
+                    if (userLv >= 10) row += `<td class="py-4 text-xs font-mono text-amber-600">${u.recovery || '未生成'}</td>`;
+                    if (userLv === 99) row += `<td class="py-4 text-xs text-slate-300 italic">${u.defaultPwd || '-'}</td>`;
+                    
+                    return `<tr class="border-b border-slate-50 hover:bg-slate-50">${row}</tr>`;
+                }).join('');
+            } else {
+                tbody.innerHTML = "<tr><td colspan='5' class='py-10 text-center text-slate-400'>無用戶數據</td></tr>";
+            }
+            openModal('userModal');
+        }
 
         async function saveConfig() {
             const btn = document.getElementById('saveBtn');
@@ -216,36 +227,19 @@
                 const response = await fetch(`${SCRIPT_URL}?action=saveConfig&announce=${announce}&theme=${theme}`);
                 const result = await response.json();
                 if(result.success) {
-                    showMsg("成功", "系統配置已同步至 Sheet。");
+                    showMsg("成功", "系統配置已同步。");
                     setTimeout(() => location.reload(), 1500);
                 } else { throw new Error(); }
             } catch(e) {
-                showMsg("錯誤", "儲存失敗，請檢查網路或腳本權限。", false);
-                btn.innerText = "儲存並同步";
-                btn.disabled = false;
+                showMsg("錯誤", "儲存失敗", false);
+                btn.innerText = "儲存並同步"; btn.disabled = false;
             }
-        }
-
-        function openUserModal() {
-            const tbody = document.getElementById('userTableBody');
-            if(cachedData.allUsers) {
-                tbody.innerHTML = cachedData.allUsers.map(u => `
-                    <tr class="border-b border-slate-50 hover:bg-slate-50">
-                        <td class="py-4 font-bold text-slate-700">${u.name}</td>
-                        <td class="py-4 text-slate-400 font-mono text-xs">${u.id}</td>
-                        <td class="py-4 text-xs font-bold ${u.role==='Admin'||u.role==='SuperAdmin'?'text-indigo-500':'text-slate-400'}">${u.role}</td>
-                    </tr>`).join('');
-            } else {
-                tbody.innerHTML = "<tr><td colspan='3' class='py-10 text-center text-slate-400'>無用戶數據</td></tr>";
-            }
-            openModal('userModal');
         }
 
         async function submitNewPwd() {
-            // 前端安全鎖：防止 SuperAdmin 或 Test 誤觸
-            if (parseInt(cachedData.user.level) === 99 || cachedData.user.role === "Test") {
-                showMsg("拒絕", "此帳號類型不允許在此修改密碼。", false);
-                return;
+            const lv = parseInt(cachedData.user.level);
+            if (lv === 99 || cachedData.user.role === "Test") {
+                return showMsg("提示", "此帳號不允許在此修改密碼。", false);
             }
             const newPwd = document.getElementById('newPwd').value;
             const confirmPwd = document.getElementById('confirmPwd').value;
@@ -258,22 +252,10 @@
             } catch(e) { showMsg("錯誤", "連線失敗", false); }
         }
 
-        function confirmRecovery() {
-            cachedData.isNewRecovery = false;
-            sessionStorage.setItem('gameData', JSON.stringify(cachedData));
-            closeModal('recoveryModal');
-        }
-
-        function openConfigModal() {
-            document.getElementById('announceInput').value = cachedData.config.AnnounceText || "";
-            document.getElementById('themeInput').value = cachedData.config.CurrentTheme || "default";
-            openModal('configModal');
-        }
-
         function applyTheme(theme) {
             const body = document.getElementById('mainBody');
             if(theme === 'christmas') body.className = "bg-red-50 min-h-screen p-4 md:p-12 transition-all";
-            else if(theme === 'dark') body.className = "bg-slate-900 min-h-screen p-4 md:p-12 transition-all";
+            else if(theme === 'dark') body.className = "bg-slate-900 min-h-screen p-4 md:p-12 transition-all text-white";
             else body.className = "bg-slate-50 min-h-screen p-4 md:p-12 transition-all";
         }
 
