@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <title>大掌櫃工具箱 - 登入</title>
+    <style>
+        .pwd-container { position: relative; width: 100%; }
+        .eye-icon {
+            position: absolute; right: 1rem; top: 50%;
+            transform: translateY(-50%); cursor: pointer; color: #94a3b8;
+            z-index: 10;
+        }
+    </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-6">
     <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 border border-slate-200 text-center">
@@ -16,7 +24,12 @@
 
         <div class="space-y-4">
             <input id="userId" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:border-indigo-500">
-            <input id="password" type="password" placeholder="密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:border-indigo-500">
+            
+            <div class="pwd-container">
+                <input id="password" type="password" placeholder="密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:border-indigo-500">
+                <span class="eye-icon" onclick="togglePwd('password')">👁️</span>
+            </div>
+
             <button id="loginBtn" onclick="login()" class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-indigo-700 transition-all">登入系統</button>
             <button onclick="openModal('resetModal')" class="text-slate-400 text-sm font-bold hover:text-indigo-500">忘記密碼？使用救援碼</button>
         </div>
@@ -41,7 +54,7 @@
             </div>
             <div class="flex gap-3">
                 <button onclick="closeModal('resetModal')" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">取消</button>
-                <button onclick="submitReset()" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black shadow-md hover:bg-amber-600 transition-all">確認重置</button>
+                <button id="resetSubmitBtn" onclick="submitReset()" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black shadow-md hover:bg-amber-600 transition-all">確認重置</button>
             </div>
         </div>
     </div>
@@ -59,6 +72,11 @@
             openModal('msgModal');
         }
 
+        function togglePwd(id) {
+            const el = document.getElementById(id);
+            el.type = el.type === 'password' ? 'text' : 'password';
+        }
+
         async function login() {
             const uid = document.getElementById('userId').value.trim();
             const pwd = document.getElementById('password').value.trim();
@@ -74,7 +92,8 @@
             btn.disabled = true;
 
             try {
-                const res = await fetch(`${SCRIPT_URL}?userId=${uid}&password=${pwd}`);
+                // 將 pwd 轉為字串確保傳輸格式正確
+                const res = await fetch(`${SCRIPT_URL}?userId=${uid}&password=${String(pwd)}`);
                 const data = await res.json();
                 
                 if(data.success) {
@@ -97,12 +116,27 @@
             const code = document.getElementById('res_code').value.trim();
             if(!uid || !code) return showMsg("提示", "欄位不可為空", false);
 
+            // 【關鍵擋下】防止 Test 身分使用救援碼
+            // 這裡假設您的 Test 帳號 ID 叫做 "test"，請視情況修改判斷條件
+            if(uid.toLowerCase() === "test") {
+                return showMsg("禁止操作", "此帳號身分受限，無法使用重置功能。", false);
+            }
+
+            const btn = document.getElementById('resetSubmitBtn');
+            btn.innerText = "處理中...";
+            btn.disabled = true;
+
             try {
                 const res = await fetch(`${SCRIPT_URL}?action=reset&userId=${uid}&recovery=${code}`);
                 const data = await res.json();
                 showMsg("重置結果", data.msg, data.success);
                 if(data.success) closeModal('resetModal');
-            } catch(e) { showMsg("錯誤", "連線失敗", false); }
+            } catch(e) { 
+                showMsg("錯誤", "連線失敗", false); 
+            } finally {
+                btn.innerText = "確認重置";
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
