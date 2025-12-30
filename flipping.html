@@ -4,16 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>大掌櫃工具箱 - 翻牌工具</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 可愛柔和風格定義 */
         :root {
-            --soft-bg: #fdfaf6;      /* 淺米色預設 */
-            --soft-blue: #b9d8eb;    /* 柔藍 */
-            --soft-green: #cfe1b9;   /* 嫩綠 */
-            --soft-pink: #f4cccc;    /* 粉桃 */
+            --soft-bg: #fdfaf6;
+            --soft-blue: #b9d8eb;
+            --soft-green: #cfe1b9;
+            --soft-pink: #f4cccc;
             --m-bg: #fdfcfb;
-            --m-font: "Yuanti SC", "YouYuan", "Microsoft JhengHei", "Rounded Mplus 1c", sans-serif;
+            /* 套用圓潤字體 */
+            --m-font: "Noto Sans JP", "Microsoft JhengHei", sans-serif;
         }
 
         body, html { 
@@ -23,7 +24,7 @@
             color: #5a5a5a; 
         }
         
-        .layout-container { display: grid; grid-template-columns: 140px 1fr 400px; height: 100vh; }
+        .layout-container { display: grid; grid-template-columns: 140px 1fr 480px; height: 100vh; }
 
         #mainScrollArea {
             overflow-y: auto;
@@ -33,19 +34,16 @@
         }
         #mainScrollArea::-webkit-scrollbar { display: none; }
 
-        /* 宮格優化 */
         .card-slot { 
             border: 2px dashed #e2e8f0; border-radius: 12px; aspect-ratio: 1/1; 
             display: flex; align-items: center; justify-content: center; 
             cursor: pointer; background: #fff; transition: all 0.3s;
             overflow: hidden; padding: 2px;
         }
-        .card-slot:hover { border-color: var(--soft-blue); background: var(--soft-bg); }
         .card-slot img { width: 100%; height: 100%; object-fit: contain; }
 
-        /* --- 左側按鈕：彩色高亮邏輯 --- */
         .btn-action {
-            border: 3px solid #fff; /* 白色邊框 */
+            border: 3px solid #fff;
             border-radius: 35px;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             font-weight: 900;
@@ -57,55 +55,51 @@
             cursor: pointer;
         }
 
-        /* 預設底色與文字色 (使用您原本設定的深色系文字，增加易讀性) */
         #undoButton { background: var(--soft-blue); color: #5d7e93; }
         #redoButton { background: var(--soft-green); color: #6e8354; }
         #clearAllButton { background: var(--soft-pink); color: #9c6c6c; }
 
-        /* 懸停高亮效果：不變白，改為「增亮」+「同色光暈」 */
-        #undoButton:hover { 
-            filter: brightness(1.1); 
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(185, 216, 235, 0.7); 
-        }
-        #redoButton:hover { 
-            filter: brightness(1.1); 
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(207, 225, 185, 0.7); 
-        }
-        #clearAllButton:hover { 
-            filter: brightness(1.1); 
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(244, 204, 204, 0.7); 
+        .card-grid-container { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 4px; 
+            padding: 8px; 
         }
 
-        .btn-action:active { transform: scale(0.95); box-shadow: none !important; }
-
-        /* 牌面庫按鈕 */
         .card-btn {
-            aspect-ratio: 1/1; border-radius: 10px; background: white; border: 2px solid #f1f1f1;
+            aspect-ratio: 1/1; border-radius: 8px; background: white; border: 2px solid #f1f1f1;
             cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
-            overflow: hidden; padding: 1px;
+            overflow: hidden;
         }
         .card-btn img { width: 100%; height: 100%; object-fit: contain; }
-        .card-btn.active { border-color: #f6ad55; border-width: 3px; transform: scale(0.95); background: var(--soft-bg); }
+        .card-btn.active { border-color: #f6ad55; border-width: 3px; background: var(--soft-bg); }
 
-        .card-grid-container { 
-            display: grid; grid-template-columns: repeat(6, 1fr); 
-            gap: 6px; padding: 8px; 
-        }
-
-        /* 手機浮窗觸發按鈕 */
+        /* --- 手機版浮窗按鈕修正區 --- */
         #mobileTrigger {
             position: fixed; bottom: 100px; right: 20px; width: 80px; height: 80px;
-            background: #d4af5f; color: white; border-radius: 50%; z-index: 45;
-            box-shadow: 0 8px 20px rgba(246, 173, 85, 0.4);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            font-weight: 900; border: 4px solid #fff;
-            line-height: 1.2;
+            background: #cd94b0; color: white; border-radius: 50%; z-index: 45;
+            box-shadow: 0 8px 20px rgba(205, 148, 176, 0.4);
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            border: 4px solid #fff;
+            /* 移除原本的 line-height 避免擠壓，改用 flex 佈局控制 */
         }
-        #mobileTrigger .main-text { font-size: 30px; letter-spacing: 2px; }
-        #mobileTrigger .sub-text { font-size: 11px; opacity: 0.95; margin-top: -2px; }
+        #mobileTrigger .main-text { 
+            font-size: 30px; 
+            letter-spacing: 2px; 
+            font-weight: 900;
+            display: block;
+            margin-bottom: -2px; /* 透過負值微調消除字體內建的底部留白 */
+        }
+        #mobileTrigger .sub-text { 
+            font-size: 11px; 
+            opacity: 0.95; 
+            font-weight: 700;
+            display: block;
+            margin-top: 0px; /* 如果還是覺得太擠，可以把這裡改成 2px */
+        }
 
         @media (max-width: 768px) {
             .layout-container { grid-template-columns: 1fr; }
@@ -116,7 +110,7 @@
                 flex-direction: row !important; padding: 12px; z-index: 50;
                 background: white; border-top: 3px solid #f1f1f1; border-radius: 30px 30px 0 0;
             }
-            #leftPanel button { font-size: 16px; border-radius: 20px; box-shadow: 0 3px 0px #eee; }
+            #leftPanel button { font-size: 16px; border-radius: 20px; }
         }
     </style>
 </head>
@@ -133,38 +127,26 @@
 
         <div id="mainScrollArea">
             <div class="max-w-xl mx-auto space-y-8">
-                <section>
-                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest text-center">輪次1-2 (3 x 2)</p>
-                    <div id="grid3x2" class="grid grid-cols-3 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 3/2;"></div>
-                </section>
-                <section>
-                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest text-center">輪次3-5 (4 x 3)</p>
-                    <div id="grid4x3" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 4/3;"></div>
-                </section>
-                <section>
-                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest text-center">輪次6-8 (4 x 4)</p>
-                    <div id="grid4x4" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 1/1;"></div>
-                </section>
-                <section>
-                    <p class="text-sm font-black text-slate-300 mb-2 px-2 tracking-widest text-center">輪次9-10 (5 x 4)</p>
-                    <div id="grid5x4" class="grid grid-cols-5 gap-1 bg-white/60 p-1 rounded-2xl shadow-inner border border-slate-100" style="aspect-ratio: 5/4;"></div>
-                </section>
+                <section><div id="grid3x2" class="grid grid-cols-3 gap-1 bg-white/60 p-1 rounded-2xl" style="aspect-ratio: 3/2;"></div></section>
+                <section><div id="grid4x3" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl" style="aspect-ratio: 4/3;"></div></section>
+                <section><div id="grid4x4" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl" style="aspect-ratio: 1/1;"></div></section>
+                <section><div id="grid5x4" class="grid grid-cols-5 gap-1 bg-white/60 p-1 rounded-2xl" style="aspect-ratio: 5/4;"></div></section>
             </div>
         </div>
 
         <div id="rightPanel" class="bg-white border-l p-4 flex flex-col overflow-hidden">
             <h2 class="text-xl font-black text-slate-700 mb-4 px-2 italic">🎴 花牌庫</h2>
-            <div id="cardMenu" class="card-grid-container overflow-y-auto pr-1"></div>
+            <div id="cardMenu" class="card-grid-container"></div>
             <div id="activeName" class="mt-4 p-3 bg-slate-50 text-slate-400 font-black rounded-2xl text-center border-2 border-slate-100">請選取牌面</div>
         </div>
     </div>
 
-    <div id="mobileDraggable" style="position:fixed; top:10%; right:20px; width:300px; background:white; border-radius:25px; box-shadow:0 20px 50px rgba(0,0,0,0.2); z-index:100; display:none; flex-direction:column; border:3px solid #f1f1f1;">
+    <div id="mobileDraggable" style="position:fixed; top:10%; right:20px; width:350px; background:white; border-radius:25px; box-shadow:0 20px 50px rgba(0,0,0,0.2); z-index:100; display:none; flex-direction:column; border:3px solid #f1f1f1;">
         <div class="drag-handle" style="padding:15px; background:var(--soft-blue); color:white; border-radius:22px 22px 0 0; cursor:move; font-weight:bold; display:flex; justify-content:space-between;">
             <span>翻牌選單</span>
             <button onclick="toggleMobileMenu()" class="font-bold">✕</button>
         </div>
-        <div id="mobileCardMenu" class="card-grid-container" style="max-height:400px; overflow-y:auto;"></div>
+        <div id="mobileCardMenu" class="card-grid-container" style="overflow:visible;"></div>
         <div id="mobileActiveName" class="py-3 text-center text-sm font-black text-slate-400 bg-slate-50 rounded-b-[22px]">未選取</div>
     </div>
 
@@ -189,6 +171,7 @@
     </div>
 
     <script>
+        // --- 此部分保持不變 ---
         const cardData = [
             { name: "紫玉", img: "https://i.postimg.cc/RhYxh9M7/zi-yu.jpg" },
             { name: "堇書", img: "https://i.postimg.cc/rsH2sc8t/jin-shu.jpg" },
@@ -230,12 +213,15 @@
         let currentSelected = null;
         let history = [];
         let historyIndex = -1;
-        let skipConfirm = false;
 
         window.onload = () => {
+            // 偵測重新整理逻辑
+            if (performance.getEntriesByType("navigation")[0]?.type === 'reload') {
+                sessionStorage.removeItem('skipClearConfirm');
+            }
             renderMenus();
             initGrids();
-            saveState();
+            loadSavedState();
             setupDraggable();
         };
 
@@ -277,14 +263,37 @@
             }
         }
 
+        function saveState() {
+            const state = Array.from(document.querySelectorAll('.card-slot')).map(s => s.innerHTML);
+            history = history.slice(0, historyIndex + 1);
+            history.push(state);
+            historyIndex++;
+            localStorage.setItem('flipGameData', JSON.stringify(state));
+        }
+
+        function loadSavedState() {
+            const saved = localStorage.getItem('flipGameData');
+            if (saved) {
+                const state = JSON.parse(saved);
+                applyState(state);
+                history = [state];
+                historyIndex = 0;
+            } else {
+                saveState();
+            }
+        }
+
         document.getElementById('clearAllButton').onclick = () => {
-            if (skipConfirm) { performClear(); return; }
+            const skipStored = sessionStorage.getItem('skipClearConfirm');
+            if (skipStored === 'true') { performClear(); return; }
             document.getElementById('clearConfirmModal').style.display = 'flex';
         };
 
         function closeClearModal(confirm) {
             if (confirm) {
-                if (document.getElementById('skipConfirmCheck').checked) skipConfirm = true;
+                if (document.getElementById('skipConfirmCheck').checked) {
+                    sessionStorage.setItem('skipClearConfirm', 'true');
+                }
                 performClear();
             }
             document.getElementById('clearConfirmModal').style.display = 'none';
@@ -292,20 +301,17 @@
 
         function performClear() {
             document.querySelectorAll('.card-slot').forEach(s => s.innerHTML = '');
+            localStorage.removeItem('flipGameData');
             saveState();
         }
 
-        function saveState() {
-            const state = Array.from(document.querySelectorAll('.card-slot')).map(s => s.innerHTML);
-            history = history.slice(0, historyIndex + 1);
-            history.push(state);
-            historyIndex++;
-        }
         document.getElementById('undoButton').onclick = () => { if (historyIndex > 0) applyState(history[--historyIndex]); };
         document.getElementById('redoButton').onclick = () => { if (historyIndex < history.length - 1) applyState(history[++historyIndex]); };
+        
         function applyState(state) {
             const slots = document.querySelectorAll('.card-slot');
-            state.forEach((html, i) => slots[i].innerHTML = html);
+            state.forEach((html, i) => { if(slots[i]) slots[i].innerHTML = html; });
+            localStorage.setItem('flipGameData', JSON.stringify(state));
         }
 
         function toggleMobileMenu() {
@@ -343,6 +349,3 @@
     </script>
 </body>
 </html>
-
-
-
