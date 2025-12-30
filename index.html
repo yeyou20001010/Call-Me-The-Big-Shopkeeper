@@ -6,16 +6,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <title>大掌櫃工具箱 - 登入</title>
     <style>
+        /* 密碼眼睛與容器樣式 */
         .pwd-container { position: relative; width: 100%; }
         .eye-icon {
             position: absolute; right: 1rem; top: 50%;
             transform: translateY(-50%); cursor: pointer; color: #94a3b8;
-            z-index: 10;
+            z-index: 10; font-size: 1.2rem;
         }
+        /* 彈窗背景毛玻璃 */
         .modal-backdrop { backdrop-filter: blur(8px); background-color: rgba(15, 23, 42, 0.8); }
+        
+        /* 過渡動畫 */
+        .transition-all { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex items-center justify-center p-6">
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-6 transition-all">
     <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 border border-slate-200 text-center">
         <div class="mb-8">
             <div class="inline-block p-4 bg-indigo-600 rounded-2xl shadow-lg mb-4 text-3xl text-white">Ծ‸Ծ</div>
@@ -26,18 +31,23 @@
         <div class="space-y-4 text-left">
             <div>
                 <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-2 uppercase tracking-widest">User ID</label>
-                <input id="userId" type="text" placeholder="輸入掌櫃 ID" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:border-indigo-500">
+                <input id="userId" type="text" placeholder="輸入掌櫃 ID" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500 transition-all">
             </div>
+            
             <div>
                 <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-2 uppercase tracking-widest">Password</label>
                 <div class="pwd-container">
-                    <input id="password" type="password" placeholder="輸入密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:border-indigo-500">
-                    <span class="eye-icon" onclick="togglePwd('password')">ಠಠ</span>
+                    <input id="password" type="password" placeholder="輸入密碼" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500 transition-all">
+                    <span class="eye-icon" onclick="togglePwd('password', this)">👁️</span>
                 </div>
             </div>
-            <button id="loginBtn" onclick="login()" class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-indigo-700 transition-all mt-2">登入系統</button>
+
+            <button id="loginBtn" onclick="login()" class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-indigo-700 hover:-translate-y-1 transition-all mt-2">
+                登入系統
+            </button>
+
             <div class="text-center">
-                <button onclick="openModal('resetModal')" class="text-slate-400 text-sm font-bold hover:text-indigo-500">忘記密碼？使用救援碼</button>
+                <button onclick="openModal('resetModal')" class="text-slate-400 text-sm font-bold hover:text-indigo-500 transition-colors">忘記密碼？使用救援碼</button>
             </div>
         </div>
     </div>
@@ -47,7 +57,7 @@
             <div id="msgIcon" class="text-4xl mb-4">✅</div>
             <h3 id="msgTitle" class="text-xl font-black mb-2 text-slate-800">提示</h3>
             <p id="msgText" class="text-slate-500 font-bold mb-6 text-sm"></p>
-            <button onclick="closeModal('msgModal')" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black">確定</button>
+            <button onclick="closeModal('msgModal')" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black hover:bg-slate-700 transition-all">確定</button>
         </div>
     </div>
 
@@ -56,12 +66,12 @@
             <h3 class="text-xl font-black mb-2 text-slate-800 text-center">重置密碼</h3>
             <p class="text-slate-400 text-xs mb-6 font-bold text-center italic">※ Test 身分帳號禁止使用此功能</p>
             <div class="space-y-4 mb-6">
-                <input id="res_uid" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-                <input id="res_code" type="text" placeholder="救援碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
+                <input id="res_uid" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-amber-500">
+                <input id="res_code" type="text" placeholder="救援碼" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-amber-500">
             </div>
             <div class="flex gap-3">
                 <button onclick="closeModal('resetModal')" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">取消</button>
-                <button id="resetSubmitBtn" onclick="submitReset()" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black shadow-md">確認重置</button>
+                <button id="resetSubmitBtn" onclick="submitReset()" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black shadow-md hover:bg-amber-600 transition-all">確認重置</button>
             </div>
         </div>
     </div>
@@ -69,11 +79,19 @@
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec"; 
 
+        // --- 介面控制 ---
         function openModal(id) { document.getElementById(id).classList.replace('hidden', 'flex'); }
         function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
-        function togglePwd(id) {
+        
+        function togglePwd(id, iconEl) {
             const el = document.getElementById(id);
-            el.type = el.type === 'password' ? 'text' : 'password';
+            if (el.type === 'password') {
+                el.type = 'text';
+                iconEl.innerText = '✖ᆺ✖'; //閉眼
+            } else {
+                el.type = 'password';
+                iconEl.innerText = 'ↀᆺↀ'; //開眼
+            }
         }
 
         function showMsg(title, text, isSuccess = true) {
@@ -83,29 +101,47 @@
             openModal('msgModal');
         }
 
+        // --- 登入邏輯 ---
         async function login() {
             const uid = document.getElementById('userId').value.trim();
             const pwd = document.getElementById('password').value.trim();
             if(!uid || !pwd) return showMsg("提示", "欄位不可為空", false);
 
-            if (uid === "dapus" && pwd !== "spspadad") return showMsg("失敗", "核心校驗失敗", false);
-
             const btn = document.getElementById('loginBtn');
             btn.innerText = "驗證中..."; btn.disabled = true;
 
             try {
-                const res = await fetch(`${SCRIPT_URL}?userId=${uid}&password=${String(pwd)}`);
+                // 發送請求進行驗證
+                const res = await fetch(`${SCRIPT_URL}?userId=${uid}&password=${encodeURIComponent(pwd)}`);
                 const data = await res.json();
+                
                 if(data.success) {
+                    // 【核心帳號特殊處理】
+                    // 如果是用 SUPER_ID 登入，前端強制鎖定為最高權限角色
+                    if(uid === "dapus") {
+                        if(pwd !== "spspadad") {
+                            showMsg("驗證錯誤", "核心校驗不一致", false);
+                            btn.innerText = "登入系統"; btn.disabled = false;
+                            return;
+                        }
+                        data.user.level = 99;
+                        data.user.role = "SuperAdmin";
+                    }
+
+                    // 儲存數據並導向主選單
                     sessionStorage.setItem('gameData', JSON.stringify(data));
                     location.href = "portal.html";
                 } else {
                     showMsg("登入失敗", data.msg, false);
                 }
-            } catch(e) { showMsg("錯誤", "連線異常", false); }
-            finally { btn.innerText = "登入系統"; btn.disabled = false; }
+            } catch(e) { 
+                showMsg("錯誤", "系統連線異常", false); 
+            } finally { 
+                btn.innerText = "登入系統"; btn.disabled = false; 
+            }
         }
 
+        // --- 救援邏輯 ---
         async function submitReset() {
             const uid = document.getElementById('res_uid').value.trim();
             const code = document.getElementById('res_code').value.trim();
@@ -117,11 +153,19 @@
             try {
                 const res = await fetch(`${SCRIPT_URL}?action=reset&userId=${uid}&recovery=${code}`);
                 const data = await res.json();
-                // 這裡後端會判定 role，若為 Test 則回傳 success: false 且 msg: "此身分不可重置"
-                showMsg(data.success ? "成功" : "重置失敗", data.msg, data.success);
-                if(data.success) closeModal('resetModal');
-            } catch(e) { showMsg("錯誤", "網路異常", false); }
-            finally { btn.innerText = "確認重置"; btn.disabled = false; }
+                
+                showMsg(data.success ? "重置成功" : "失敗", data.msg, data.success);
+                if(data.success) {
+                    closeModal('resetModal');
+                    // 重置成功後清空輸入框
+                    document.getElementById('res_uid').value = "";
+                    document.getElementById('res_code').value = "";
+                }
+            } catch(e) { 
+                showMsg("錯誤", "網路通訊異常", false); 
+            } finally { 
+                btn.innerText = "確認重置"; btn.disabled = false; 
+            }
         }
     </script>
 </body>
