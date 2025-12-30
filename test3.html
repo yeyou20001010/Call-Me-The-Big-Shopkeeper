@@ -2,436 +2,510 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>大掌櫃工具箱 - 翻牌工具</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;900&family=Varela+Round&display=swap" rel="stylesheet">
-    <title>體力監控中心</title>
     <style>
         :root {
-            --highlight-pink: #FF9D6F; 
-            --full-green: #02C874;     
-            --morandi-bg: #FBFBF9;
-            --tag-bg: #F0EFEB;
-        }
-        body { 
-            font-family: 'Varela Round', 'Noto Sans TC', sans-serif;
-            background-color: #EAE8E4; 
-            color: #6D6875;
-        }
-        .card-standard { background-color: var(--morandi-bg); border: 1px solid #D7D3CC; }
-        .card-full-highlight { 
-            background-color: var(--morandi-bg) !important; 
-            border: 4px solid var(--full-green) !important; 
-            box-shadow: 0 4px 15px rgba(2, 200, 116, 0.15); 
-        }
-        .text-status-pink { color: var(--highlight-pink); } 
-        .text-full-green { color: var(--full-green); }
-        .tag-label { 
-            background-color: var(--tag-bg); 
-            color: #5E548E; 
-            border: 1px solid #D7D3CC;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 10px;
-            font-weight: 900;
-        }
-        .progress-ring-circle {
-            transition: stroke-dashoffset 0.8s ease-out;
-            transform: rotate(-90deg);
-            transform-origin: 50% 50%;
-        }
-        @keyframes blinker { 50% { opacity: 0.3; } }
-        .animate-guide { animation: blinker 2s linear infinite; }
-        
-        .fat-pencil-btn { 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 26px;
-            height: 26px;
-            background: #EAE8E4;
-            border-radius: 8px;
-            transition: all 0.2s; 
-            cursor: pointer;
-            border: 1px solid #D7D3CC;
-            color: #6D6875;
-        }
-        .fat-pencil-btn:hover { 
-            transform: scale(1.1); 
-            background: #FFF;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            color: #FF9D6F;
+            --soft-bg: #fdfaf6;
+            --soft-blue: #b9d8eb;
+            --soft-green: #cfe1b9;
+            --soft-pink: #f4cccc;
+            --m-bg: #fdfcfb;
+            --m-font: "Noto Sans JP", "Microsoft JhengHei", sans-serif;
         }
 
-        .member-item.dragging {
-            opacity: 0.4;
-            border: 2px dashed #FF9D6F;
+        body, html { 
+            height: 100vh; overflow: hidden; 
+            font-family: var(--m-font); 
+            background: var(--m-bg); 
+            color: #5a5a5a; 
+        }
+        
+        .layout-container { display: grid; grid-template-columns: 140px 1fr 480px; height: 100vh; }
+
+        #mainScrollArea {
+            overflow-y: auto;
+            padding: 15px 15px 180px 15px;
+            height: 100%;
+            scrollbar-width: none;
+        }
+        #mainScrollArea::-webkit-scrollbar { display: none; }
+
+        .card-slot { 
+            border: 2px dashed #e2e8f0; border-radius: 12px; aspect-ratio: 1/1; 
+            display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; background: #fff; transition: all 0.3s;
+            overflow: hidden; padding: 2px;
+        }
+        .card-slot img { width: 100%; height: 100%; object-fit: contain; }
+
+        .btn-action {
+            border: 3px solid #fff;
+            border-radius: 35px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 900;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0px rgba(0,0,0,0.05);
+            cursor: pointer;
+        }
+
+        #undoButton { background: var(--soft-blue); color: #5d7e93; }
+        #redoButton { background: var(--soft-green); color: #6e8354; }
+        #clearAllButton { background: var(--soft-pink); color: #9c6c6c; }
+
+        .card-grid-container { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 4px; 
+            padding: 8px; 
+        }
+
+        .card-btn {
+            aspect-ratio: 1/1; border-radius: 8px; background: white; border: 2px solid #f1f1f1;
+            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .card-btn img { width: 100%; height: 100%; object-fit: contain; }
+        .card-btn.active { border-color: #f6ad55; border-width: 3px; background: var(--soft-bg); }
+
+        /* --- 手機版浮窗按鈕修正區 --- */
+        #mobileTrigger {
+            position: fixed; bottom: 100px; right: 20px; width: 80px; height: 80px;
+            background: #cd94b0; color: white; border-radius: 50%; z-index: 45;
+            box-shadow: 0 8px 20px rgba(205, 148, 176, 0.4);
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            border: 4px solid #fff;
+        }
+        #mobileTrigger .main-text { 
+            font-size: 30px; 
+            letter-spacing: 2px; 
+            font-weight: 900;
+            display: block;
+            margin-bottom: -2px;
+        }
+        #mobileTrigger .sub-text { 
+            font-size: 11px; 
+            opacity: 0.95; 
+            font-weight: 700;
+            display: block;
+        }
+
+        /* 統一彈窗樣式 */
+        .modal-base {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px); z-index: 1000;
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-content-base {
+            background: white; padding: 2rem; border-radius: 35px;
+            width: 85%; max-w-sm: 360px; text-center; shadow: 2xl;
+        }
+
+        @media (max-width: 768px) {
+            .layout-container { grid-template-columns: 1fr; }
+            #rightPanel { display: none !important; }
+            #mobileTrigger { display: flex !important; }
+            #leftPanel { 
+                position: fixed; bottom: 0; left: 0; width: 100%; height: 80px; 
+                flex-direction: row !important; padding: 12px; z-index: 50;
+                background: white; border-top: 3px solid #f1f1f1; border-radius: 30px 30px 0 0;
+            }
+            #leftPanel button { font-size: 14px; border-radius: 20px; padding: 4px; }
         }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-10">
-    <div class="max-w-6xl mx-auto">
-        <div class="flex flex-col lg:flex-row justify-between items-center mb-10 bg-[#FBFBF9] p-8 rounded-[2rem] shadow-sm border border-[#D7D3CC] gap-6">
-            <div class="flex items-center gap-5">
-                <div class="w-16 h-16 bg-[#6D6875] rounded-2xl flex items-center justify-center text-[#F4F2EE] text-3xl font-black shadow-inner">⚡</div>
+<body>
+
+    <div class="layout-container">
+        <div id="leftPanel" class="bg-white border-r flex flex-col p-4 gap-4 shadow-sm z-10">
+            <button onclick="location.href='portal.html'" class="py-3 bg-slate-500 text-white rounded-[25px] font-black text-lg hover:bg-slate-600 transition-colors">🏠 返回</button>
+            <div class="h-[2px] bg-slate-100 hidden md:block"></div>
+            <button id="staminaBtn" onclick="openStaminaModal()" class="py-3 bg-amber-400 text-white rounded-[25px] font-black text-lg shadow-sm">⚡體力</button>
+            <button id="undoButton" class="btn-action flex-[2]">↩️回退</button>
+            <button id="redoButton" class="btn-action flex-[2]">↪️重做</button>
+            <button id="clearAllButton" class="btn-action flex-1">🗑️清除</button>
+        </div>
+
+        <div id="mainScrollArea">
+            <div class="max-w-xl mx-auto mb-6 bg-white/80 p-4 rounded-[25px] border-2 border-slate-50 shadow-sm flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="text-2xl">⚡</div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Stamina Status</div>
+                        <div id="staminaDisplay" class="text-xl font-black text-slate-700">0 / 0</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div id="timerDisplay" class="text-sm font-black text-amber-500">MAX</div>
+                    <div id="fullTimeDisplay" class="text-[10px] text-slate-300 font-bold">已回滿</div>
+                </div>
+            </div>
+
+            <div class="max-w-xl mx-auto space-y-8">
+                <section><div id="grid3x2" class="grid grid-cols-3 gap-1 bg-white/60 p-1 rounded-2xl" style="aspect-ratio: 3/2;"></div></section>
+                <section><div id="grid4x3" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl" style="aspect-ratio: 4/3;"></div></section>
+                <section><div id="grid4x4" class="grid grid-cols-4 gap-1 bg-white/60 p-1 rounded-2xl" style="aspect-ratio: 1/1;"></div></section>
+                <section><div id="grid5x4" class="grid grid-cols-5 gap-1 bg-white/60 p-1 rounded-2xl" style="aspect-ratio: 5/4;"></div></section>
+            </div>
+        </div>
+
+        <div id="rightPanel" class="bg-white border-l p-4 flex flex-col overflow-hidden">
+            <h2 class="text-xl font-black text-slate-700 mb-4 px-2 italic">🎴 花牌庫</h2>
+            <div id="cardMenu" class="card-grid-container"></div>
+            <div id="activeName" class="mt-4 p-3 bg-slate-50 text-slate-400 font-black rounded-2xl text-center border-2 border-slate-100">請選取牌面</div>
+        </div>
+    </div>
+
+    <div id="staminaModal" class="modal-base">
+        <div class="bg-white p-8 rounded-[35px] w-[90%] max-w-[360px] shadow-2xl relative">
+            <button onclick="closeStaminaModal()" class="absolute top-6 right-6 text-slate-300 hover:text-slate-500 text-xl font-bold">✕</button>
+            <h3 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">⚡ 體力監控設定</h3>
+            
+            <div class="space-y-4">
                 <div>
-                    <h2 class="text-3xl font-black text-[#5E548E] tracking-tight">體力監控中心</h2>
-                    <p class="text-xs font-bold text-[#8E9AAF] tracking-widest uppercase opacity-70">Stamina Real-time Monitor</p>
-                </div>
-            </div>
-            
-            <div class="flex gap-3 flex-wrap justify-center items-center">
-                <div class="flex items-center bg-[#F0EFEB] rounded-2xl p-1 border border-[#D7D3CC]">
-                    <button onclick="changeSort(-1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❮</button>
-                    <div class="px-4 min-w-[150px] text-center">
-                        <p class="text-[10px] font-black text-[#A5A5A5] uppercase">排序方式</p>
-                        <span id="sortModeText" class="font-black text-sm text-[#6D6875]">按活動 (預設)</span>
+                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">目前體力 / 上限</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="inputStamina" class="flex-1 p-3 bg-slate-50 border-2 border-slate-100 rounded-xl font-black text-center outline-none focus:border-amber-400 transition-all">
+                        <span class="text-slate-300 py-3">/</span>
+                        <input type="number" id="inputMax" class="flex-1 p-3 bg-slate-50 border-2 border-slate-100 rounded-xl font-black text-center outline-none focus:border-amber-400 transition-all">
                     </div>
-                    <button onclick="changeSort(1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❯</button>
                 </div>
-                <button onclick="openManageModal()" class="bg-[#B8B0A5] text-white px-6 py-4 rounded-2xl font-black shadow-sm hover:bg-[#A69D92] transition-all active:scale-95">👥 名單管理</button>
-                <button onclick="askClearAll()" class="bg-[#AF7A7D] text-white px-6 py-4 rounded-2xl font-black shadow-sm hover:bg-[#9B6B6E] transition-all active:scale-95">🗑️ 全部清空</button>
-                <button onclick="window.location.replace('portal.html')" class="bg-[#6D6875] text-white px-6 py-4 rounded-2xl font-black shadow-sm hover:bg-[#5A5562] transition-all active:scale-95">返回選單</button>
-            </div>
-        </div>
 
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            <div class="xl:col-span-1">
-                <div class="bg-[#FBFBF9] p-8 rounded-[2.5rem] shadow-sm border border-[#D7D3CC] sticky top-10">
-                    <h3 class="text-lg font-black text-[#6D6875] mb-6 border-b border-[#F0EFEB] pb-4">📅 活動選擇</h3>
-                    <select id="activitySelect" class="w-full p-4 bg-white rounded-2xl font-black text-[#8E9AAF] border border-[#D7D3CC] mb-4 outline-none focus:ring-2 focus:ring-[#B8B0A5] transition-all cursor-pointer"></select>
-                    <div class="bg-[#F4F2EE] p-5 rounded-2xl space-y-2 text-sm font-bold">
-                        <div class="flex justify-between"><span class="text-[#A5A5A5]">恢復速率</span><span id="rateDetail" class="text-[#6D6875]">--</span></div>
-                        <div class="flex justify-between"><span class="text-[#A5A5A5]">體力上限</span><span id="maxDetail" class="text-[#6D6875]">--</span></div>
+                <div class="bg-slate-50 p-4 rounded-2xl space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase">回滿提醒方式</label>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold text-slate-600">瀏覽器推播通知</span>
+                        <input type="checkbox" id="notifyWeb" class="w-5 h-5 accent-amber-500">
                     </div>
-                    <button onclick="openBatchModal()" class="w-full mt-8 bg-[#8E9AAF] text-white py-5 rounded-[2rem] text-lg font-black shadow-md hover:bg-[#7D7684] transition-all active:scale-95">🚀 批量加入監測</button>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold text-slate-600">Line 通知</span>
+                        <input type="checkbox" id="notifyLine" class="w-5 h-5 accent-green-500">
+                    </div>
                 </div>
             </div>
 
-            <div class="xl:col-span-3">
-                <div id="monitorGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-                <div id="emptyDisplay" class="hidden text-center py-40 bg-[#FBFBF9] rounded-[3rem] border-4 border-dashed border-[#D7D3CC]">
-                    <div class="text-6xl mb-6 opacity-20">💤</div>
-                    <p class="text-[#D7D3CC] font-black text-2xl">目前無進行中的監測項目</p>
-                    <p class="text-[#D7D3CC] font-bold mt-2">請從左側選擇活動並加入人物</p>
-                </div>
+            <button onclick="saveStaminaSettings()" class="w-full mt-6 py-4 bg-amber-400 text-white rounded-2xl font-black shadow-lg shadow-amber-200 hover:scale-[1.02] active:scale-95 transition-all">儲存並啟動監控</button>
+        </div>
+    </div>
+
+    <div id="clearConfirmModal" class="modal-base">
+        <div class="bg-white p-8 rounded-[35px] w-[85%] max-w-[340px] text-center shadow-2xl">
+            <h3 class="text-xl font-black text-slate-800 mb-2">確定清除嗎？</h3>
+            <p class="text-sm text-slate-400 mb-6">紀錄清空後不可回退喔！</p>
+            <div class="flex items-center justify-center gap-2 mb-6 font-bold text-slate-500">
+                <input type="checkbox" id="skipConfirmCheck" class="w-5 h-5 accent-pink-500"> 
+                <label for="skipConfirmCheck">不再詢問</label>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="closeClearModal(false)" class="flex-1 py-3 bg-slate-100 rounded-full font-black text-slate-500">取消</button>
+                <button onclick="closeClearModal(true)" class="flex-1 py-3 bg-pink-300 text-white rounded-full font-black shadow-lg">清空</button>
             </div>
         </div>
     </div>
 
-    <div id="customPromptModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-[100] backdrop-blur-md">
-        <div class="bg-[#FBFBF9] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-[#D7D3CC]">
-            <h3 id="promptTitle" class="text-xl font-black mb-4 text-[#5E548E]">提示</h3>
-            <p id="promptSub" class="text-sm font-bold text-[#8E9AAF] mb-4"></p>
-            <input id="promptInput" type="text" class="w-full p-4 bg-white border border-[#D7D3CC] rounded-2xl font-bold mb-6 outline-none focus:ring-2 focus:ring-[#FF9D6F]">
-            <div class="flex gap-3">
-                <button onclick="closeModal('customPromptModal')" class="flex-1 py-4 bg-[#D7D3CC] text-white rounded-2xl font-black hover:bg-[#C2BEB6]">取消</button>
-                <button id="promptConfirmBtn" class="flex-1 py-4 bg-[#FF9D6F] text-white rounded-2xl font-black hover:bg-[#E88D5F]">確認</button>
-            </div>
+    <div id="mobileDraggable" style="position:fixed; top:10%; right:20px; width:350px; background:white; border-radius:25px; box-shadow:0 20px 50px rgba(0,0,0,0.2); z-index:100; display:none; flex-direction:column; border:3px solid #f1f1f1;">
+        <div class="drag-handle" style="padding:15px; background:var(--soft-blue); color:white; border-radius:22px 22px 0 0; cursor:move; font-weight:bold; display:flex; justify-content:space-between;">
+            <span>翻牌選單</span>
+            <button onclick="toggleMobileMenu()" class="font-bold">✕</button>
         </div>
+        <div id="mobileCardMenu" class="card-grid-container" style="overflow:visible;"></div>
+        <div id="mobileActiveName" class="py-3 text-center text-sm font-black text-slate-400 bg-slate-50 rounded-b-[22px]">未選取</div>
     </div>
 
-    <div id="manageModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-50 backdrop-blur-md">
-        <div class="bg-[#FBFBF9] w-full max-w-2xl rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl relative flex flex-col max-h-[90vh] border border-[#D7D3CC]">
-            <button onclick="closeModal('manageModal')" class="absolute top-6 right-6 md:top-10 md:right-10 text-[#D7D3CC] text-3xl hover:text-[#6D6875]">✕</button>
-            <h3 class="text-2xl font-black mb-6 text-[#5E548E]">名單與群組管理</h3>
-            
-            <div class="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl border border-[#D7D3CC]">
-                <input id="newGroupName" type="text" placeholder="輸入新群組名稱..." class="flex-1 min-w-[150px] bg-transparent p-4 outline-none font-bold">
-                <button onclick="addGroup()" class="bg-[#8E9AAF] text-white px-6 md:px-8 py-3 rounded-xl font-black hover:bg-[#7D7684] transition-all active:scale-95 whitespace-nowrap">建立群組</button>
-            </div>
-            
-            <div id="groupListArea" class="overflow-y-auto flex-1 space-y-6 pr-2"></div>
-        </div>
-    </div>
-
-    <div id="batchModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-50 backdrop-blur-md">
-        <div class="bg-[#FBFBF9] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl relative flex flex-col max-h-[90vh] border border-[#D7D3CC]">
-            <button onclick="closeModal('batchModal')" class="absolute top-10 right-10 text-[#D7D3CC] text-3xl">✕</button>
-            <h3 class="text-2xl font-black mb-2 text-[#5E548E]">批量加入監測</h3>
-            <p id="batchActName" class="text-sm font-bold text-[#8E9AAF] mb-4"></p>
-            <div class="flex justify-end gap-3 mb-4">
-                <button onclick="toggleAllBatch(true)" class="text-xs font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-lg">全選</button>
-                <button onclick="toggleAllBatch(false)" class="text-xs font-black text-[#AF7A7D] bg-red-50 px-3 py-1 rounded-lg">取消全選</button>
-            </div>
-            <div id="batchInputList" class="overflow-y-auto flex-1 space-y-6 mb-8 pr-2"></div>
-            <button onclick="submitBatch()" class="w-full bg-[#8E9AAF] text-white py-6 rounded-[2rem] text-xl font-black shadow-lg hover:bg-[#7D7684]">確認並開始監測</button>
-        </div>
-    </div>
+    <button id="mobileTrigger" onclick="toggleMobileMenu()">
+        <span class="main-text">牌</span>
+        <span class="sub-text">Menu</span>
+    </button>
 
     <script>
-        let activities = [];
-        let db = JSON.parse(localStorage.getItem('stamina_v15_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
-        let monitors = JSON.parse(localStorage.getItem('stamina_v15_active')) || [];
-        let sortMode = 0; 
-        const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec"; 
+        
+        const cardData = [
+            { name: "紫玉", img: "https://i.postimg.cc/RhYxh9M7/zi-yu.jpg" },
+            { name: "堇書", img: "https://i.postimg.cc/rsH2sc8t/jin-shu.jpg" },
+            { name: "捉鬼師", img: "https://i.postimg.cc/Y00wtjww/zhuo-gui-shi.jpg" },
+            { name: "小師妹", img: "https://i.postimg.cc/cJ7WmVm4/xiao-shi-mei.jpg" },
+            { name: "馬湘蘭", img: "https://i.postimg.cc/T1sv1GR1/ma-xiang-lan.jpg" },
+            { name: "牛郎", img: "https://i.postimg.cc/9MWhNJ8r/niu-lang.jpg" },
+            { name: "花郎", img: "https://i.postimg.cc/85tS8M9w/hua-lang.jpg" },
+            { name: "采詩官", img: "https://i.postimg.cc/3NNH3WQb/cai-shi-guan.jpg" },
+            { name: "董小宛", img: "https://i.postimg.cc/SQ1hDLWN/dong-xiao-wan.jpg" },
+            { name: "精衛", img: "https://i.postimg.cc/ZYsSVPrd/jing-wei.jpg" },
+            { name: "織女", img: "https://i.postimg.cc/SQ1hDLW9/zhi-nu.jpg" },
+            { name: "花藝師", img: "https://i.postimg.cc/fLBN4mp6/hua-yi-shi.jpg" },
+            { name: "李香君", img: "https://i.postimg.cc/hjSB3pyb/li-xiang-jun.jpg" },
+            { name: "小蝴蝶", img: "https://i.postimg.cc/mDbs68XB/xiao-hu-die.jpg" },
+            { name: "手工少女", img: "https://i.postimg.cc/HxpgPBZW/shou-gong-shao-nu.jpg" },
+            { name: "卞玉京", img: "https://i.postimg.cc/PxtjF23d/bian-yu-jing.jpg" },
+            { name: "王后婦好", img: "https://i.postimg.cc/B6q0wMYP/wang-hou-fu-hao.jpg" },
+            { name: "小鹿女", img: "https://i.postimg.cc/qRkTZjbr/xiao-lu-nu.jpg" },
+            { name: "嫦娥", img: "https://i.postimg.cc/y6pHvhFg/chang-e.jpg" },
+            { name: "新娘之妹", img: "https://i.postimg.cc/FFC4DbjN/xin-niang-zhi-mei.jpg" },
+            { name: "狐妖掌櫃", img: "https://i.postimg.cc/fLBN4mpt/hu-yao-zhang-gui.jpg" },
+            { name: "女魃", img: "https://i.postimg.cc/43vG5r5f/nu-ba.jpg" },
+            { name: "新娘", img: "https://i.postimg.cc/PJ7nJhty/xin-niang.jpg" },
+            { name: "靈夜貓女", img: "https://i.postimg.cc/NfywVy4M/ling-ye-mao-nu.jpg" },
+            { name: "塗山氏", img: "https://i.postimg.cc/mknWkRbS/tu-shan-shi.jpg" },
+            { name: "寇白門", img: "https://i.postimg.cc/6qPxqw9R/kou-bai-men.jpg" },
+            { name: "苗疆聖女", img: "https://i.postimg.cc/4yyTXnRD/miao-jiang-sheng-nu.jpg" },
+            { name: "馴鷹少女", img: "https://i.postimg.cc/WpYvXmMD/xun-ying-shao-nu.jpg" },
+            { name: "小木匠", img: "https://i.postimg.cc/LskSTrTH/xiao-mu-jiang.jpg" },
+            { name: "馴馬師", img: "https://i.postimg.cc/wx4p05h3/xun-ma-shi.jpg" },
+            { name: "驛使", img: "https://i.postimg.cc/7Ptkm1g0/yi-shi.jpg" },
+            { name: "捕快", img: "https://i.postimg.cc/L55MmhM9/bu-kuai.jpg" },
+            { name: "西湖船孃", img: "https://i.postimg.cc/4dJgFBLc/xi-hu-chuan-niang.jpg" },
+            { name: "荒野鈴蘭", img: "https://i.postimg.cc/MHLJHxWK/huang-ye-ling-lan.jpg" },
+            { name: "古國公主", img: "https://i.postimg.cc/vBQsS3qV/gu-guo-gong-zhu.jpg" }
+        ];
 
-        window.onload = function() {
-            const gameData = JSON.parse(sessionStorage.getItem('gameData'));
-            if(!gameData) return location.href = "index.html"; 
-            
-            activities = gameData.activities;
-            const select = document.getElementById('activitySelect');
-            activities.forEach((act, idx) => {
-                const opt = document.createElement('option'); 
-                opt.value = idx; 
-                opt.textContent = act.name;
-                select.appendChild(opt);
-            });
+        let currentSelected = null;
+        let history = [];
+        let historyIndex = -1;
 
-            select.onchange = () => {
-                const act = activities[select.value];
-                document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / 1 體`;
-                document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
-            };
-            
-            select.dispatchEvent(new Event('change'));
-            renderMonitoring();
-            setInterval(renderMonitoring, 1000);
+        // 體力相關變數
+        let staminaConfig = {
+            current: 0,
+            max: 0,
+            lastUpdate: 0,
+            notifyWeb: false,
+            notifyLine: false,
+            isNotified: false // 避免重複提醒標記
         };
 
-        function renderMonitoring() {
-            const grid = document.getElementById('monitorGrid');
-            if(monitors.length === 0) {
-                grid.innerHTML = "";
-                document.getElementById('emptyDisplay').classList.remove('hidden');
-                return;
+        window.onload = () => {
+            if (performance.getEntriesByType("navigation")[0]?.type === 'reload') {
+                sessionStorage.removeItem('skipClearConfirm');
             }
-            document.getElementById('emptyDisplay').classList.add('hidden');
-            const now = Date.now();
+            renderMenus();
+            initGrids();
+            loadSavedState();
+            loadStaminaData();
+            setupDraggable();
+            setInterval(updateStaminaRealtime, 1000);
+        };
+
+        // --- 體力功能區 ---
+        function loadStaminaData() {
+            const saved = localStorage.getItem('staminaData');
+            if (saved) {
+                staminaConfig = JSON.parse(saved);
+                document.getElementById('inputStamina').value = staminaConfig.current;
+                document.getElementById('inputMax').value = staminaConfig.max;
+                document.getElementById('notifyWeb').checked = staminaConfig.notifyWeb;
+                document.getElementById('notifyLine').checked = staminaConfig.notifyLine;
+            }
+        }
+
+        function openStaminaModal() { 
+            document.getElementById('staminaModal').style.display = 'flex'; 
+        }
+
+        function closeStaminaModal() { 
+            document.getElementById('staminaModal').style.display = 'none'; 
+        }
+
+        function saveStaminaSettings() {
+            const cur = parseInt(document.getElementById('inputStamina').value) || 0;
+            const max = parseInt(document.getElementById('inputMax').value) || 0;
             
-            let list = monitors.map((m) => {
-                const act = activities[m.actIdx];
-                const mins = (now - m.startTime) / 60000;
-                let current = Math.min(act.maxStamina, Math.max(0, m.initStamina + Math.floor(mins / act.minPerStamina)));
-                const isFull = current >= act.maxStamina;
-                let remSec = isFull ? 0 : ((act.maxStamina - current) * act.minPerStamina - (mins % act.minPerStamina)) * 60;
-                return { ...m, current, isFull, remSec, actMax: act.maxStamina, actName: act.name, groupName: getGroupNameByCharId(m.charId) };
-            });
+            staminaConfig.current = cur;
+            staminaConfig.max = max;
+            staminaConfig.lastUpdate = Date.now();
+            staminaConfig.notifyWeb = document.getElementById('notifyWeb').checked;
+            staminaConfig.notifyLine = document.getElementById('notifyLine').checked;
+            staminaConfig.isNotified = false; // 數值手動變動後，重置通知狀態
 
-            if(sortMode === 0) list.sort((a,b) => a.actName.localeCompare(b.actName));
-            else if(sortMode === 1) list.sort((a,b) => a.remSec - b.remSec);
-            else if(sortMode === 2) list.sort((a,b) => a.groupName.localeCompare(b.groupName));
-            else if(sortMode === 3) list.sort((a,b) => a.charName.localeCompare(b.charName));
+            if (staminaConfig.notifyWeb && Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
 
-            grid.innerHTML = list.map(m => {
-                const percent = (m.current / m.actMax) * 100;
-                const ringColor = m.isFull ? '#02C874' : '#FF9D6F';
-                const textColor = m.isFull ? 'text-full-green' : 'text-status-pink';
-                let countdownText = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
+            localStorage.setItem('staminaData', JSON.stringify(staminaConfig));
+            updateStaminaRealtime();
+            closeStaminaModal();
+        }
+
+        function updateStaminaRealtime() {
+            if (!staminaConfig.max) return;
+
+            const elapsedSec = Math.floor((Date.now() - staminaConfig.lastUpdate) / 1000);
+            const recovered = Math.floor(elapsedSec / 360); // 6分鐘1點
+            let currentStamina = staminaConfig.current + recovered;
+            
+            if (currentStamina >= staminaConfig.max) {
+                currentStamina = staminaConfig.max;
+                document.getElementById('timerDisplay').innerText = "MAX";
+                document.getElementById('fullTimeDisplay').innerText = "體力已回滿";
                 
-                let fullTimeLabel = "狀態：體力已充滿";
-                if(!m.isFull) {
-                    const d = new Date(now + m.remSec * 1000);
-                    const Y = d.getFullYear();
-                    const M = (d.getMonth()+1).toString().padStart(2,'0');
-                    const D = d.getDate().toString().padStart(2,'0');
-                    const hh = d.getHours().toString().padStart(2,'0');
-                    const mm = d.getMinutes().toString().padStart(2,'0');
-                    fullTimeLabel = `預計回滿：${Y}/${M}/${D} ${hh}:${mm}`;
+                // 執行通知
+                if (!staminaConfig.isNotified) {
+                    triggerStaminaNotification();
+                    staminaConfig.isNotified = true;
+                    localStorage.setItem('staminaData', JSON.stringify(staminaConfig));
                 }
+            } else {
+                const nextPointSec = 360 - (elapsedSec % 360);
+                const m = Math.floor(nextPointSec / 60);
+                const s = nextPointSec % 60;
+                document.getElementById('timerDisplay').innerText = `${m}m ${s}s`;
+                
+                const totalSecRemaining = (staminaConfig.max - currentStamina - 1) * 360 + nextPointSec;
+                const fullH = Math.floor(totalSecRemaining / 3600);
+                const fullM = Math.floor((totalSecRemaining % 3600) / 60);
+                document.getElementById('fullTimeDisplay').innerText = `預計 ${fullH}h ${fullM}m 後回滿`;
+            }
 
-                return `
-                <div class="${m.isFull?'card-full-highlight':'card-standard'} p-8 rounded-[2.5rem] flex flex-col relative transition-all duration-500 shadow-sm">
-                    <button onclick="removeMonitor('${m.charId}', ${m.actIdx})" class="absolute top-6 right-8 text-[#D7D3CC] hover:text-[#AF7A7D] text-2xl transition-colors">✕</button>
-                    <div class="flex gap-2 mb-3">
-                        <span class="tag-label">${m.actName}</span>
-                        <span class="tag-label">${m.groupName}</span>
-                    </div>
-                    <div class="flex items-start justify-between mb-6">
-                        <h4 class="text-2xl font-black text-[#6D6875]">${m.charName}</h4>
-                        <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-black text-[#A5A5A5] uppercase mb-1">目前體力</span>
-                            <div onclick="quickUpdateStamina('${m.charId}', ${m.actIdx}, ${m.actMax})" class="relative w-20 h-20 cursor-pointer active:scale-90 transition-transform">
-                                <svg class="w-20 h-20">
-                                    <circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/>
-                                    <circle style="stroke: ${ringColor}" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/>
-                                </svg>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center font-black">
-                                    <span class="text-xl text-[#6D6875] leading-none">${m.current}</span>
-                                    <span class="text-[7px] text-[#A5A5A5] mt-1 animate-guide">刷新體力</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white/40 p-5 rounded-[1.5rem] border border-[#D7D3CC]/30">
-                        <p class="text-3xl font-black ${textColor} tracking-tighter mb-1">${countdownText}</p>
-                        <p class="text-[11px] font-bold text-[#8E9AAF] uppercase tracking-wider">${fullTimeLabel}</p>
-                    </div>
-                </div>`;
-            }).join('');
+            document.getElementById('staminaDisplay').innerText = `${currentStamina} / ${staminaConfig.max}`;
         }
 
-        // --- 名單管理 UI 修正版 ---
-        function renderManageUI() {
-            const area = document.getElementById('groupListArea');
-            area.innerHTML = db.groups.map((g, gi) => {
-                const isDefault = g.id === 'default';
-                return `
-                <div class="bg-[#F4F2EE] p-5 md:p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
-                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
-                        <div class="flex items-center gap-3">
-                            <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
-                            ${!isDefault ? `
-                            <button onclick="editGroupName('${g.id}')" class="fat-pencil-btn">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1);">
-                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                </svg>
-                            </button>` : ''}
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-red-50 transition-colors whitespace-nowrap">清空</button>
-                            ${!isDefault ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors whitespace-nowrap">刪除</button>` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-wrap gap-2 mb-4 bg-white/50 p-1.5 rounded-xl border border-dashed border-[#D7D3CC]">
-                        <input type="text" placeholder="新增人物..." class="flex-1 min-w-[120px] p-3 rounded-lg text-sm font-bold border-none bg-white shadow-inner outline-none focus:ring-2 focus:ring-[#8E9AAF]">
-                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-5 py-2.5 rounded-lg text-xs font-black transition-all active:scale-95 whitespace-nowrap">新增</button>
-                    </div>
+        async function triggerStaminaNotification() {
+            // 瀏覽器推播
+            if (staminaConfig.notifyWeb && Notification.permission === "granted") {
+                new Notification("大掌櫃提醒：⚡ 體力已回滿！", {
+                    body: "快回遊戲處理雜務吧！",
+                    icon: "https://i.postimg.cc/RhYxh9M7/zi-yu.jpg"
+                });
+            }
 
-                    <div class="grid grid-cols-2 gap-3 min-h-[50px] member-list" data-gid="${g.id}">
-                        ${g.members.map((m, mi) => `
-                            <div draggable="true" 
-                                 ondragstart="handleDragStart(event, '${g.id}', ${mi})" 
-                                 ondragend="handleDragEnd(event)"
-                                 class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between items-center border border-[#D7D3CC] cursor-move shadow-sm hover:shadow-md transition-all">
-                                <span class="truncate pr-2">${m.name}</span>
-                                <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-[#AF7A7D] flex-shrink-0">✕</button>
-                            </div>`).join('')}
-                    </div>
-                </div>`;
-            }).join('');
-            setupDragAndDrop();
+            // Line 通知
+            if (staminaConfig.notifyLine) {
+                const user = JSON.parse(sessionStorage.getItem('gameData'))?.user;
+                if (!user) return;
+                try {
+                    await fetch(`${SCRIPT_URL}?action=sendNotify&userId=${user.userId}&msg=${encodeURIComponent("掌櫃！您的體力已回滿 (⚡ " + staminaConfig.max + ")，請記得上線處理！")}`);
+                } catch (e) { console.error("Line 通知發送失敗"); }
+            }
         }
 
-        let dragInfo = null;
-        function handleDragStart(e, gid, mi) {
-            dragInfo = { gid, mi };
-            e.target.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        }
-        function handleDragEnd(e) {
-            e.target.classList.remove('dragging');
-            document.querySelectorAll('.drop-zone').forEach(z => z.style.border = "1px solid #D7D3CC");
-        }
-        function setupDragAndDrop() {
-            const zones = document.querySelectorAll('.drop-zone');
-            zones.forEach(zone => {
-                zone.ondragover = e => { e.preventDefault(); zone.style.border = "2px dashed #FF9D6F"; };
-                zone.ondragleave = () => zone.style.border = "1px solid #D7D3CC";
-                zone.ondrop = e => {
-                    e.preventDefault();
-                    zone.style.border = "1px solid #D7D3CC";
-                    if (!dragInfo) return;
-                    const targetGid = zone.dataset.gid;
-                    const sGroup = db.groups.find(g => g.id === dragInfo.gid);
-                    const tGroup = db.groups.find(g => g.id === targetGid);
-                    const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
-                    const listContainer = zone.querySelector('.member-list');
-                    const siblings = [...listContainer.querySelectorAll('.member-item:not(.dragging)')];
-                    const nextSibling = siblings.find(sibling => {
-                        const box = sibling.getBoundingClientRect();
-                        return e.clientY < box.top + box.height / 2 || (e.clientY < box.bottom && e.clientX < box.left + box.width / 2);
-                    });
-                    if (nextSibling) {
-                        const nextIdx = tGroup.members.findIndex(m => m.name === nextSibling.querySelector('span').innerText);
-                        tGroup.members.splice(nextIdx, 0, movingItem);
-                    } else {
-                        tGroup.members.push(movingItem);
-                    }
-                    saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null;
+        // --- 原有功能區 (保持不變) ---
+        function renderMenus() {
+            const pcMenu = document.getElementById('cardMenu');
+            const mbMenu = document.getElementById('mobileCardMenu');
+            cardData.forEach(card => {
+                const btn = document.createElement('div');
+                btn.className = 'card-btn';
+                btn.innerHTML = `<img src="${card.img}">`;
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    currentSelected = card;
+                    document.getElementById('activeName').innerText = card.name;
+                    document.getElementById('mobileActiveName').innerText = card.name;
+                    document.querySelectorAll('.card-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
                 };
+                pcMenu.appendChild(btn);
+                const mBtn = btn.cloneNode(true);
+                mBtn.onclick = btn.onclick;
+                mbMenu.appendChild(mBtn);
             });
         }
 
-        function openBatchModal() {
-            const actIdx = document.getElementById('activitySelect').value;
-            const act = activities[actIdx];
-            document.getElementById('batchActName').innerText = `正在為「${act.name}」分配人物`;
-            document.getElementById('batchInputList').innerHTML = db.groups.map(g => `
-                <div class="bg-[#F4F2EE] p-5 rounded-[2rem] border border-[#D7D3CC]">
-                    <div class="flex justify-between items-center mb-4 border-b border-[#D7D3CC] pb-2">
-                        <span class="font-black text-[#6D6875]">${g.name}</span>
-                        <div class="flex gap-2">
-                            <button onclick="toggleGroupBatch('${g.id}', true)" class="text-[10px] font-black text-indigo-500 hover:underline">全選此組</button>
-                            <button onclick="toggleGroupBatch('${g.id}', false)" class="text-[10px] font-black text-[#AF7A7D] hover:underline">取消</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 gap-2" data-batch-gid="${g.id}">
-                        ${g.members.map(m => `
-                            <div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
-                                <input type="checkbox" class="char-cb w-6 h-6 accent-[#FF9D6F]" data-name="${m.name}" data-id="${m.id}">
-                                <span class="flex-1 font-black text-[#6D6875]">${m.name}</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[10px] font-black text-[#A5A5A5]">起始體力</span>
-                                    <input type="number" class="stamina-input w-20 p-2 bg-[#F4F2EE] rounded-lg text-center font-black outline-none border-none focus:ring-2 focus:ring-[#8E9AAF]" value="0">
-                                </div>
-                            </div>`).join('')}
-                    </div>
-                </div>`).join('');
-            document.getElementById('batchModal').classList.replace('hidden', 'flex');
-        }
-
-        function toggleAllBatch(checked) { document.querySelectorAll('.char-cb').forEach(cb => cb.checked = checked); }
-        function toggleGroupBatch(gid, checked) { document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => cb.checked = checked); }
-
-        function submitBatch() {
-            const actIdx = document.getElementById('activitySelect').value;
-            const cbs = document.querySelectorAll('.char-cb:checked');
-            if (cbs.length === 0) return alert('請選擇至少一位人物');
-            cbs.forEach(cb => {
-                const row = cb.closest('.flex');
-                const val = parseInt(row.querySelector('.stamina-input').value) || 0;
-                const charId = cb.dataset.id;
-                const data = { charId: charId, charName: cb.dataset.name, actIdx: actIdx, initStamina: val, startTime: Date.now() };
-                const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
-                if(idx > -1) monitors[idx] = data; else monitors.push(data);
-            });
-            saveActive(); closeModal('batchModal'); renderMonitoring();
-        }
-
-        function quickUpdateStamina(charId, actIdx, maxStamina) {
-            openCustomPrompt("快速刷新體力", `輸入 ${getCharName(charId)} 的目前體力 (上限：${maxStamina})`, "0", false, (val) => {
-                const num = parseInt(val);
-                if (isNaN(num) || num < 0) return;
-                const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
-                if(idx > -1) {
-                    monitors[idx].initStamina = Math.min(num, maxStamina);
-                    monitors[idx].startTime = Date.now();
-                    saveActive(); renderMonitoring();
+        function initGrids() {
+            const configs = { 'grid3x2':6, 'grid4x3':12, 'grid4x4':16, 'grid5x4':20 };
+            for (let id in configs) {
+                const container = document.getElementById(id);
+                for (let i = 0; i < configs[id]; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'card-slot';
+                    slot.onclick = () => {
+                        slot.innerHTML = currentSelected ? `<img src="${currentSelected.img}">` : '';
+                        saveState();
+                    };
+                    container.appendChild(slot);
                 }
-            });
+            }
         }
-        function getCharName(id) { for(let g of db.groups) { const m = g.members.find(m=>m.id===id); if(m) return m.name; } return "未知"; }
-        function editGroupName(gid) {
-            const group = db.groups.find(g => g.id === gid);
-            openCustomPrompt("編輯群組名稱", "請輸入新名稱：", group.name, false, (n) => {
-                if(n && n.trim() !== ""){ group.name = n.trim(); saveDB(); renderManageUI(); renderMonitoring(); }
-            });
+
+        function saveState() {
+            const state = Array.from(document.querySelectorAll('.card-slot')).map(s => s.innerHTML);
+            history = history.slice(0, historyIndex + 1);
+            history.push(state);
+            historyIndex++;
+            localStorage.setItem('flipGameData', JSON.stringify(state));
         }
-        function openCustomPrompt(t, s, d, c, f) {
-            document.getElementById('promptTitle').innerText = t;
-            document.getElementById('promptSub').innerText = s;
-            const inp = document.getElementById('promptInput');
-            inp.style.display = c ? 'none' : 'block';
-            inp.value = d || "";
-            document.getElementById('customPromptModal').classList.replace('hidden', 'flex');
-            document.getElementById('promptConfirmBtn').onclick = () => { f(inp.value); closeModal('customPromptModal'); };
+
+        function loadSavedState() {
+            const saved = localStorage.getItem('flipGameData');
+            if (saved) {
+                const state = JSON.parse(saved);
+                applyState(state);
+                history = [state];
+                historyIndex = 0;
+            } else {
+                saveState();
+            }
         }
-        function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
-        function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
-        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
-        function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
-        function addGroup() { const n = document.getElementById('newGroupName').value; if(n){ db.groups.push({id:'g'+Date.now(), name:n, members:[]}); document.getElementById('newGroupName').value=""; saveDB(); renderManageUI(); }}
-        function addMemberInLine(btn, gid) { const inp = btn.previousElementSibling; if(inp.value){ db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); }}
-        function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
-        function getGroupNameByCharId(id) { for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } return "未分類"; }
-        function changeSort(dir) { sortMode = (sortMode + dir + 4) % 4; document.getElementById('sortModeText').innerText = sortTexts[sortMode]; renderMonitoring(); }
-        function askClearAll() { openCustomPrompt("確定清空？", "這將移除主介面上所有正在監控的體力項目。", "", true, () => { monitors = []; saveActive(); renderMonitoring(); }); }
-        function askClearGroup(gid) { openCustomPrompt("清空成員？", "將移除此群組內的所有人物。", "", true, () => { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); }); }
-        function askRemoveGroup(gi) { openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", true, () => { db.groups.splice(gi,1); saveDB(); renderManageUI(); }); }
-        function removeMonitor(charId, actIdx) { monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); saveActive(); renderMonitoring(); }
+
+        document.getElementById('clearAllButton').onclick = () => {
+            const skipStored = sessionStorage.getItem('skipClearConfirm');
+            if (skipStored === 'true') { performClear(); return; }
+            document.getElementById('clearConfirmModal').style.display = 'flex';
+        };
+
+        function closeClearModal(confirm) {
+            if (confirm) {
+                if (document.getElementById('skipConfirmCheck').checked) {
+                    sessionStorage.setItem('skipClearConfirm', 'true');
+                }
+                performClear();
+            }
+            document.getElementById('clearConfirmModal').style.display = 'none';
+        }
+
+        function performClear() {
+            document.querySelectorAll('.card-slot').forEach(s => s.innerHTML = '');
+            localStorage.removeItem('flipGameData');
+            saveState();
+        }
+
+        document.getElementById('undoButton').onclick = () => { if (historyIndex > 0) applyState(history[--historyIndex]); };
+        document.getElementById('redoButton').onclick = () => { if (historyIndex < history.length - 1) applyState(history[++historyIndex]); };
+        
+        function applyState(state) {
+            const slots = document.querySelectorAll('.card-slot');
+            state.forEach((html, i) => { if(slots[i]) slots[i].innerHTML = html; });
+            localStorage.setItem('flipGameData', JSON.stringify(state));
+        }
+
+        function toggleMobileMenu() {
+            const m = document.getElementById('mobileDraggable');
+            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function setupDraggable() {
+            const el = document.getElementById('mobileDraggable');
+            const handle = el.querySelector('.drag-handle');
+            let posX = 0, posY = 0, startX = 0, startY = 0;
+            const dragStart = (e) => {
+                const event = e.type === 'touchstart' ? e.touches[0] : e;
+                startX = event.clientX; startY = event.clientY;
+                document.addEventListener('touchmove', dragMove, {passive: false});
+                document.addEventListener('mousemove', dragMove);
+                document.addEventListener('touchend', dragEnd);
+                document.addEventListener('mouseup', dragEnd);
+            };
+            const dragMove = (e) => {
+                const event = e.type === 'touchmove' ? e.touches[0] : e;
+                posX = startX - event.clientX; posY = startY - event.clientY;
+                startX = event.clientX; startY = event.clientY;
+                el.style.top = (el.offsetTop - posY) + "px";
+                el.style.left = (el.offsetLeft - posX) + "px";
+                el.style.transform = "none";
+            };
+            const dragEnd = () => {
+                document.removeEventListener('touchmove', dragMove);
+                document.removeEventListener('mousemove', dragMove);
+            };
+            handle.addEventListener('touchstart', dragStart);
+            handle.addEventListener('mousedown', dragStart);
+        }
     </script>
 </body>
 </html>
