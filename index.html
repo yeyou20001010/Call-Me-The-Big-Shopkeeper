@@ -38,7 +38,7 @@
                 <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-2 uppercase tracking-widest">Password</label>
                 <div class="pwd-container">
                     <input id="password" type="password" placeholder="輸入密碼" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500 transition-all">
-                    <span class="eye-icon" onclick="togglePwd('password', this)">˃ᆺ˂</span>
+                    <span class="eye-icon" onclick="togglePwd('password', this)">ʕ￫ᴥ￩ʔ</span>
                 </div>
             </div>
 
@@ -87,10 +87,10 @@
             const el = document.getElementById(id);
             if (el.type === 'password') {
                 el.type = 'text';
-                iconEl.innerText = 'Ծ‸Ծ'; //目前為開眼
+                iconEl.innerText = 'ʕ•ᴥ•ʔ'; //目前為開眼
             } else {
                 el.type = 'password';
-                iconEl.innerText = '˃‸˂'; //目前為閉眼
+                iconEl.innerText = 'ʕ￫ᴥ￩ʔ'; //目前為閉眼
             }
         }
 
@@ -170,5 +170,6 @@
     </script>
 </body>
 </html>
+
 
 
