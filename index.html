@@ -69,7 +69,6 @@
             loginBtn.disabled = true;
 
             try {
-                // 發送請求，讓 Code.gs 處理所有驗證（含 SuperAdmin）
                 const res = await fetch(`${SCRIPT_URL}?userId=${uid}&password=${pwd}`);
                 const data = await res.json();
                 
@@ -97,15 +96,12 @@
                 const res = await fetch(`${SCRIPT_URL}?action=reset&userId=${uid}&recovery=${code}`);
                 const data = await res.json();
                 showMsg(data.success ? "成功" : "失敗", data.msg, data.success);
-                
                 if(data.success) {
                     closeModal('resetModal');
                     document.getElementById('res_uid').value = "";
                     document.getElementById('res_code').value = "";
                 }
-            } catch(e) {
-                showMsg("錯誤", "系統連線異常", false);
-            }
+            } catch(e) { showMsg("錯誤", "系統連線異常", false); }
         }
     </script>
 </body>
