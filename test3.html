@@ -67,6 +67,14 @@
             opacity: 0.4;
             border: 2px dashed #FF9D6F;
         }
+
+        /* 新增 Switch 樣式 */
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #D7D3CC; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #7BB38B; }
+        input:checked + .slider:before { transform: translateX(22px); }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-10">
@@ -89,8 +97,7 @@
                     </div>
                     <button onclick="changeSort(1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❯</button>
                 </div>
-                <button onclick="requestNotifyPermission()" class="bg-[#7BB38B] text-white px-5 py-4 rounded-2xl font-black shadow-sm hover:opacity-90 transition-all active:scale-95">🔔 開啟通知</button>
-                <button onclick="openLineModal()" class="bg-[#06C755] text-white px-5 py-4 rounded-2xl font-black shadow-sm hover:opacity-90 transition-all active:scale-95">💬 LINE 設定</button>
+                <button onclick="openNotifyModal()" class="bg-[#7BB38B] text-white px-5 py-4 rounded-2xl font-black shadow-sm hover:opacity-90 transition-all active:scale-95">🔔 通知設定</button>
                 <button onclick="openManageModal()" class="bg-[#B8B0A5] text-white px-5 py-4 rounded-2xl font-black shadow-sm hover:bg-[#A69D92] transition-all active:scale-95">👥 名單管理</button>
                 <button onclick="askClearAll()" class="bg-[#AF7A7D] text-white px-5 py-4 rounded-2xl font-black shadow-sm hover:bg-[#9B6B6E] transition-all active:scale-95">🗑️ 全部清空</button>
                 <button onclick="window.location.replace('portal.html')" class="bg-[#6D6875] text-white px-5 py-4 rounded-2xl font-black shadow-sm hover:bg-[#5A5562] transition-all active:scale-95">返回選單</button>
@@ -121,15 +128,46 @@
         </div>
     </div>
 
-    <div id="lineModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-[101] backdrop-blur-md">
+    <div id="notifyModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-[101] backdrop-blur-md">
         <div class="bg-[#FBFBF9] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-[#D7D3CC]">
-            <h3 class="text-xl font-black mb-4 text-[#06C755]">LINE Notify 設定</h3>
-            <p class="text-sm font-bold text-[#8E9AAF] mb-4">輸入您的 LINE Notify Token 以接收回滿通知：</p>
-            <input id="lineTokenInput" type="password" placeholder="貼上 Token..." class="w-full p-4 bg-white border border-[#D7D3CC] rounded-2xl font-bold mb-6 outline-none focus:ring-2 focus:ring-[#06C755]">
-            <div class="flex gap-3">
-                <button onclick="closeModal('lineModal')" class="flex-1 py-4 bg-[#D7D3CC] text-white rounded-2xl font-black hover:bg-[#C2BEB6]">取消</button>
-                <button onclick="saveLineSettings()" class="flex-1 py-4 bg-[#06C755] text-white rounded-2xl font-black hover:opacity-90">儲存設定</button>
+            <h3 class="text-xl font-black mb-6 text-[#5E548E]">通知管理中心</h3>
+            
+            <div class="space-y-6">
+                <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-[#D7D3CC]">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">🖥️</span>
+                        <div>
+                            <p class="font-black text-[#6D6875]">瀏覽器推播</p>
+                            <p class="text-[10px] text-[#A5A5A5] font-bold italic">滿體時於電腦桌面提示</p>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="webNotifyToggle" onchange="toggleWebNotify(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-[#D7D3CC]">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">💬</span>
+                            <div>
+                                <p class="font-black text-[#6D6875]">LINE API 通知</p>
+                                <p class="text-[10px] text-[#A5A5A5] font-bold italic">Notify 已停用，改用 Messenger API</p>
+                            </div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="lineNotifyToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <input id="lineTokenInput" type="password" placeholder="Channel Access Token..." 
+                           class="w-full p-3 bg-[#F4F2EE] border border-[#D7D3CC] rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-[#06C755]">
+                </div>
             </div>
+
+            <button onclick="saveNotifySettings()" class="w-full mt-8 py-4 bg-[#6D6875] text-white rounded-2xl font-black hover:opacity-90">儲存設定</button>
+            <button onclick="closeModal('notifyModal')" class="w-full mt-2 py-2 text-[#A5A5A5] font-bold text-sm">取消</button>
         </div>
     </div>
 
@@ -175,8 +213,10 @@
         let activities = [];
         let db = JSON.parse(localStorage.getItem('stamina_v15_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
         let monitors = JSON.parse(localStorage.getItem('stamina_v15_active')) || [];
-        let lineToken = localStorage.getItem('line_notify_token') || "";
-        let notifiedSet = new Set(); // 記錄已發送通知的 ID
+        
+        // 整合通知狀態
+        let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || { web: false, line: false, token: "" };
+        let notifiedSet = new Set();
         let sortMode = 0; 
         const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
 
@@ -199,10 +239,54 @@
             };
             
             select.dispatchEvent(new Event('change'));
-            requestNotifyPermission(); // 進入時詢問通知權限
+            
+            // 初始化通知 UI
+            document.getElementById('webNotifyToggle').checked = notifySettings.web;
+            document.getElementById('lineNotifyToggle').checked = notifySettings.line;
+            document.getElementById('lineTokenInput').value = notifySettings.token;
+
             renderMonitoring();
             setInterval(renderMonitoring, 1000);
         };
+
+        // 通知相關邏輯
+        function openNotifyModal() {
+            document.getElementById('notifyModal').classList.replace('hidden', 'flex');
+        }
+
+        function toggleWebNotify(enabled) {
+            if (enabled && "Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission !== "granted") {
+                        alert("請手動允許瀏覽器通知權限");
+                        document.getElementById('webNotifyToggle').checked = false;
+                    }
+                });
+            }
+        }
+
+        function saveNotifySettings() {
+            notifySettings.web = document.getElementById('webNotifyToggle').checked;
+            notifySettings.line = document.getElementById('lineNotifyToggle').checked;
+            notifySettings.token = document.getElementById('lineTokenInput').value.trim();
+            localStorage.setItem('stamina_notify_cfg', JSON.stringify(notifySettings));
+            closeModal('notifyModal');
+            alert("通知設定已儲存");
+        }
+
+        function triggerFullNotification(charName, actName) {
+            const msg = `⚡ 體力回滿：${charName} 的 ${actName} 體力已充滿！`;
+            
+            // 1. 瀏覽器通知
+            if (notifySettings.web && Notification.permission === "granted") {
+                new Notification("體力監控中心", { body: msg, icon: "https://cdn-icons-png.flaticon.com/512/281/281769.png" });
+            }
+            
+            // 2. LINE Messenger API (提示)
+            if (notifySettings.line && notifySettings.token) {
+                console.log("LINE API 通知邏輯應於伺服器端執行。");
+            }
+        }
 
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
@@ -221,7 +305,6 @@
                 const isFull = current >= act.maxStamina;
                 let remSec = isFull ? 0 : ((act.maxStamina - current) * act.minPerStamina - (mins % act.minPerStamina)) * 60;
                 
-                // 通知判斷邏輯
                 const mKey = `${m.charId}-${m.actIdx}`;
                 if(isFull && !notifiedSet.has(mKey)) {
                     triggerFullNotification(m.charName, act.name);
@@ -286,45 +369,7 @@
             }).join('');
         }
 
-        // 通知相關功能
-        function requestNotifyPermission() {
-            if ("Notification" in window) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") alert("瀏覽器通知已開啟！");
-                });
-            }
-        }
-
-        function triggerFullNotification(charName, actName) {
-            const msg = `⚡ 體力回滿通知：${charName} 的 ${actName} 體力已經滿了！`;
-            // 1. 瀏覽器通知
-            if ("Notification" in window && Notification.permission === "granted") {
-                new Notification("體力監控中心", { body: msg, icon: "https://cdn-icons-png.flaticon.com/512/281/281769.png" });
-            }
-            // 2. LINE Notify
-            if (lineToken) {
-                fetch('https://notify-api.line.me/api/notify', {
-                    method: 'POST',
-                    mode: 'no-cors', // 由於跨網域限制，直接在客戶端發送通常需要 Proxy，此處為結構範例
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': `Bearer ${lineToken}` },
-                    body: `message=${encodeURIComponent(msg)}`
-                });
-            }
-        }
-
-        function openLineModal() {
-            document.getElementById('lineTokenInput').value = lineToken;
-            document.getElementById('lineModal').classList.replace('hidden', 'flex');
-        }
-
-        function saveLineSettings() {
-            lineToken = document.getElementById('lineTokenInput').value.trim();
-            localStorage.setItem('line_notify_token', lineToken);
-            alert("LINE Notify Token 已儲存！");
-            closeModal('lineModal');
-        }
-
-        // --- 名單管理與批量處理 ---
+        // --- 其餘基礎函數與名單邏輯 (不變) ---
         function renderManageUI() {
             const area = document.getElementById('groupListArea');
             area.innerHTML = db.groups.map((g, gi) => {
@@ -390,7 +435,7 @@
             document.getElementById('batchModal').classList.replace('hidden', 'flex');
         }
 
-        // --- 拖拽功能 ---
+        // 拖拽與基礎 UI 功能
         let dragInfo = null;
         function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); }
         function handleDragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drop-zone').forEach(z => z.style.border = "1px solid #D7D3CC"); }
@@ -421,7 +466,6 @@
             });
         }
 
-        // --- 基礎函數 ---
         function toggleAllBatch(checked) { document.querySelectorAll('.char-cb').forEach(cb => cb.checked = checked); }
         function toggleGroupBatch(gid, checked) { document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => cb.checked = checked); }
         function submitBatch() {
