@@ -15,9 +15,9 @@
         </div>
 
         <div class="space-y-4">
-            <input id="userId" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-            <input id="password" type="password" placeholder="密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-            <button id="loginBtn" onclick="login()" class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-indigo-700 transition-colors">登入系統</button>
+            <input id="userId" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:border-indigo-500">
+            <input id="password" type="password" placeholder="密碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:border-indigo-500">
+            <button id="loginBtn" onclick="login()" class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-indigo-700 transition-all">登入系統</button>
             <button onclick="openModal('resetModal')" class="text-slate-400 text-sm font-bold hover:text-indigo-500">忘記密碼？使用救援碼</button>
         </div>
     </div>
@@ -34,14 +34,14 @@
     <div id="resetModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-6 z-50 backdrop-blur-sm">
         <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
             <h3 class="text-xl font-black mb-2 text-slate-800 text-center">重置密碼</h3>
-            <p class="text-slate-400 text-sm mb-6 font-bold text-center">重置後將恢復為系統預設密碼</p>
+            <p class="text-slate-400 text-sm mb-6 font-bold text-center">重置後密碼為系統預設值</p>
             <div class="space-y-4 mb-6">
                 <input id="res_uid" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
                 <input id="res_code" type="text" placeholder="救援碼" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
             </div>
             <div class="flex gap-3">
-                <button onclick="closeModal('resetModal')" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black hover:bg-slate-200 transition-colors">取消</button>
-                <button onclick="submitReset()" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black shadow-md hover:bg-amber-600 transition-colors">確認重置</button>
+                <button onclick="closeModal('resetModal')" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">取消</button>
+                <button onclick="submitReset()" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black shadow-md hover:bg-amber-600 transition-all">確認重置</button>
             </div>
         </div>
     </div>
@@ -64,9 +64,14 @@
             const pwd = document.getElementById('password').value.trim();
             if(!uid || !pwd) return showMsg("提示", "請輸入 ID 與密碼", false);
 
-            const loginBtn = document.getElementById('loginBtn');
-            loginBtn.innerText = "驗證中...";
-            loginBtn.disabled = true;
+            // SuperAdmin 硬編碼校驗
+            if (uid === "dapus" && pwd !== "spspadad") {
+                return showMsg("登入失敗", "核心帳號驗證失敗，請檢查密碼。", false);
+            }
+
+            const btn = document.getElementById('loginBtn');
+            btn.innerText = "驗證中...";
+            btn.disabled = true;
 
             try {
                 const res = await fetch(`${SCRIPT_URL}?userId=${uid}&password=${pwd}`);
@@ -77,31 +82,27 @@
                     location.href = "portal.html";
                 } else {
                     showMsg("登入失敗", data.msg, false);
-                    loginBtn.innerText = "登入系統";
-                    loginBtn.disabled = false;
+                    btn.innerText = "登入系統";
+                    btn.disabled = false;
                 }
             } catch(e) { 
                 showMsg("錯誤", "系統連線異常", false); 
-                loginBtn.innerText = "登入系統";
-                loginBtn.disabled = false;
+                btn.innerText = "登入系統";
+                btn.disabled = false;
             }
         }
 
         async function submitReset() {
             const uid = document.getElementById('res_uid').value.trim();
             const code = document.getElementById('res_code').value.trim();
-            if(!uid || !code) return showMsg("提示", "請輸入 ID 與救援碼", false);
+            if(!uid || !code) return showMsg("提示", "欄位不可為空", false);
 
             try {
                 const res = await fetch(`${SCRIPT_URL}?action=reset&userId=${uid}&recovery=${code}`);
                 const data = await res.json();
-                showMsg(data.success ? "成功" : "失敗", data.msg, data.success);
-                if(data.success) {
-                    closeModal('resetModal');
-                    document.getElementById('res_uid').value = "";
-                    document.getElementById('res_code').value = "";
-                }
-            } catch(e) { showMsg("錯誤", "系統連線異常", false); }
+                showMsg("重置結果", data.msg, data.success);
+                if(data.success) closeModal('resetModal');
+            } catch(e) { showMsg("錯誤", "連線失敗", false); }
         }
     </script>
 </body>
