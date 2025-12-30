@@ -64,28 +64,16 @@
             const pwd = document.getElementById('password').value.trim();
             if(!uid || !pwd) return showMsg("提示", "請輸入 ID 與密碼", false);
 
-            // --- SuperAdmin 硬編碼校驗邏輯 ---
-            if (uid === "dapus") { 
-                if (pwd !== "spspadad") { // 務必確認此處密碼與您預期的一致
-                    return showMsg("登入失敗", "核心帳號驗證失敗，請檢查密碼。", false);
-                }
-            }
-
             const loginBtn = document.getElementById('loginBtn');
             loginBtn.innerText = "驗證中...";
             loginBtn.disabled = true;
 
             try {
-                // 發送請求進行後端驗證與數據獲取
+                // 發送請求，讓 Code.gs 處理所有驗證（含 SuperAdmin）
                 const res = await fetch(`${SCRIPT_URL}?userId=${uid}&password=${pwd}`);
                 const data = await res.json();
                 
                 if(data.success) {
-                    // 如果是用核心 ID 登入，確保前端資料物件包含正確權限
-                    if(uid === "dapus") {
-                        data.user.level = 99;
-                        data.user.role = "SuperAdmin";
-                    }
                     sessionStorage.setItem('gameData', JSON.stringify(data));
                     location.href = "portal.html";
                 } else {
@@ -108,13 +96,10 @@
             try {
                 const res = await fetch(`${SCRIPT_URL}?action=reset&userId=${uid}&recovery=${code}`);
                 const data = await res.json();
-                
-                // 顯示後端傳回的 msg（例如：「密碼已恢復為系統預設值」）
                 showMsg(data.success ? "成功" : "失敗", data.msg, data.success);
                 
                 if(data.success) {
                     closeModal('resetModal');
-                    // 清空欄位以便下次使用
                     document.getElementById('res_uid').value = "";
                     document.getElementById('res_code').value = "";
                 }
