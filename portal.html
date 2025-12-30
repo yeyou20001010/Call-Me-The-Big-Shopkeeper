@@ -25,7 +25,7 @@
 
         /* 密碼眼睛與彈窗背景 */
         .pwd-container { position: relative; width: 100%; }
-        .eye-icon { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #94a3b8; }
+        .eye-icon { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #94a3b8; font-size: 1.2rem; }
         .modal-backdrop { backdrop-filter: blur(12px); background-color: rgba(15, 23, 42, 0.85); }
     </style>
 </head>
@@ -138,11 +138,11 @@
             <div class="space-y-4 mb-6">
                 <div class="pwd-container text-left">
                     <input id="newPwd" type="password" placeholder="輸入新密碼" class="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold outline-none">
-                    <span class="eye-icon" onclick="togglePwd('newPwd')">ಠಠ</span>
+                    <span class="eye-icon" onclick="togglePwd('newPwd', this)">👁️</span>
                 </div>
                 <div class="pwd-container text-left">
                     <input id="confirmPwd" type="password" placeholder="確認新密碼" class="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold outline-none">
-                    <span class="eye-icon" onclick="togglePwd('confirmPwd')">ಠಠ</span>
+                    <span class="eye-icon" onclick="togglePwd('confirmPwd', this)">👁️</span>
                 </div>
             </div>
             <div class="flex gap-3">
@@ -196,20 +196,23 @@
             const lv = parseInt(data.user.level);
             const role = data.user.role;
 
-            if(role === "Test") {
-                // Test 身分封鎖
+            // 針對 SuperAdmin 隱藏修改密碼按鈕
+            if(role === "SuperAdmin") {
                 document.getElementById('changePwdBtn').classList.add('hidden');
-                data.isNewRecovery = false; // 強制不顯示救援碼
+            } else if (role === "Test") {
+                document.getElementById('changePwdBtn').classList.add('hidden');
+                data.isNewRecovery = false;
             } else {
                 document.getElementById('changePwdBtn').classList.remove('hidden');
+            }
+
+            // 管理面板顯示邏輯
+            if(lv >= 10) {
+                document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('userManageBtn').classList.remove('hidden');
                 if(lv === 99) {
-                    document.getElementById('adminPanel').classList.remove('hidden');
                     document.getElementById('configBtn').classList.remove('hidden');
-                    document.getElementById('userManageBtn').classList.remove('hidden');
                     document.getElementById('testHubBtn').classList.remove('hidden');
-                } else if(lv >= 10) {
-                    document.getElementById('adminPanel').classList.remove('hidden');
-                    document.getElementById('userManageBtn').classList.remove('hidden');
                 }
             }
 
@@ -248,8 +251,7 @@
             btn.innerText = "更新中..."; btn.disabled = true;
 
             try {
-                // 強制轉換為字串發送，解決 0000 類型的密碼問題
-                const res = await fetch(`${SCRIPT_URL}?action=updatePassword&userId=${cachedData.user.userId}&newPassword=${String(p1)}`);
+                const res = await fetch(`${SCRIPT_URL}?action=updatePassword&userId=${cachedData.user.userId}&newPassword=${encodeURIComponent(p1)}`);
                 const result = await res.json();
                 if(result.success) {
                     showMsg("成功", "密碼已更新，請牢記。");
@@ -275,8 +277,8 @@
                         <tr class="border-b border-slate-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                             <td class="py-4 font-bold text-slate-700 dark:text-slate-200">${u.name}</td>
                             <td class="py-4 font-mono text-xs text-slate-400">${u.id}</td>
-                            <td class="py-4 text-xs font-bold text-indigo-500 uppercase">${u.role}</td>
-                            <td class="py-4 text-xs font-mono text-indigo-600">${u.recovery || '---'}</td>
+                            <td class="py-4 text-xs font-bold text-indigo-500">${u.role}</td>
+                            <td class="py-4 text-xs font-mono font-black text-orange-500">${u.recovery || '---'}</td>
                     `;
                     if (lv === 99) row += `<td class="py-4 text-xs font-mono text-amber-600">${u.defaultPwd || '---'}</td>`;
                     return row + `</tr>`;
@@ -299,18 +301,26 @@
         function applyTheme(theme) {
             const body = document.getElementById('mainBody');
             body.classList.remove('theme-dark');
+            body.style.backgroundColor = ""; // 重置
+
             if(theme === 'dark') {
                 body.classList.add('theme-dark');
             } else if(theme === 'christmas') {
-                body.style.backgroundColor = "#fff1f2"; // 聖誕淺紅
+                body.style.backgroundColor = "#fff1f2";
             } else {
-                body.style.backgroundColor = "#f8fafc"; // 預設
+                body.style.backgroundColor = "#f8fafc";
             }
         }
 
-        function togglePwd(id) {
+        function togglePwd(id, iconEl) {
             const el = document.getElementById(id);
-            el.type = el.type === 'password' ? 'text' : 'password';
+            if (el.type === 'password') {
+                el.type = 'text';
+                iconEl.innerText = '눈_눈';
+            } else {
+                el.type = 'password';
+                iconEl.innerText = '‾᷆д‾᷇';
+            }
         }
 
         function showMsg(title, text, isSuccess = true) {
