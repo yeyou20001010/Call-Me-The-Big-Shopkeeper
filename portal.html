@@ -178,18 +178,26 @@
             if(data.config && data.config.CurrentTheme) applyTheme(data.config.CurrentTheme);
 
             const lv = parseInt(data.user.level);
-            if(lv === 99) { // SuperAdmin
+            const role = data.user.role;
+
+            // 權限分流邏輯
+            if(lv === 99) { // SuperAdmin (dapus)
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('configBtn').classList.remove('hidden');
                 document.getElementById('userManageBtn').classList.remove('hidden');
-                document.getElementById('testHubBtn').classList.remove('hidden'); // 顯示實驗室按鈕
-                document.getElementById('changePwdBtn').classList.add('hidden'); 
+                document.getElementById('testHubBtn').classList.remove('hidden'); 
+                document.getElementById('changePwdBtn').classList.add('hidden'); // 超級管理員不透過此修改密碼
             } else if(lv >= 10) { // Admin
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('userManageBtn').classList.remove('hidden');
                 document.getElementById('changePwdBtn').classList.remove('hidden');
-            } else { // User
-                document.getElementById('changePwdBtn').classList.remove('hidden');
+            } else { // User 或 Test
+                // 如果是 Test 角色，隱藏修改密碼按鈕
+                if(role === "Test") {
+                    document.getElementById('changePwdBtn').classList.add('hidden');
+                } else {
+                    document.getElementById('changePwdBtn').classList.remove('hidden');
+                }
             }
 
             if(String(data.isNewRecovery) === "true") {
@@ -234,8 +242,9 @@
         }
 
         async function submitNewPwd() {
-            if (parseInt(cachedData.user.level) === 99) {
-                showMsg("拒絕", "核心帳號密碼受硬編碼保護，無法修改。", false);
+            // 前端安全鎖：防止 SuperAdmin 或 Test 誤觸
+            if (parseInt(cachedData.user.level) === 99 || cachedData.user.role === "Test") {
+                showMsg("拒絕", "此帳號類型不允許在此修改密碼。", false);
                 return;
             }
             const newPwd = document.getElementById('newPwd').value;
