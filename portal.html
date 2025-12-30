@@ -57,8 +57,18 @@
         </div>
     </div>
 
+    <div id="recoveryModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-6 z-[60] backdrop-blur-md">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl text-center border-4 border-indigo-500">
+            <div class="text-5xl mb-6">🛡️</div>
+            <h3 class="text-2xl font-black mb-2 text-slate-800">安全救援碼</h3>
+            <p class="text-slate-400 font-bold mb-6 text-sm">這是唯一一次顯示您的救援碼，請截圖保存！</p>
+            <div id="recoveryDisplay" class="bg-slate-100 p-6 rounded-2xl text-3xl font-black text-indigo-600 tracking-widest mb-8 border-2 border-dashed border-indigo-200 font-mono"></div>
+            <button onclick="confirmRecovery()" class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg">我已保存，進入系統</button>
+        </div>
+    </div>
+
     <div id="userModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-2xl rounded-[3rem] p-8 shadow-2xl flex flex-col max-h-[80vh] relative border border-slate-100">
+        <div class="bg-white w-full max-w-3xl rounded-[3rem] p-8 shadow-2xl flex flex-col max-h-[80vh] relative border border-slate-100">
             <button onclick="closeModal('userModal')" class="absolute top-8 right-8 text-slate-300 hover:text-slate-600 text-2xl font-bold">✕</button>
             <h3 class="text-2xl font-black mb-6 text-slate-800">權限管理</h3>
             <div class="overflow-y-auto flex-1 pr-2">
@@ -80,8 +90,8 @@
     </div>
 
     <div id="configModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-4 z-50 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-slate-100">
-            <button onclick="closeModal('configModal')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600 text-2xl font-bold">✕</button>
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative">
+            <button onclick="closeModal('configModal')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600 text-xl font-bold">✕</button>
             <h3 class="text-2xl font-black mb-6 text-slate-800 text-center">配置同步</h3>
             <div class="space-y-5">
                 <div>
@@ -99,8 +109,35 @@
             </div>
             <div class="flex gap-4 mt-8">
                 <button onclick="closeModal('configModal')" class="flex-1 py-4 text-slate-400 font-bold text-sm">取消退出</button>
-                <button onclick="saveConfig()" id="saveBtn" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-indigo-100">儲存並同步</button>
+                <button onclick="saveConfig()" id="saveBtn" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold text-sm shadow-xl">儲存並同步</button>
             </div>
+        </div>
+    </div>
+
+    <div id="testListModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-6 z-50 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative">
+            <button onclick="closeModal('testListModal')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600 text-2xl font-bold">✕</button>
+            <div class="text-center mb-6">
+                <div class="text-4xl mb-2">🧪</div>
+                <h3 class="text-2xl font-black text-slate-800">測試實驗室</h3>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Developer Sandbox</p>
+            </div>
+            <div class="space-y-3">
+                <button onclick="sendLineTest()" class="w-full flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-2xl transition-all border border-green-200">
+                    <span class="font-bold text-green-700">測試發送 Line 通知</span>
+                    <span>📲</span>
+                </button>
+                <a href="test.html" class="flex items-center justify-between p-4 bg-slate-50 hover:bg-indigo-50 rounded-2xl transition-all group">
+                    <span class="font-bold text-slate-700 group-hover:text-indigo-600 text-sm">版本更新入口 (test.html)</span>
+                </a>
+                <a href="test2.html" class="flex items-center justify-between p-4 bg-slate-50 hover:bg-indigo-50 rounded-2xl transition-all group">
+                    <span class="font-bold text-slate-700 group-hover:text-indigo-600 text-sm">UI 排版測試 (test2.html)</span>
+                </a>
+                <a href="test3.html" class="flex items-center justify-between p-4 bg-slate-50 hover:bg-indigo-50 rounded-2xl transition-all group">
+                    <span class="font-bold text-slate-700 group-hover:text-indigo-600 text-sm">數據邏輯測試 (test3.html)</span>
+                </a>
+            </div>
+            <button onclick="closeModal('testListModal')" class="mt-6 w-full py-4 bg-slate-100 text-slate-400 rounded-2xl font-black hover:bg-slate-200 transition">關閉</button>
         </div>
     </div>
 
@@ -113,7 +150,7 @@
             </div>
             <div class="flex gap-3">
                 <button onclick="closeModal('pwdModal')" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">取消</button>
-                <button onclick="submitNewPwd()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-md">確認修改</button>
+                <button onclick="submitNewPwd()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-md transition-all">確認修改</button>
             </div>
         </div>
     </div>
@@ -124,32 +161,6 @@
             <h3 id="msgTitle" class="text-xl font-black mb-2 text-slate-800">提示</h3>
             <p id="msgText" class="text-slate-500 font-bold mb-6"></p>
             <button onclick="closeModal('msgModal')" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black">我知道了</button>
-        </div>
-    </div>
-
-    <div id="testListModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center p-6 z-50 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative border border-slate-100">
-            <button onclick="closeModal('testListModal')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-600 text-2xl font-bold">✕</button>
-            <div class="text-center mb-6">
-                <div class="text-4xl mb-2">🧪</div>
-                <h3 class="text-2xl font-black text-slate-800">測試實驗室</h3>
-                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Developer Sandbox</p>
-            </div>
-            <div class="space-y-3">
-                <a href="test.html" class="flex items-center justify-between p-4 bg-slate-50 hover:bg-indigo-50 rounded-2xl transition-all group">
-                    <span class="font-bold text-slate-700 group-hover:text-indigo-600">版本更新入口 (test.html)</span>
-                    <span class="text-slate-300">→</span>
-                </a>
-                <a href="test2.html" class="flex items-center justify-between p-4 bg-slate-50 hover:bg-indigo-50 rounded-2xl transition-all group">
-                    <span class="font-bold text-slate-700 group-hover:text-indigo-600">UI 排版測試 (test2.html)</span>
-                    <span class="text-slate-300">→</span>
-                </a>
-                <a href="test3.html" class="flex items-center justify-between p-4 bg-slate-50 hover:bg-indigo-50 rounded-2xl transition-all group">
-                    <span class="font-bold text-slate-700 group-hover:text-indigo-600">數據邏輯測試 (test3.html)</span>
-                    <span class="text-slate-300">→</span>
-                </a>
-            </div>
-            <button onclick="closeModal('testListModal')" class="mt-6 w-full py-4 bg-slate-100 text-slate-400 rounded-2xl font-black hover:bg-slate-200 transition">關閉</button>
         </div>
     </div>
 
@@ -172,29 +183,33 @@
             if(data.config && data.config.CurrentTheme) applyTheme(data.config.CurrentTheme);
 
             const lv = parseInt(data.user.level);
-            const role = data.user.role;
-
-            // 權限分流顯示面板
-            if(lv === 99) {
+            
+            // 權限分流與 UI 控制
+            if(lv === 99) { // SuperAdmin
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('configBtn').classList.remove('hidden');
                 document.getElementById('userManageBtn').classList.remove('hidden');
                 document.getElementById('testHubBtn').classList.remove('hidden'); 
-                document.getElementById('changePwdBtn').classList.add('hidden'); // SuperAdmin 透過後台改
-            } else if(lv >= 10) {
+                document.getElementById('changePwdBtn').classList.add('hidden'); // SuperAdmin 受硬編碼保護
+            } else if(lv >= 10) { // Admin
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('userManageBtn').classList.remove('hidden');
                 document.getElementById('changePwdBtn').classList.remove('hidden');
-            } else {
-                if(role !== "Test") document.getElementById('changePwdBtn').classList.remove('hidden');
+            } else { // User
+                document.getElementById('changePwdBtn').classList.remove('hidden');
+            }
+
+            // 救援碼提醒視窗
+            if(String(data.isNewRecovery) === "true") {
+                document.getElementById('recoveryDisplay').innerText = data.recoveryCode;
+                openModal('recoveryModal');
             }
         };
 
-        // 核心：權限表格動態渲染
         function openUserModal() {
             const tbody = document.getElementById('userTableBody');
             const userLv = parseInt(cachedData.user.level);
-
+            
             // 動態表頭控制
             if(userLv >= 10) document.getElementById('th-recovery').classList.remove('hidden');
             if(userLv === 99) document.getElementById('th-default').classList.remove('hidden');
@@ -206,15 +221,22 @@
                         <td class="py-4 text-slate-400 font-mono text-xs">${u.id}</td>
                         <td class="py-4 text-xs font-bold ${u.role==='Admin'||u.role==='SuperAdmin'?'text-indigo-500':'text-slate-400'}">${u.role}</td>
                     `;
-                    if (userLv >= 10) row += `<td class="py-4 text-xs font-mono text-amber-600">${u.recovery || '未生成'}</td>`;
+                    if (userLv >= 10) row += `<td class="py-4 text-xs font-mono text-amber-600">${u.recovery || '-'}</td>`;
                     if (userLv === 99) row += `<td class="py-4 text-xs text-slate-300 italic">${u.defaultPwd || '-'}</td>`;
                     
                     return `<tr class="border-b border-slate-50 hover:bg-slate-50">${row}</tr>`;
                 }).join('');
-            } else {
-                tbody.innerHTML = "<tr><td colspan='5' class='py-10 text-center text-slate-400'>無用戶數據</td></tr>";
             }
             openModal('userModal');
+        }
+
+        async function sendLineTest() {
+            showMsg("發送中", "正在觸發 Line Notify...", true);
+            try {
+                const res = await fetch(`${SCRIPT_URL}?action=testLine`);
+                const result = await res.json();
+                showMsg(result.success ? "成功" : "失敗", result.msg, result.success);
+            } catch(e) { showMsg("錯誤", "系統連線異常", false); }
         }
 
         async function saveConfig() {
@@ -224,8 +246,8 @@
             btn.innerText = "正在儲存...";
             btn.disabled = true;
             try {
-                const response = await fetch(`${SCRIPT_URL}?action=saveConfig&announce=${announce}&theme=${theme}`);
-                const result = await response.json();
+                const res = await fetch(`${SCRIPT_URL}?action=saveConfig&announce=${announce}&theme=${theme}`);
+                const result = await res.json();
                 if(result.success) {
                     showMsg("成功", "系統配置已同步。");
                     setTimeout(() => location.reload(), 1500);
@@ -238,9 +260,8 @@
 
         async function submitNewPwd() {
             const lv = parseInt(cachedData.user.level);
-            if (lv === 99 || cachedData.user.role === "Test") {
-                return showMsg("提示", "此帳號不允許在此修改密碼。", false);
-            }
+            if (lv === 99) return showMsg("拒絕", "核心帳號受保護，無法在此修改。", false);
+            
             const newPwd = document.getElementById('newPwd').value;
             const confirmPwd = document.getElementById('confirmPwd').value;
             if(!newPwd || newPwd !== confirmPwd) return showMsg("錯誤", "密碼不一致", false);
@@ -250,6 +271,18 @@
                 showMsg(result.success ? "成功" : "失敗", result.msg, result.success);
                 if(result.success) closeModal('pwdModal');
             } catch(e) { showMsg("錯誤", "連線失敗", false); }
+        }
+
+        function openConfigModal() {
+            document.getElementById('announceInput').value = cachedData.config.AnnounceText || "";
+            document.getElementById('themeInput').value = cachedData.config.CurrentTheme || "default";
+            openModal('configModal');
+        }
+
+        function confirmRecovery() {
+            cachedData.isNewRecovery = false;
+            sessionStorage.setItem('gameData', JSON.stringify(cachedData));
+            closeModal('recoveryModal');
         }
 
         function applyTheme(theme) {
