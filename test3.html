@@ -207,7 +207,7 @@
         
         // 通知相關
         let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || { line: false, userId: "" };
-        let notifiedSet = new Set(); // 記錄已通知過的對象，防止重複彈訊息
+        let notifiedSet = new Set(); 
 
         window.onload = function() {
             const gameData = JSON.parse(sessionStorage.getItem('gameData'));
@@ -230,7 +230,6 @@
             
             select.dispatchEvent(new Event('change'));
 
-            // 初始化通知設定 UI
             document.getElementById('lineNotifyToggle').checked = notifySettings.line;
             document.getElementById('userIdInput').value = notifySettings.userId || "";
 
@@ -253,7 +252,6 @@
         async function sendLineMsg(msg) {
             if(!notifySettings.line || !notifySettings.userId || !MY_GAS_URL) return;
             try {
-                // 使用 no-cors 模式發送 POST 請求給 GAS
                 await fetch(MY_GAS_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -267,7 +265,7 @@
             sendLineMsg(`⚡ 體力回滿提醒：\n角色：${charName}\n活動：${actName}\n請及時登入處理！`);
         }
 
-        // --- 原有監測與渲染邏輯 ---
+        // --- 監測與渲染邏輯 ---
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
             if(monitors.length === 0) {
@@ -285,7 +283,6 @@
                 const isFull = current >= act.maxStamina;
                 let remSec = isFull ? 0 : ((act.maxStamina - current) * act.minPerStamina - (mins % act.minPerStamina)) * 60;
                 
-                // --- 檢查是否需要發送通知 ---
                 const mKey = `${m.charId}-${m.actIdx}`;
                 if(isFull && !notifiedSet.has(mKey)) {
                     triggerFullNotification(m.charName, act.name);
@@ -347,7 +344,7 @@
             }).join('');
         }
 
-        // --- 其餘所有原功能函數 (名單、拖拽、群組等) ---
+        // --- 名單管理 UI ---
         function renderManageUI() {
             const area = document.getElementById('groupListArea');
             area.innerHTML = db.groups.map((g, gi) => {
@@ -390,27 +387,64 @@
             setupDragAndDrop();
         }
 
+        // --- 修正後的拖拽邏輯 (滑到哪放哪) ---
         let dragInfo = null;
         function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
         function handleDragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drop-zone').forEach(z => z.style.border = "1px solid #D7D3CC"); }
+
         function setupDragAndDrop() {
             const zones = document.querySelectorAll('.drop-zone');
             zones.forEach(zone => {
-                zone.ondragover = e => { e.preventDefault(); zone.style.border = "2px dashed #FF9D6F"; };
+                zone.ondragover = e => { 
+                    e.preventDefault(); 
+                    zone.style.border = "2px dashed #FF9D6F"; 
+                };
                 zone.ondragleave = () => zone.style.border = "1px solid #D7D3CC";
                 zone.ondrop = e => {
-                    e.preventDefault(); zone.style.border = "1px solid #D7D3CC";
+                    e.preventDefault(); 
+                    zone.style.border = "1px solid #D7D3CC";
                     if (!dragInfo) return;
+
                     const targetGid = zone.dataset.gid;
                     const sGroup = db.groups.find(g => g.id === dragInfo.gid);
                     const tGroup = db.groups.find(g => g.id === targetGid);
+                    
+                    // 從原位取出
                     const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
-                    tGroup.members.push(movingItem);
+                    
+                    // 計算精確座標插入點
+                    const container = zone.querySelector('.member-list');
+                    const afterElement = getDragAfterElement(container, e.clientY);
+                    
+                    if (afterElement == null) {
+                        tGroup.members.push(movingItem);
+                    } else {
+                        // 找到該元素在 tGroup 中的索引
+                        const afterElementName = afterElement.querySelector('span').innerText;
+                        const afterIndex = tGroup.members.findIndex(m => m.name === afterElementName);
+                        tGroup.members.splice(afterIndex, 0, movingItem);
+                    }
+
                     saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null;
                 };
             });
         }
 
+        // 輔助函數：根據座標尋找滑鼠下方的成員元素
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.member-item:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // --- 其他功能函數 ---
         function openBatchModal() {
             const actIdx = document.getElementById('activitySelect').value;
             const act = activities[actIdx];
