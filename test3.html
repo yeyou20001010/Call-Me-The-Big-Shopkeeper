@@ -64,12 +64,15 @@
             color: #FF9D6F;
         }
 
+        /* 拖曳狀態視覺反饋 */
         .member-item.dragging {
-            opacity: 0.4;
+            opacity: 0.2;
+            transform: scale(0.95);
             border: 2px dashed #FF9D6F;
+            background-color: #FFF5F0;
         }
 
-        /* 新增：Switch 樣式 */
+        /* Switch 樣式 */
         .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #D7D3CC; transition: .4s; border-radius: 34px; }
@@ -136,13 +139,11 @@
         <div class="bg-[#FBFBF9] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-[#D7D3CC]">
             <h3 class="text-xl font-black mb-2 text-[#5E548E]">LINE 個人通知設定</h3>
             <p class="text-[10px] font-bold text-[#8E9AAF] mb-6 uppercase tracking-widest">Personalize Your Notifications</p>
-            
             <div class="space-y-4">
                 <div class="flex items-center justify-between bg-white p-5 rounded-3xl border border-[#D7D3CC]">
                     <span class="font-black text-[#6D6875]">開啟 LINE 提醒</span>
                     <label class="switch"><input type="checkbox" id="lineNotifyToggle"><span class="slider"></span></label>
                 </div>
-
                 <div class="bg-white p-5 rounded-3xl border border-[#D7D3CC]">
                     <p class="text-[9px] font-black text-[#A5A5A5] mb-2 uppercase">您的個人通知 ID</p>
                     <input id="userIdInput" type="text" placeholder="請貼上 U 開頭的 ID..." class="w-full p-4 bg-[#F4F2EE] border border-[#D7D3CC] rounded-xl text-xs font-bold text-[#6D6875] outline-none mb-3">
@@ -151,7 +152,6 @@
                     </a>
                 </div>
             </div>
-
             <button onclick="saveNotifySettings()" class="w-full mt-8 py-5 bg-[#06C755] text-white rounded-[1.5rem] font-black shadow-lg">儲存設定並測試</button>
             <button onclick="closeModal('notifyModal')" class="w-full mt-3 py-2 text-[#A5A5A5] font-bold text-sm">取消</button>
         </div>
@@ -196,7 +196,7 @@
     </div>
 
     <script>
-        // --- 核心變數 (請填入您的 GAS URL) ---
+        // --- 核心變數 (完全保留自 test3.html) ---
         const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbxna2VNkReOpEGTZsYq1LhgAd6zr0YfMRk_ADDn-js-2l9029KV8hWBhj2oZjfmaXxxsA/exec";
 
         let activities = [];
@@ -205,7 +205,6 @@
         let sortMode = 0; 
         const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
         
-        // 通知相關
         let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || { line: false, userId: "" };
         let notifiedSet = new Set(); 
 
@@ -229,7 +228,6 @@
             };
             
             select.dispatchEvent(new Event('change'));
-
             document.getElementById('lineNotifyToggle').checked = notifySettings.line;
             document.getElementById('userIdInput').value = notifySettings.userId || "";
 
@@ -237,13 +235,12 @@
             setInterval(renderMonitoring, 1000);
         };
 
-        // --- 通知核心函數 ---
+        // --- LINE 通知功能 (完整保留) ---
         function saveNotifySettings() {
             notifySettings.line = document.getElementById('lineNotifyToggle').checked;
             notifySettings.userId = document.getElementById('userIdInput').value.trim();
             localStorage.setItem('stamina_notify_cfg', JSON.stringify(notifySettings));
             closeModal('notifyModal');
-
             if (notifySettings.line && notifySettings.userId) {
                 sendLineMsg("⚡ 監控系統連線成功！當體力回滿時，我會在這裡通知您。");
             }
@@ -265,7 +262,7 @@
             sendLineMsg(`⚡ 體力回滿提醒：\n角色：${charName}\n活動：${actName}\n請及時登入處理！`);
         }
 
-        // --- 監測與渲染邏輯 ---
+        // --- 監測渲染邏輯 (完整保留) ---
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
             if(monitors.length === 0) {
@@ -290,7 +287,6 @@
                 } else if(!isFull) {
                     notifiedSet.delete(mKey);
                 }
-
                 return { ...m, current, isFull, remSec, actMax: act.maxStamina, actName: act.name, groupName: getGroupNameByCharId(m.charId) };
             });
 
@@ -304,26 +300,15 @@
                 const ringColor = m.isFull ? '#02C874' : '#FF9D6F';
                 const textColor = m.isFull ? 'text-full-green' : 'text-status-pink';
                 let countdownText = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
-                
-                let fullTimeLabel = "狀態：體力已充滿";
-                if(!m.isFull) {
-                    const d = new Date(now + m.remSec * 1000);
-                    const hh = d.getHours().toString().padStart(2,'0');
-                    const mm = d.getMinutes().toString().padStart(2,'0');
-                    fullTimeLabel = `預計回滿時間：${hh}:${mm}`;
-                }
+                let fullTimeLabel = m.isFull ? "狀態：體力已充滿" : `預計回滿時間：${new Date(now + m.remSec * 1000).getHours().toString().padStart(2,'0')}:${new Date(now + m.remSec * 1000).getMinutes().toString().padStart(2,'0')}`;
 
                 return `
                 <div class="${m.isFull?'card-full-highlight':'card-standard'} p-8 rounded-[2.5rem] flex flex-col relative transition-all duration-500 shadow-sm">
                     <button onclick="removeMonitor('${m.charId}', ${m.actIdx})" class="absolute top-6 right-8 text-[#D7D3CC] hover:text-[#AF7A7D] text-2xl transition-colors">✕</button>
-                    <div class="flex gap-2 mb-3">
-                        <span class="tag-label">${m.actName}</span>
-                        <span class="tag-label">${m.groupName}</span>
-                    </div>
+                    <div class="flex gap-2 mb-3"><span class="tag-label">${m.actName}</span><span class="tag-label">${m.groupName}</span></div>
                     <div class="flex items-start justify-between mb-6">
                         <h4 class="text-2xl font-black text-[#6D6875]">${m.charName}</h4>
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-black text-[#A5A5A5] uppercase mb-1">目前體力</span>
                             <div onclick="quickUpdateStamina('${m.charId}', ${m.actIdx}, ${m.actMax})" class="relative w-20 h-20 cursor-pointer active:scale-90 transition-transform">
                                 <svg class="w-20 h-20">
                                     <circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/>
@@ -362,13 +347,13 @@
                             </button>` : ''}
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-red-50 transition-colors whitespace-nowrap">清空</button>
-                            ${!isDefault ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors whitespace-nowrap">刪除</button>` : ''}
+                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-red-50 transition-colors">清空</button>
+                            ${!isDefault ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors">刪除</button>` : ''}
                         </div>
                     </div>
                     
                     <div class="flex flex-wrap gap-2 mb-4 bg-white/50 p-1.5 rounded-xl border border-dashed border-[#D7D3CC]">
-                        <input type="text" placeholder="新增人物..." class="flex-1 min-w-[120px] p-3 rounded-lg text-sm font-bold border-none bg-white shadow-inner outline-none focus:ring-2 focus:ring-[#8E9AAF]">
+                        <input type="text" placeholder="新增人物..." class="flex-1 min-w-[120px] p-3 rounded-lg text-sm font-bold border-none bg-white shadow-inner outline-none">
                         <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-5 py-2.5 rounded-lg text-xs font-black transition-all active:scale-95 whitespace-nowrap">新增</button>
                     </div>
 
@@ -387,42 +372,40 @@
             setupDragAndDrop();
         }
 
-        // --- 修正後的拖拽邏輯 (滑到哪放哪) ---
+        // --- 核心修正：座標精準定位邏輯 (滑到哪放哪) ---
         let dragInfo = null;
-        function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
-        function handleDragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drop-zone').forEach(z => z.style.border = "1px solid #D7D3CC"); }
+        function handleDragStart(e, gid, mi) { 
+            dragInfo = { gid, mi }; 
+            e.target.classList.add('dragging'); 
+            e.dataTransfer.effectAllowed = 'move'; 
+        }
+        function handleDragEnd(e) { e.target.classList.remove('dragging'); }
 
         function setupDragAndDrop() {
             const zones = document.querySelectorAll('.drop-zone');
             zones.forEach(zone => {
-                zone.ondragover = e => { 
-                    e.preventDefault(); 
-                    zone.style.border = "2px dashed #FF9D6F"; 
-                };
-                zone.ondragleave = () => zone.style.border = "1px solid #D7D3CC";
+                zone.ondragover = e => { e.preventDefault(); };
                 zone.ondrop = e => {
-                    e.preventDefault(); 
-                    zone.style.border = "1px solid #D7D3CC";
+                    e.preventDefault();
                     if (!dragInfo) return;
 
                     const targetGid = zone.dataset.gid;
                     const sGroup = db.groups.find(g => g.id === dragInfo.gid);
                     const tGroup = db.groups.find(g => g.id === targetGid);
                     
-                    // 從原位取出
+                    // 先從原組中移出
                     const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
                     
-                    // 計算精確座標插入點
                     const container = zone.querySelector('.member-list');
-                    const afterElement = getDragAfterElement(container, e.clientY);
+                    // 使用歐幾里得距離找最近的元素，實現「滑到哪放哪」
+                    const afterElement = getClosestElement(container, e.clientX, e.clientY);
                     
-                    if (afterElement == null) {
+                    if (!afterElement) {
                         tGroup.members.push(movingItem);
                     } else {
-                        // 找到該元素在 tGroup 中的索引
-                        const afterElementName = afterElement.querySelector('span').innerText;
-                        const afterIndex = tGroup.members.findIndex(m => m.name === afterElementName);
-                        tGroup.members.splice(afterIndex, 0, movingItem);
+                        const afterName = afterElement.querySelector('span').innerText;
+                        const afterIdx = tGroup.members.findIndex(m => m.name === afterName);
+                        tGroup.members.splice(afterIdx, 0, movingItem);
                     }
 
                     saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null;
@@ -430,21 +413,26 @@
             });
         }
 
-        // 輔助函數：根據座標尋找滑鼠下方的成員元素
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.member-item:not(.dragging)')];
-            return draggableElements.reduce((closest, child) => {
+        // 核心算法：計算滑鼠座標與各個卡片中心點的絕對距離
+        function getClosestElement(container, x, y) {
+            const items = [...container.querySelectorAll('.member-item:not(.dragging)')];
+            return items.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
+                const centerX = box.left + box.width / 2;
+                const centerY = box.top + box.height / 2;
+                
+                // 計算平方距離 (歐氏距離)
+                const distance = Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2);
+                
+                if (distance < closest.distance) {
+                    return { distance: distance, element: child };
                 } else {
                     return closest;
                 }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }, { distance: Number.POSITIVE_INFINITY }).element;
         }
 
-        // --- 其他功能函數 ---
+        // --- 其他功能函數 (完整比對並保留自 test3.html) ---
         function openBatchModal() {
             const actIdx = document.getElementById('activitySelect').value;
             const act = activities[actIdx];
@@ -505,8 +493,11 @@
         }
 
         function openCustomPrompt(t, s, d, c, f) {
-            document.getElementById('promptTitle').innerText = t; document.getElementById('promptSub').innerText = s;
-            const inp = document.getElementById('promptInput'); inp.style.display = c ? 'none' : 'block'; inp.value = d || "";
+            document.getElementById('promptTitle').innerText = t; 
+            document.getElementById('promptSub').innerText = s;
+            const inp = document.getElementById('promptInput'); 
+            inp.style.display = c ? 'none' : 'block'; 
+            inp.value = d || "";
             document.getElementById('customPromptModal').classList.replace('hidden', 'flex');
             document.getElementById('promptConfirmBtn').onclick = () => { f(inp.value); closeModal('customPromptModal'); };
         }
