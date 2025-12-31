@@ -64,11 +64,6 @@
             color: #FF9D6F;
         }
 
-        .member-item.dragging {
-            opacity: 0.4;
-            border: 2px dashed #FF9D6F;
-        }
-
         .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #D7D3CC; transition: .4s; border-radius: 34px; }
@@ -122,7 +117,6 @@
                 <div id="emptyDisplay" class="hidden text-center py-40 bg-[#FBFBF9] rounded-[3rem] border-4 border-dashed border-[#D7D3CC]">
                     <div class="text-6xl mb-6 opacity-20">💤</div>
                     <p class="text-[#D7D3CC] font-black text-2xl">目前無進行中的監測項目</p>
-                    <p class="text-[#D7D3CC] font-bold mt-2">請從左側選擇活動並加入人物</p>
                 </div>
             </div>
         </div>
@@ -131,95 +125,81 @@
     <div id="notifyModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-[101] backdrop-blur-md">
         <div class="bg-[#FBFBF9] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-[#D7D3CC]">
             <h3 class="text-xl font-black mb-2 text-[#5E548E]">LINE 通知管理</h3>
-            <p class="text-[10px] font-bold text-[#8E9AAF] mb-6 tracking-tight">體力回滿時將透過 Messenger API 發送提醒</p>
+            <p class="text-[10px] font-bold text-[#8E9AAF] mb-6 tracking-tight">體力回滿時將發送 LINE 提醒</p>
             
             <div class="space-y-6">
                 <div class="bg-white p-5 rounded-3xl border border-[#D7D3CC]">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-3">
-                            <span class="text-3xl">💬</span>
-                            <div>
-                                <p class="font-black text-[#6D6875]">LINE 通知狀態</p>
-                                <p class="text-[10px] text-green-500 font-black italic">API Connection</p>
-                            </div>
-                        </div>
+                        <span class="font-black text-[#6D6875]">啟用通知開關</span>
                         <label class="switch">
                             <input type="checkbox" id="lineNotifyToggle">
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <p class="text-[9px] font-black text-[#A5A5A5] mb-2 uppercase">Channel Access Token</p>
-                    <input id="lineTokenInput" type="text" readonly value="https://script.google.com/macros/s/AKfycbxna2VNkReOpEGTZsYq1LhgAd6zr0YfMRk_ADDn-js-2l9029KV8hWBhj2oZjfmaXxxsA/exec" 
-                           class="w-full p-4 bg-[#F4F2EE] border border-[#D7D3CC] rounded-xl text-[10px] font-bold text-[#A5A5A5] outline-none">
+                    <p class="text-[9px] font-black text-[#A5A5A5] mb-2 uppercase">Webhook GAS URL</p>
+                    <input id="gasUrlInput" type="text" class="w-full p-4 bg-[#F4F2EE] border border-[#D7D3CC] rounded-xl text-[10px] font-bold text-[#6D6875] outline-none" value="https://script.google.com/macros/s/AKfycbxna2VNkReOpEGTZsYq1LhgAd6zr0YfMRk_ADDn-js-2l9029KV8hWBhj2oZjfmaXxxsA/exec">
                 </div>
             </div>
 
-            <button onclick="saveNotifySettings()" class="w-full mt-8 py-4 bg-[#06C755] text-white rounded-2xl font-black hover:opacity-90">儲存設定</button>
+            <button onclick="saveNotifySettings()" class="w-full mt-8 py-4 bg-[#06C755] text-white rounded-2xl font-black hover:opacity-90">儲存設定並發送測試</button>
             <button onclick="closeModal('notifyModal')" class="w-full mt-2 py-2 text-[#A5A5A5] font-bold text-sm">取消</button>
         </div>
     </div>
 
     <div id="manageModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-50 backdrop-blur-md">
-        <div class="bg-[#FBFBF9] w-full max-w-2xl rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl relative flex flex-col max-h-[90vh] border border-[#D7D3CC]">
-            <button onclick="closeModal('manageModal')" class="absolute top-6 right-6 md:top-10 md:right-10 text-[#D7D3CC] text-3xl hover:text-[#6D6875]">✕</button>
-            <h3 class="text-2xl font-black mb-6 text-[#5E548E]">名單與群組管理</h3>
-            <div class="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl border border-[#D7D3CC]">
-                <input id="newGroupName" type="text" placeholder="輸入新群組名稱..." class="flex-1 min-w-[150px] bg-transparent p-4 outline-none font-bold">
-                <button onclick="addGroup()" class="bg-[#8E9AAF] text-white px-6 md:px-8 py-3 rounded-xl font-black hover:bg-[#7D7684] transition-all active:scale-95 whitespace-nowrap">建立群組</button>
+        <div class="bg-[#FBFBF9] w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl relative flex flex-col max-h-[90vh] border border-[#D7D3CC]">
+            <button onclick="closeModal('manageModal')" class="absolute top-6 right-6 text-[#D7D3CC] text-3xl">✕</button>
+            <h3 class="text-2xl font-black mb-6 text-[#5E548E]">名單管理</h3>
+            <div class="flex gap-2 mb-6 bg-white p-2 rounded-2xl border border-[#D7D3CC]">
+                <input id="newGroupName" type="text" placeholder="新群組..." class="flex-1 bg-transparent p-4 outline-none font-bold">
+                <button onclick="addGroup()" class="bg-[#8E9AAF] text-white px-6 py-3 rounded-xl font-black">建立群組</button>
             </div>
-            <div id="groupListArea" class="overflow-y-auto flex-1 space-y-6 pr-2"></div>
+            <div id="groupListArea" class="overflow-y-auto flex-1 space-y-6"></div>
         </div>
     </div>
 
     <div id="batchModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-50 backdrop-blur-md">
         <div class="bg-[#FBFBF9] w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl relative flex flex-col max-h-[90vh] border border-[#D7D3CC]">
             <button onclick="closeModal('batchModal')" class="absolute top-10 right-10 text-[#D7D3CC] text-3xl">✕</button>
-            <h3 class="text-2xl font-black mb-2 text-[#5E548E]">批量加入監測</h3>
-            <p id="batchActName" class="text-sm font-bold text-[#8E9AAF] mb-4"></p>
-            <div class="flex justify-end gap-3 mb-4">
-                <button onclick="toggleAllBatch(true)" class="text-xs font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-lg">全選</button>
-                <button onclick="toggleAllBatch(false)" class="text-xs font-black text-[#AF7A7D] bg-red-50 px-3 py-1 rounded-lg">取消全選</button>
-            </div>
-            <div id="batchInputList" class="overflow-y-auto flex-1 space-y-6 mb-8 pr-2"></div>
-            <button onclick="submitBatch()" class="w-full bg-[#8E9AAF] text-white py-6 rounded-[2rem] text-xl font-black shadow-lg hover:bg-[#7D7684]">確認並開始監測</button>
+            <h3 class="text-2xl font-black mb-4 text-[#5E548E]">批量加入</h3>
+            <div id="batchInputList" class="overflow-y-auto flex-1 space-y-6 pr-2"></div>
+            <button onclick="submitBatch()" class="w-full mt-8 bg-[#8E9AAF] text-white py-6 rounded-[2rem] text-xl font-black">確認加入</button>
         </div>
     </div>
 
     <div id="customPromptModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-[200] backdrop-blur-md">
-        <div class="bg-[#FBFBF9] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-[#D7D3CC]">
-            <h3 id="promptTitle" class="text-xl font-black mb-4 text-[#5E548E]">提示</h3>
-            <p id="promptSub" class="text-sm font-bold text-[#8E9AAF] mb-4"></p>
-            <input id="promptInput" type="text" class="w-full p-4 bg-white border border-[#D7D3CC] rounded-2xl font-bold mb-6 outline-none focus:ring-2 focus:ring-[#FF9D6F]">
+        <div class="bg-[#FBFBF9] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border border-[#D7D3CC]">
+            <h3 id="promptTitle" class="text-xl font-black mb-2 text-[#5E548E]">提示</h3>
+            <p id="promptSub" class="text-sm font-bold text-[#8E9AAF] mb-6"></p>
+            <input id="promptInput" type="text" class="w-full p-4 bg-white border border-[#D7D3CC] rounded-2xl font-bold mb-6 outline-none">
             <div class="flex gap-3">
-                <button id="promptCancelBtn" onclick="closeModal('customPromptModal')" class="flex-1 py-4 bg-[#D7D3CC] text-white rounded-2xl font-black hover:bg-[#C2BEB6]">取消</button>
-                <button id="promptConfirmBtn" class="flex-1 py-4 bg-[#FF9D6F] text-white rounded-2xl font-black hover:bg-[#E88D5F]">確認</button>
+                <button id="promptCancelBtn" onclick="closeModal('customPromptModal')" class="flex-1 py-4 bg-[#D7D3CC] text-white rounded-2xl font-black">取消</button>
+                <button id="promptConfirmBtn" class="flex-1 py-4 bg-[#FF9D6F] text-white rounded-2xl font-black">確認</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 基本變數 ---
         let activities = [];
         let db = JSON.parse(localStorage.getItem('stamina_v15_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
         let monitors = JSON.parse(localStorage.getItem('stamina_v15_active')) || [];
-        let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || { line: false, gasUrl: "https://script.google.com/macros/s/AKfycbxna2VNkReOpEGTZsYq1LhgAd6zr0YfMRk_ADDn-js-2l9029KV8hWBhj2oZjfmaXxxsA/exec" };
+        let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || { 
+            line: false, 
+            gasUrl: "https://script.google.com/macros/s/AKfycbxna2VNkReOpEGTZsYq1LhgAd6zr0YfMRk_ADDn-js-2l9029KV8hWBhj2oZjfmaXxxsA/exec" 
+        };
         let notifiedSet = new Set();
-        let sortMode = 0; 
+        let sortMode = 0;
         const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
 
-        // --- 初始化 ---
         window.onload = function() {
             const gameData = JSON.parse(sessionStorage.getItem('gameData'));
             if(!gameData) return location.href = "index.html"; 
-            
             activities = gameData.activities;
             const select = document.getElementById('activitySelect');
             activities.forEach((act, idx) => {
-                const opt = document.createElement('option'); 
-                opt.value = idx; opt.textContent = act.name;
+                const opt = document.createElement('option'); opt.value = idx; opt.textContent = act.name;
                 select.appendChild(opt);
             });
-
             select.onchange = () => {
                 const act = activities[select.value];
                 document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / 1 體`;
@@ -227,13 +207,15 @@
             };
             select.dispatchEvent(new Event('change'));
             
+            // 初始化通知開關狀態與網址
             document.getElementById('lineNotifyToggle').checked = notifySettings.line;
+            document.getElementById('gasUrlInput').value = notifySettings.gasUrl;
 
             renderMonitoring();
             setInterval(renderMonitoring, 1000);
         };
 
-        // --- 核心彈窗邏輯 (取代系統彈窗) ---
+        // 統一提示框
         function customAlert(title, sub) {
             openCustomPrompt(title, sub, "", true, () => {});
         }
@@ -244,47 +226,52 @@
             const inp = document.getElementById('promptInput');
             inp.style.display = isAlert ? 'none' : 'block'; 
             inp.value = d || "";
-            
-            const cancelBtn = document.getElementById('promptCancelBtn');
-            cancelBtn.style.display = isAlert ? 'none' : 'block';
-
+            document.getElementById('promptCancelBtn').style.display = isAlert ? 'none' : 'block';
             document.getElementById('customPromptModal').classList.replace('hidden', 'flex');
-            document.getElementById('promptConfirmBtn').onclick = () => { 
-                f(inp.value); 
-                closeModal('customPromptModal'); 
-            };
+            document.getElementById('promptConfirmBtn').onclick = () => { f(inp.value); closeModal('customPromptModal'); };
         }
 
-        // --- LINE 設定 ---
+        // --- LINE 發送邏輯 ---
         function openNotifyModal() {
             document.getElementById('notifyModal').classList.replace('hidden', 'flex');
         }
 
         function saveNotifySettings() {
             notifySettings.line = document.getElementById('lineNotifyToggle').checked;
+            notifySettings.gasUrl = document.getElementById('gasUrlInput').value.trim();
             localStorage.setItem('stamina_notify_cfg', JSON.stringify(notifySettings));
+            
             closeModal('notifyModal');
-            customAlert("儲存成功", "LINE 通知設定已更新。");
+
+            if (notifySettings.line && notifySettings.gasUrl) {
+                sendLineMsg("⚡ 監控系統測試：連線成功！當體力回滿時您將收到通知。");
+                customAlert("已儲存", "測試訊息已發送至 LINE，請檢查手機。");
+            } else {
+                customAlert("已儲存", "通知功能已關閉。");
+            }
         }
 
         async function sendLineMsg(msg) {
             if(!notifySettings.gasUrl || !notifySettings.line) return;
             try {
+                // 使用 fetch 發送至 GAS，設定 mode 為 no-cors
                 await fetch(notifySettings.gasUrl, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: msg })
                 });
-            } catch (e) { console.error("LINE 發送失敗", e); }
+            } catch (e) {
+                console.error("LINE 發送出錯:", e);
+            }
         }
 
         function triggerFullNotification(charName, actName) {
-            const msg = `⚡ 體力回滿：${charName} 的 ${actName} 體力已充滿！`;
+            const msg = `⚡ 體力回滿通知：\n角色：${charName}\n活動：${actName}\n體力已充滿，請記得登入遊戲！`;
             sendLineMsg(msg);
         }
 
-        // --- 監控渲染 ---
+        // --- 核心渲染 ---
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
             if(monitors.length === 0) {
@@ -313,8 +300,8 @@
                 return { ...m, current, isFull, remSec, actMax: act.maxStamina, actName: act.name, groupName: getGroupNameByCharId(m.charId) };
             });
 
-            if(sortMode === 0) list.sort((a,b) => a.actName.localeCompare(b.actName));
-            else if(sortMode === 1) list.sort((a,b) => a.remSec - b.remSec);
+            // 排序邏輯
+            if(sortMode === 1) list.sort((a,b) => a.remSec - b.remSec);
             else if(sortMode === 2) list.sort((a,b) => a.groupName.localeCompare(b.groupName));
             else if(sortMode === 3) list.sort((a,b) => a.charName.localeCompare(b.charName));
 
@@ -322,234 +309,107 @@
                 const percent = (m.current / m.actMax) * 100;
                 const ringColor = m.isFull ? '#02C874' : '#FF9D6F';
                 const textColor = m.isFull ? 'text-full-green' : 'text-status-pink';
-                let countdownText = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
-                
-                let fullTimeLabel = "狀態：體力已充滿";
-                if(!m.isFull) {
-                    const d = new Date(now + m.remSec * 1000);
-                    const Y = d.getFullYear();
-                    const M = (d.getMonth()+1).toString().padStart(2,'0');
-                    const D = d.getDate().toString().padStart(2,'0');
-                    const hh = d.getHours().toString().padStart(2,'0');
-                    const mm = d.getMinutes().toString().padStart(2,'0');
-                    fullTimeLabel = `預計回滿：${Y}/${M}/${D} ${hh}:${mm}`;
-                }
+                let countdown = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
 
                 return `
-                <div class="${m.isFull?'card-full-highlight':'card-standard'} p-8 rounded-[2.5rem] flex flex-col relative transition-all duration-500 shadow-sm">
-                    <button onclick="removeMonitor('${m.charId}', ${m.actIdx})" class="absolute top-6 right-8 text-[#D7D3CC] hover:text-[#AF7A7D] text-2xl transition-colors">✕</button>
+                <div class="${m.isFull?'card-full-highlight':'card-standard'} p-8 rounded-[2.5rem] flex flex-col relative shadow-sm">
+                    <button onclick="removeMonitor('${m.charId}', ${m.actIdx})" class="absolute top-6 right-8 text-[#D7D3CC] hover:text-[#AF7A7D] text-2xl">✕</button>
                     <div class="flex gap-2 mb-3">
                         <span class="tag-label">${m.actName}</span>
                         <span class="tag-label">${m.groupName}</span>
                     </div>
                     <div class="flex items-start justify-between mb-6">
                         <h4 class="text-2xl font-black text-[#6D6875]">${m.charName}</h4>
-                        <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-black text-[#A5A5A5] uppercase mb-1">目前體力</span>
-                            <div onclick="quickUpdateStamina('${m.charId}', ${m.actIdx}, ${m.actMax})" class="relative w-20 h-20 cursor-pointer active:scale-90 transition-transform">
-                                <svg class="w-20 h-20">
-                                    <circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/>
-                                    <circle style="stroke: ${ringColor}" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/>
-                                </svg>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center font-black">
-                                    <span class="text-xl text-[#6D6875] leading-none">${m.current}</span>
-                                    <span class="text-[7px] text-[#A5A5A5] mt-1 animate-guide">刷新體力</span>
-                                </div>
+                        <div class="relative w-20 h-20 cursor-pointer" onclick="quickUpdateStamina('${m.charId}', ${m.actIdx}, ${m.actMax})">
+                            <svg class="w-20 h-20">
+                                <circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/>
+                                <circle style="stroke: ${ringColor}" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center font-black">
+                                <span class="text-xl text-[#6D6875] leading-none">${m.current}</span>
+                                <span class="text-[7px] text-[#A5A5A5] mt-1 animate-guide">修正</span>
                             </div>
                         </div>
                     </div>
                     <div class="bg-white/40 p-5 rounded-[1.5rem] border border-[#D7D3CC]/30">
-                        <p class="text-3xl font-black ${textColor} tracking-tighter mb-1">${countdownText}</p>
-                        <p class="text-[11px] font-bold text-[#8E9AAF] uppercase tracking-wider">${fullTimeLabel}</p>
+                        <p class="text-2xl font-black ${textColor}">${countdown}</p>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        // --- 名單與拖放邏輯 ---
+        // --- 名單管理與批量處理 (沿用附件功能) ---
         function renderManageUI() {
             const area = document.getElementById('groupListArea');
-            area.innerHTML = db.groups.map((g, gi) => {
-                const isDefault = g.id === 'default';
-                return `
-                <div class="bg-[#F4F2EE] p-5 md:p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
-                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
-                        <div class="flex items-center gap-3">
-                            <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
-                            ${!isDefault ? `<button onclick="editGroupName('${g.id}')" class="fat-pencil-btn">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1);">
-                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                </svg>
-                            </button>` : ''}
-                        </div>
+            area.innerHTML = db.groups.map((g, gi) => `
+                <div class="bg-[#F4F2EE] p-6 rounded-[2rem] border border-[#D7D3CC]">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
                         <div class="flex gap-2">
-                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-red-50 transition-colors whitespace-nowrap">清空</button>
-                            ${!isDefault ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors whitespace-nowrap">刪除</button>` : ''}
+                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] font-black">清空</button>
+                            ${g.id !== 'default' ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-red-500 font-black">刪除組</button>` : ''}
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-2 mb-4 bg-white/50 p-1.5 rounded-xl border border-dashed border-[#D7D3CC]">
-                        <input type="text" placeholder="新增人物..." class="flex-1 min-w-[120px] p-3 rounded-lg text-sm font-bold border-none bg-white shadow-inner outline-none focus:ring-2 focus:ring-[#8E9AAF]">
-                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-5 py-2.5 rounded-lg text-xs font-black transition-all active:scale-95 whitespace-nowrap">新增</button>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" placeholder="加人..." class="flex-1 p-3 rounded-lg text-sm font-bold border-none">
+                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-4 rounded-lg text-xs font-black">新增</button>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 min-h-[50px] member-list" data-gid="${g.id}">
-                        ${g.members.map((m, mi) => `<div draggable="true" 
-                                 ondragstart="handleDragStart(event, '${g.id}', ${mi})" 
-                                 ondragend="handleDragEnd(event)"
-                                 class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between items-center border border-[#D7D3CC] cursor-move shadow-sm hover:shadow-md transition-all">
-                                <span class="truncate pr-2">${m.name}</span>
-                                <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-[#AF7A7D] flex-shrink-0">✕</button>
-                            </div>`).join('')}
+                    <div class="grid grid-cols-2 gap-2">
+                        ${g.members.map((m, mi) => `<div class="bg-white p-2 rounded-lg text-xs font-black flex justify-between border border-[#D7D3CC]">
+                            <span>${m.name}</span>
+                            <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC]">✕</button>
+                        </div>`).join('')}
                     </div>
-                </div>`;
-            }).join('');
-            setupDragAndDrop();
+                </div>`).join('');
         }
 
-        let dragInfo = null;
-        function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); }
-        function handleDragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drop-zone').forEach(z => z.style.border = "1px solid #D7D3CC"); }
-        function setupDragAndDrop() {
-            const zones = document.querySelectorAll('.drop-zone');
-            zones.forEach(zone => {
-                zone.ondragover = e => { e.preventDefault(); zone.style.border = "2px dashed #FF9D6F"; };
-                zone.ondragleave = () => zone.style.border = "1px solid #D7D3CC";
-                zone.ondrop = e => {
-                    e.preventDefault(); zone.style.border = "1px solid #D7D3CC";
-                    if (!dragInfo) return;
-                    const targetGid = zone.dataset.gid;
-                    const sGroup = db.groups.find(g => g.id === dragInfo.gid);
-                    const tGroup = db.groups.find(g => g.id === targetGid);
-                    const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
-                    const listContainer = zone.querySelector('.member-list');
-                    const siblings = [...listContainer.querySelectorAll('.member-item:not(.dragging)')];
-                    const nextSibling = siblings.find(sibling => {
-                        const box = sibling.getBoundingClientRect();
-                        return e.clientY < box.top + box.height / 2;
-                    });
-                    if (nextSibling) {
-                        const nextIdx = tGroup.members.findIndex(m => m.name === nextSibling.querySelector('span').innerText);
-                        tGroup.members.splice(nextIdx, 0, movingItem);
-                    } else { tGroup.members.push(movingItem); }
-                    saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null;
-                };
-            });
-        }
-
-        // --- 批量管理 ---
+        function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
+        function addGroup() { const n = document.getElementById('newGroupName').value; if(n){ db.groups.push({id:'g'+Date.now(), name:n, members:[]}); document.getElementById('newGroupName').value=""; saveDB(); renderManageUI(); } }
+        function addMemberInLine(btn, gid) { const inp = btn.previousElementSibling; if(inp.value){ db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); } }
+        function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
+        function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
+        function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
+        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
+        function getGroupNameByCharId(id) { for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } return "未分類"; }
+        function changeSort(dir) { sortMode = (sortMode + dir + 4) % 4; document.getElementById('sortModeText').innerText = sortTexts[sortMode]; renderMonitoring(); }
+        
         function openBatchModal() {
-            const actIdx = document.getElementById('activitySelect').value;
-            const act = activities[actIdx];
-            document.getElementById('batchActName').innerText = `正在為「${act.name}」分配人物`;
             document.getElementById('batchInputList').innerHTML = db.groups.map(g => `
                 <div class="bg-[#F4F2EE] p-5 rounded-[2rem] border border-[#D7D3CC]">
-                    <div class="flex justify-between items-center mb-4 border-b border-[#D7D3CC] pb-2">
-                        <span class="font-black text-[#6D6875]">${g.name}</span>
-                        <div class="flex gap-2">
-                            <button onclick="toggleGroupBatch('${g.id}', true)" class="text-[10px] font-black text-indigo-500 hover:underline">全選此組</button>
-                            <button onclick="toggleGroupBatch('${g.id}', false)" class="text-[10px] font-black text-[#AF7A7D] hover:underline">取消</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 gap-2" data-batch-gid="${g.id}">
-                        ${g.members.map(m => `<div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
-                                <input type="checkbox" class="char-cb w-6 h-6 accent-[#FF9D6F]" data-name="${m.name}" data-id="${m.id}">
-                                <span class="flex-1 font-black text-[#6D6875]">${m.name}</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[10px] font-black text-[#A5A5A5]">起始體力</span>
-                                    <input type="number" min="0" class="stamina-input w-20 p-2 bg-[#F4F2EE] rounded-lg text-center font-black outline-none border-none focus:ring-2 focus:ring-[#8E9AAF]" value="0">
-                                </div>
+                    <p class="font-black text-[#6D6875] mb-4">${g.name}</p>
+                    <div class="space-y-2">
+                        ${g.members.map(m => `
+                            <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-[#D7D3CC]">
+                                <input type="checkbox" class="char-cb w-5 h-5" data-name="${m.name}" data-id="${m.id}">
+                                <span class="flex-1 font-bold text-sm">${m.name}</span>
+                                <input type="number" class="stamina-input w-16 p-1 bg-[#F4F2EE] rounded text-center text-xs font-black" value="0">
                             </div>`).join('')}
                     </div>
                 </div>`).join('');
             document.getElementById('batchModal').classList.replace('hidden', 'flex');
         }
 
-        function toggleAllBatch(checked) { document.querySelectorAll('.char-cb').forEach(cb => cb.checked = checked); }
-        function toggleGroupBatch(gid, checked) { document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => cb.checked = checked); }
         function submitBatch() {
             const actIdx = document.getElementById('activitySelect').value;
-            const cbs = document.querySelectorAll('.char-cb:checked');
-            if (cbs.length === 0) return customAlert("提示", "請選擇至少一位人物");
-            cbs.forEach(cb => {
-                const row = cb.closest('.flex');
-                const val = parseInt(row.querySelector('.stamina-input').value) || 0;
+            const rows = document.querySelectorAll('.char-cb:checked');
+            rows.forEach(cb => {
+                const parent = cb.closest('.flex');
+                const val = parseInt(parent.querySelector('.stamina-input').value) || 0;
                 const charId = cb.dataset.id;
-                const data = { charId: charId, charName: cb.dataset.name, actIdx: actIdx, initStamina: Math.max(0, val), startTime: Date.now() };
+                const data = { charId, charName: cb.dataset.name, actIdx, initStamina: val, startTime: Date.now() };
                 const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
                 if(idx > -1) monitors[idx] = data; else monitors.push(data);
             });
             saveActive(); closeModal('batchModal'); renderMonitoring();
         }
 
-        // --- 輔助功能 ---
-        function quickUpdateStamina(charId, actIdx, maxStamina) {
-            openCustomPrompt("快速刷新體力", `輸入 ${getCharName(charId)} 的目前體力 (上限：${maxStamina})`, "0", false, (val) => {
-                const num = parseInt(val);
-                if (isNaN(num) || num < 0) return;
-                const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
-                if(idx > -1) {
-                    monitors[idx].initStamina = Math.min(num, maxStamina);
-                    monitors[idx].startTime = Date.now();
-                    saveActive(); renderMonitoring();
-                }
-            });
-        }
-
-        function getCharName(id) { for(let g of db.groups) { const m = g.members.find(m=>m.id===id); if(m) return m.name; } return "未知"; }
-        function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
-        function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
-        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
-        function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
-        function addGroup() { 
-            const n = document.getElementById('newGroupName').value; 
-            if(n){ 
-                db.groups.push({id:'g'+Date.now(), name:n, members:[]}); 
-                document.getElementById('newGroupName').value=""; 
-                saveDB(); renderManageUI(); 
-            }
-        }
-        function addMemberInLine(btn, gid) { 
-            const inp = btn.previousElementSibling; 
-            if(inp.value){ 
-                db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); 
-                inp.value=""; saveDB(); renderManageUI(); 
-            }
-        }
-        function removeMember(gid, mi) { 
-            const g = db.groups.find(g=>g.id===gid); 
-            g.members.splice(mi,1); 
-            saveDB(); renderManageUI(); 
-        }
-        function getGroupNameByCharId(id) { for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } return "未分類"; }
-        function changeSort(dir) { 
-            sortMode = (sortMode + dir + 4) % 4; 
-            document.getElementById('sortModeText').innerText = sortTexts[sortMode]; 
-            renderMonitoring(); 
-        }
-        function askClearAll() { 
-            openCustomPrompt("確定清空？", "這將移除主介面上所有正在監控的項目。", "", false, () => { 
-                monitors = []; saveActive(); renderMonitoring(); 
-            }); 
-        }
-        function askClearGroup(gid) { 
-            openCustomPrompt("清空成員？", "將移除此群組內的所有人物。", "", false, () => { 
-                db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); 
-            }); 
-        }
-        function askRemoveGroup(gi) { 
-            openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", false, () => { 
-                db.groups.splice(gi,1); saveDB(); renderManageUI(); 
-            }); 
-        }
-        function removeMonitor(charId, actIdx) { 
-            monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); 
-            saveActive(); renderMonitoring(); 
-        }
-        function editGroupName(gid) {
-            const group = db.groups.find(g => g.id === gid);
-            openCustomPrompt("編輯群組名稱", "請輸入新名稱：", group.name, false, (n) => {
-                if(n && n.trim() !== ""){ group.name = n.trim(); saveDB(); renderManageUI(); }
-            });
-        }
+        function removeMonitor(charId, actIdx) { monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); saveActive(); renderMonitoring(); }
+        function askClearAll() { openCustomPrompt("確定清空？", "移除主介面所有監測。", "", true, () => { monitors = []; saveActive(); renderMonitoring(); }); }
+        function askClearGroup(gid) { openCustomPrompt("清空組員？", "移除組內所有人。", "", true, () => { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); }); }
+        function askRemoveGroup(gi) { openCustomPrompt("刪除組？", "永久刪除組別。", "", true, () => { db.groups.splice(gi,1); saveDB(); renderManageUI(); }); }
+        function quickUpdateStamina(charId, actIdx, max) { openCustomPrompt("修正體力", `輸入目前的體力(上限:${max})`, "0", false, (v) => {
+            const n = parseInt(v); if(!isNaN(n)){ const i = monitors.findIndex(m=>m.charId===charId&&m.actIdx==actIdx); if(i>-1){ monitors[i].initStamina=Math.min(n,max); monitors[i].startTime=Date.now(); saveActive(); renderMonitoring(); }}
+        }); }
     </script>
 </body>
 </html>
