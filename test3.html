@@ -149,8 +149,8 @@
                         </label>
                     </div>
                     <p class="text-[9px] font-black text-[#A5A5A5] mb-2 uppercase">Channel Access Token</p>
-                    <input id="lineTokenInput" type="password" placeholder="貼上您的 API Token..." 
-                           class="w-full p-4 bg-[#F4F2EE] border border-[#D7D3CC] rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-[#06C755]">
+                    <input id="lineTokenInput" type="text" readonly value="https://script.google.com/macros/s/AKfycbxna2VNkReOpEGTZsYq1LhgAd6zr0YfMRk_ADDn-js-2l9029KV8hWBhj2oZjfmaXxxsA/exec" 
+                           class="w-full p-4 bg-[#F4F2EE] border border-[#D7D3CC] rounded-xl text-[10px] font-bold text-[#A5A5A5] outline-none">
                 </div>
             </div>
 
@@ -185,29 +185,29 @@
         </div>
     </div>
 
-    <div id="customPromptModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-[100] backdrop-blur-md">
+    <div id="customPromptModal" class="fixed inset-0 bg-[#6D6875]/90 hidden items-center justify-center p-4 z-[200] backdrop-blur-md">
         <div class="bg-[#FBFBF9] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative border border-[#D7D3CC]">
             <h3 id="promptTitle" class="text-xl font-black mb-4 text-[#5E548E]">提示</h3>
             <p id="promptSub" class="text-sm font-bold text-[#8E9AAF] mb-4"></p>
             <input id="promptInput" type="text" class="w-full p-4 bg-white border border-[#D7D3CC] rounded-2xl font-bold mb-6 outline-none focus:ring-2 focus:ring-[#FF9D6F]">
             <div class="flex gap-3">
-                <button onclick="closeModal('customPromptModal')" class="flex-1 py-4 bg-[#D7D3CC] text-white rounded-2xl font-black hover:bg-[#C2BEB6]">取消</button>
+                <button id="promptCancelBtn" onclick="closeModal('customPromptModal')" class="flex-1 py-4 bg-[#D7D3CC] text-white rounded-2xl font-black hover:bg-[#C2BEB6]">取消</button>
                 <button id="promptConfirmBtn" class="flex-1 py-4 bg-[#FF9D6F] text-white rounded-2xl font-black hover:bg-[#E88D5F]">確認</button>
             </div>
         </div>
     </div>
 
     <script>
+        // --- 基本變數 ---
         let activities = [];
         let db = JSON.parse(localStorage.getItem('stamina_v15_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
         let monitors = JSON.parse(localStorage.getItem('stamina_v15_active')) || [];
-        
-        // 僅保留 LINE 通知設定
-        let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || { line: false, token: "" };
+        let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || { line: false, gasUrl: "https://script.google.com/macros/s/AKfycbxna2VNkReOpEGTZsYq1LhgAd6zr0YfMRk_ADDn-js-2l9029KV8hWBhj2oZjfmaXxxsA/exec" };
         let notifiedSet = new Set();
         let sortMode = 0; 
         const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
 
+        // --- 初始化 ---
         window.onload = function() {
             const gameData = JSON.parse(sessionStorage.getItem('gameData'));
             if(!gameData) return location.href = "index.html"; 
@@ -225,39 +225,66 @@
                 document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / 1 體`;
                 document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
             };
-            
             select.dispatchEvent(new Event('change'));
             
-            // 初始化 LINE UI 設定
             document.getElementById('lineNotifyToggle').checked = notifySettings.line;
-            document.getElementById('lineTokenInput').value = notifySettings.token;
 
             renderMonitoring();
             setInterval(renderMonitoring, 1000);
         };
 
+        // --- 核心彈窗邏輯 (取代系統彈窗) ---
+        function customAlert(title, sub) {
+            openCustomPrompt(title, sub, "", true, () => {});
+        }
+
+        function openCustomPrompt(t, s, d, isAlert, f) {
+            document.getElementById('promptTitle').innerText = t;
+            document.getElementById('promptSub').innerText = s;
+            const inp = document.getElementById('promptInput');
+            inp.style.display = isAlert ? 'none' : 'block'; 
+            inp.value = d || "";
+            
+            const cancelBtn = document.getElementById('promptCancelBtn');
+            cancelBtn.style.display = isAlert ? 'none' : 'block';
+
+            document.getElementById('customPromptModal').classList.replace('hidden', 'flex');
+            document.getElementById('promptConfirmBtn').onclick = () => { 
+                f(inp.value); 
+                closeModal('customPromptModal'); 
+            };
+        }
+
+        // --- LINE 設定 ---
         function openNotifyModal() {
             document.getElementById('notifyModal').classList.replace('hidden', 'flex');
         }
 
         function saveNotifySettings() {
             notifySettings.line = document.getElementById('lineNotifyToggle').checked;
-            notifySettings.token = document.getElementById('lineTokenInput').value.trim();
             localStorage.setItem('stamina_notify_cfg', JSON.stringify(notifySettings));
             closeModal('notifyModal');
-            alert("LINE 通知設定已儲存");
+            customAlert("儲存成功", "LINE 通知設定已更新。");
         }
 
-        // 通知邏輯整合
+        async function sendLineMsg(msg) {
+            if(!notifySettings.gasUrl || !notifySettings.line) return;
+            try {
+                await fetch(notifySettings.gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
+            } catch (e) { console.error("LINE 發送失敗", e); }
+        }
+
         function triggerFullNotification(charName, actName) {
             const msg = `⚡ 體力回滿：${charName} 的 ${actName} 體力已充滿！`;
-            
-            if (notifySettings.line && notifySettings.token) {
-                // 這裡將通知發送到您的 LINE Messenger API
-                console.log("LINE 通知觸發：" + msg);
-            }
+            sendLineMsg(msg);
         }
 
+        // --- 監控渲染 ---
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
             if(monitors.length === 0) {
@@ -339,7 +366,7 @@
             }).join('');
         }
 
-        // --- 名單管理與拖放邏輯 (保持原樣) ---
+        // --- 名單與拖放邏輯 ---
         function renderManageUI() {
             const area = document.getElementById('groupListArea');
             area.innerHTML = db.groups.map((g, gi) => {
@@ -378,33 +405,6 @@
             setupDragAndDrop();
         }
 
-        function openBatchModal() {
-            const actIdx = document.getElementById('activitySelect').value;
-            const act = activities[actIdx];
-            document.getElementById('batchActName').innerText = `正在為「${act.name}」分配人物`;
-            document.getElementById('batchInputList').innerHTML = db.groups.map(g => `
-                <div class="bg-[#F4F2EE] p-5 rounded-[2rem] border border-[#D7D3CC]">
-                    <div class="flex justify-between items-center mb-4 border-b border-[#D7D3CC] pb-2">
-                        <span class="font-black text-[#6D6875]">${g.name}</span>
-                        <div class="flex gap-2">
-                            <button onclick="toggleGroupBatch('${g.id}', true)" class="text-[10px] font-black text-indigo-500 hover:underline">全選此組</button>
-                            <button onclick="toggleGroupBatch('${g.id}', false)" class="text-[10px] font-black text-[#AF7A7D] hover:underline">取消</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 gap-2" data-batch-gid="${g.id}">
-                        ${g.members.map(m => `<div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
-                                <input type="checkbox" class="char-cb w-6 h-6 accent-[#FF9D6F]" data-name="${m.name}" data-id="${m.id}">
-                                <span class="flex-1 font-black text-[#6D6875]">${m.name}</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[10px] font-black text-[#A5A5A5]">起始體力</span>
-                                    <input type="number" min="0" class="stamina-input w-20 p-2 bg-[#F4F2EE] rounded-lg text-center font-black outline-none border-none focus:ring-2 focus:ring-[#8E9AAF]" value="0">
-                                </div>
-                            </div>`).join('')}
-                    </div>
-                </div>`).join('');
-            document.getElementById('batchModal').classList.replace('hidden', 'flex');
-        }
-
         let dragInfo = null;
         function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); }
         function handleDragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drop-zone').forEach(z => z.style.border = "1px solid #D7D3CC"); }
@@ -435,12 +435,40 @@
             });
         }
 
+        // --- 批量管理 ---
+        function openBatchModal() {
+            const actIdx = document.getElementById('activitySelect').value;
+            const act = activities[actIdx];
+            document.getElementById('batchActName').innerText = `正在為「${act.name}」分配人物`;
+            document.getElementById('batchInputList').innerHTML = db.groups.map(g => `
+                <div class="bg-[#F4F2EE] p-5 rounded-[2rem] border border-[#D7D3CC]">
+                    <div class="flex justify-between items-center mb-4 border-b border-[#D7D3CC] pb-2">
+                        <span class="font-black text-[#6D6875]">${g.name}</span>
+                        <div class="flex gap-2">
+                            <button onclick="toggleGroupBatch('${g.id}', true)" class="text-[10px] font-black text-indigo-500 hover:underline">全選此組</button>
+                            <button onclick="toggleGroupBatch('${g.id}', false)" class="text-[10px] font-black text-[#AF7A7D] hover:underline">取消</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-2" data-batch-gid="${g.id}">
+                        ${g.members.map(m => `<div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
+                                <input type="checkbox" class="char-cb w-6 h-6 accent-[#FF9D6F]" data-name="${m.name}" data-id="${m.id}">
+                                <span class="flex-1 font-black text-[#6D6875]">${m.name}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-black text-[#A5A5A5]">起始體力</span>
+                                    <input type="number" min="0" class="stamina-input w-20 p-2 bg-[#F4F2EE] rounded-lg text-center font-black outline-none border-none focus:ring-2 focus:ring-[#8E9AAF]" value="0">
+                                </div>
+                            </div>`).join('')}
+                    </div>
+                </div>`).join('');
+            document.getElementById('batchModal').classList.replace('hidden', 'flex');
+        }
+
         function toggleAllBatch(checked) { document.querySelectorAll('.char-cb').forEach(cb => cb.checked = checked); }
         function toggleGroupBatch(gid, checked) { document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => cb.checked = checked); }
         function submitBatch() {
             const actIdx = document.getElementById('activitySelect').value;
             const cbs = document.querySelectorAll('.char-cb:checked');
-            if (cbs.length === 0) return alert('請選擇至少一位人物');
+            if (cbs.length === 0) return customAlert("提示", "請選擇至少一位人物");
             cbs.forEach(cb => {
                 const row = cb.closest('.flex');
                 const val = parseInt(row.querySelector('.stamina-input').value) || 0;
@@ -451,6 +479,8 @@
             });
             saveActive(); closeModal('batchModal'); renderMonitoring();
         }
+
+        // --- 輔助功能 ---
         function quickUpdateStamina(charId, actIdx, maxStamina) {
             openCustomPrompt("快速刷新體力", `輸入 ${getCharName(charId)} 的目前體力 (上限：${maxStamina})`, "0", false, (val) => {
                 const num = parseInt(val);
@@ -463,28 +493,57 @@
                 }
             });
         }
+
         function getCharName(id) { for(let g of db.groups) { const m = g.members.find(m=>m.id===id); if(m) return m.name; } return "未知"; }
-        function openCustomPrompt(t, s, d, c, f) {
-            document.getElementById('promptTitle').innerText = t;
-            document.getElementById('promptSub').innerText = s;
-            const inp = document.getElementById('promptInput');
-            inp.style.display = c ? 'none' : 'block'; inp.value = d || "";
-            document.getElementById('customPromptModal').classList.replace('hidden', 'flex');
-            document.getElementById('promptConfirmBtn').onclick = () => { f(inp.value); closeModal('customPromptModal'); };
-        }
         function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
         function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
         function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
         function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
-        function addGroup() { const n = document.getElementById('newGroupName').value; if(n){ db.groups.push({id:'g'+Date.now(), name:n, members:[]}); document.getElementById('newGroupName').value=""; saveDB(); renderManageUI(); }}
-        function addMemberInLine(btn, gid) { const inp = btn.previousElementSibling; if(inp.value){ db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); }}
-        function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
+        function addGroup() { 
+            const n = document.getElementById('newGroupName').value; 
+            if(n){ 
+                db.groups.push({id:'g'+Date.now(), name:n, members:[]}); 
+                document.getElementById('newGroupName').value=""; 
+                saveDB(); renderManageUI(); 
+            }
+        }
+        function addMemberInLine(btn, gid) { 
+            const inp = btn.previousElementSibling; 
+            if(inp.value){ 
+                db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); 
+                inp.value=""; saveDB(); renderManageUI(); 
+            }
+        }
+        function removeMember(gid, mi) { 
+            const g = db.groups.find(g=>g.id===gid); 
+            g.members.splice(mi,1); 
+            saveDB(); renderManageUI(); 
+        }
         function getGroupNameByCharId(id) { for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } return "未分類"; }
-        function changeSort(dir) { sortMode = (sortMode + dir + 4) % 4; document.getElementById('sortModeText').innerText = sortTexts[sortMode]; renderMonitoring(); }
-        function askClearAll() { openCustomPrompt("確定清空？", "這將移除主介面上所有正在監控的項目。", "", true, () => { monitors = []; saveActive(); renderMonitoring(); }); }
-        function askClearGroup(gid) { openCustomPrompt("清空成員？", "將移除此群組內的所有人物。", "", true, () => { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); }); }
-        function askRemoveGroup(gi) { openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", true, () => { db.groups.splice(gi,1); saveDB(); renderManageUI(); }); }
-        function removeMonitor(charId, actIdx) { monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); saveActive(); renderMonitoring(); }
+        function changeSort(dir) { 
+            sortMode = (sortMode + dir + 4) % 4; 
+            document.getElementById('sortModeText').innerText = sortTexts[sortMode]; 
+            renderMonitoring(); 
+        }
+        function askClearAll() { 
+            openCustomPrompt("確定清空？", "這將移除主介面上所有正在監控的項目。", "", false, () => { 
+                monitors = []; saveActive(); renderMonitoring(); 
+            }); 
+        }
+        function askClearGroup(gid) { 
+            openCustomPrompt("清空成員？", "將移除此群組內的所有人物。", "", false, () => { 
+                db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); 
+            }); 
+        }
+        function askRemoveGroup(gi) { 
+            openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", false, () => { 
+                db.groups.splice(gi,1); saveDB(); renderManageUI(); 
+            }); 
+        }
+        function removeMonitor(charId, actIdx) { 
+            monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); 
+            saveActive(); renderMonitoring(); 
+        }
         function editGroupName(gid) {
             const group = db.groups.find(g => g.id === gid);
             openCustomPrompt("編輯群組名稱", "請輸入新名稱：", group.name, false, (n) => {
