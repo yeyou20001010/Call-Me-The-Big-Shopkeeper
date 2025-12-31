@@ -89,19 +89,22 @@
                 </div>
             </div>
             
-            <div class="flex gap-3 flex-wrap justify-center items-center">
-                <div class="flex items-center bg-[#F0EFEB] rounded-2xl p-1 border border-[#D7D3CC]">
+            <div class="flex flex-col lg:flex-row gap-3 items-center">
+                <div class="flex items-center bg-[#F0EFEB] rounded-2xl p-1 border border-[#D7D3CC] w-full lg:w-auto">
                     <button onclick="changeSort(-1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❮</button>
-                    <div class="px-4 min-w-[150px] text-center">
+                    <div class="px-4 min-w-[150px] text-center flex-1">
                         <p class="text-[10px] font-black text-[#A5A5A5] uppercase">排序方式</p>
                         <span id="sortModeText" class="font-black text-sm text-[#6D6875]">按活動 (預設)</span>
                     </div>
                     <button onclick="changeSort(1)" class="p-3 hover:bg-white rounded-xl transition text-[#8E9AAF] font-bold">❯</button>
                 </div>
-                <button onclick="openNotifyModal()" class="bg-[#06C755] text-white px-6 py-4 rounded-2xl font-black shadow-sm hover:bg-[#05B34C] transition-all active:scale-95">🔔 通知設定</button>
-                <button onclick="openManageModal()" class="bg-[#B8B0A5] text-white px-6 py-4 rounded-2xl font-black shadow-sm hover:bg-[#A69D92] transition-all active:scale-95">👥 名單管理</button>
-                <button onclick="askClearAll()" class="bg-[#AF7A7D] text-white px-6 py-4 rounded-2xl font-black shadow-sm hover:bg-[#9B6B6E] transition-all active:scale-95">🗑️ 全部清空</button>
-                <button onclick="window.location.replace('portal.html')" class="bg-[#6D6875] text-white px-6 py-4 rounded-2xl font-black shadow-sm hover:bg-[#5A5562] transition-all active:scale-95">返回選單</button>
+                
+                <div class="grid grid-cols-2 lg:flex gap-3 w-full lg:w-auto">
+                    <button onclick="openNotifyModal()" class="bg-[#06C755] text-white px-4 py-4 rounded-2xl font-black shadow-sm hover:bg-[#05B34C] transition-all active:scale-95 text-sm whitespace-nowrap">🔔 通知設定</button>
+                    <button onclick="openManageModal()" class="bg-[#B8B0A5] text-white px-4 py-4 rounded-2xl font-black shadow-sm hover:bg-[#A69D92] transition-all active:scale-95 text-sm whitespace-nowrap">👥 名單管理</button>
+                    <button onclick="askClearAll()" class="bg-[#AF7A7D] text-white px-4 py-4 rounded-2xl font-black shadow-sm hover:bg-[#9B6B6E] transition-all active:scale-95 text-sm whitespace-nowrap">🗑️ 全部清空</button>
+                    <button onclick="window.location.replace('portal.html')" class="bg-[#6D6875] text-white px-4 py-4 rounded-2xl font-black shadow-sm hover:bg-[#5A5562] transition-all active:scale-95 text-sm whitespace-nowrap">返回選單</button>
+                </div>
             </div>
         </div>
 
