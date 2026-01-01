@@ -44,6 +44,7 @@
         @keyframes blinker { 50% { opacity: 0.3; } }
         .animate-guide { animation: blinker 2s linear infinite; }
         
+        /* 編輯按鈕樣式 */
         .fat-pencil-btn { 
             display: inline-flex;
             align-items: center;
@@ -147,9 +148,7 @@
                 <div class="bg-white p-5 rounded-3xl border border-[#D7D3CC]">
                     <p class="text-[9px] font-black text-[#A5A5A5] mb-2 uppercase">您的個人通知 ID</p>
                     <input id="userIdInput" type="text" placeholder="請貼上 U 開頭的 ID..." class="w-full p-4 bg-[#F4F2EE] border border-[#D7D3CC] rounded-xl text-xs font-bold text-[#6D6875] outline-none mb-3">
-                    <a href="https://lin.ee/P511ju5" target="_blank" class="block w-full text-center py-3 bg-[#F0EFEB] text-[#8E9AAF] rounded-xl text-[10px] font-black hover:bg-[#EAE8E4] transition-all">
-                        💬 點此加入好友後，輸入「查詢ID」以獲取個人代碼
-                    </a>
+                    <a href="https://lin.ee/P511ju5" target="_blank" class="block w-full text-center py-3 bg-[#F0EFEB] text-[#8E9AAF] rounded-xl text-[10px] font-black hover:bg-[#EAE8E4] transition-all">💬 點此加入好友後，輸入「查詢ID」以獲取個人代碼</a>
                 </div>
             </div>
             <button onclick="saveNotifySettings()" class="w-full mt-8 py-5 bg-[#06C755] text-white rounded-[1.5rem] font-black shadow-lg">儲存設定並測試</button>
@@ -196,7 +195,7 @@
     </div>
 
     <script>
-        // --- 核心變數 (完全保留自 test3.html) ---
+        // --- 核心變數設定 ---
         const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbxna2VNkReOpEGTZsYq1LhgAd6zr0YfMRk_ADDn-js-2l9029KV8hWBhj2oZjfmaXxxsA/exec";
 
         let activities = [];
@@ -204,89 +203,60 @@
         let monitors = JSON.parse(localStorage.getItem('stamina_v15_active')) || [];
         let sortMode = 0; 
         const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
-        
         let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || { line: false, userId: "" };
-        let notifiedSet = new Set(); 
+        let notifiedSet = new Set();
 
         window.onload = function() {
             const gameData = JSON.parse(sessionStorage.getItem('gameData'));
             if(!gameData) return location.href = "index.html"; 
-            
             activities = gameData.activities;
             const select = document.getElementById('activitySelect');
             activities.forEach((act, idx) => {
                 const opt = document.createElement('option'); 
-                opt.value = idx; 
-                opt.textContent = act.name;
+                opt.value = idx; opt.textContent = act.name;
                 select.appendChild(opt);
             });
-
             select.onchange = () => {
                 const act = activities[select.value];
                 document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / 1 體`;
                 document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
             };
-            
             select.dispatchEvent(new Event('change'));
             document.getElementById('lineNotifyToggle').checked = notifySettings.line;
             document.getElementById('userIdInput').value = notifySettings.userId || "";
-
             renderMonitoring();
             setInterval(renderMonitoring, 1000);
         };
 
-        // --- LINE 通知功能 (完整保留) ---
+        // --- 通知邏輯 ---
         function saveNotifySettings() {
             notifySettings.line = document.getElementById('lineNotifyToggle').checked;
             notifySettings.userId = document.getElementById('userIdInput').value.trim();
             localStorage.setItem('stamina_notify_cfg', JSON.stringify(notifySettings));
             closeModal('notifyModal');
-            if (notifySettings.line && notifySettings.userId) {
-                sendLineMsg("⚡ 監控系統連線成功！當體力回滿時，我會在這裡通知您。");
-            }
+            if (notifySettings.line && notifySettings.userId) sendLineMsg("⚡ 監控系統連線成功！");
         }
-
         async function sendLineMsg(msg) {
             if(!notifySettings.line || !notifySettings.userId || !MY_GAS_URL) return;
-            try {
-                await fetch(MY_GAS_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: notifySettings.userId, message: msg })
-                });
-            } catch (e) { console.error("LINE 發送失敗", e); }
+            try { await fetch(MY_GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ userId: notifySettings.userId, message: msg }) }); } catch (e) {}
         }
+        function triggerFullNotification(charName, actName) { sendLineMsg(`⚡ 體力回滿：\n角色：${charName}\n活動：${actName}`); }
 
-        function triggerFullNotification(charName, actName) {
-            sendLineMsg(`⚡ 體力回滿提醒：\n角色：${charName}\n活動：${actName}\n請及時登入處理！`);
-        }
-
-        // --- 監測渲染邏輯 (完整保留) ---
+        // --- 主監控介面渲染 ---
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
-            if(monitors.length === 0) {
-                grid.innerHTML = "";
-                document.getElementById('emptyDisplay').classList.remove('hidden');
-                return;
-            }
+            if(monitors.length === 0) { grid.innerHTML = ""; document.getElementById('emptyDisplay').classList.remove('hidden'); return; }
             document.getElementById('emptyDisplay').classList.add('hidden');
             const now = Date.now();
-            
             let list = monitors.map((m) => {
                 const act = activities[m.actIdx];
                 const mins = (now - m.startTime) / 60000;
                 let current = Math.min(act.maxStamina, Math.max(0, m.initStamina + Math.floor(mins / act.minPerStamina)));
                 const isFull = current >= act.maxStamina;
                 let remSec = isFull ? 0 : ((act.maxStamina - current) * act.minPerStamina - (mins % act.minPerStamina)) * 60;
-                
                 const mKey = `${m.charId}-${m.actIdx}`;
-                if(isFull && !notifiedSet.has(mKey)) {
-                    triggerFullNotification(m.charName, act.name);
-                    notifiedSet.add(mKey);
-                } else if(!isFull) {
-                    notifiedSet.delete(mKey);
-                }
+                if(isFull && !notifiedSet.has(mKey)) { triggerFullNotification(m.charName, act.name); notifiedSet.add(mKey); }
+                else if(!isFull) notifiedSet.delete(mKey);
                 return { ...m, current, isFull, remSec, actMax: act.maxStamina, actName: act.name, groupName: getGroupNameByCharId(m.charId) };
             });
 
@@ -301,7 +271,6 @@
                 const textColor = m.isFull ? 'text-full-green' : 'text-status-pink';
                 let countdownText = m.isFull ? "體力已回滿" : `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
                 let fullTimeLabel = m.isFull ? "狀態：體力已充滿" : `預計回滿時間：${new Date(now + m.remSec * 1000).getHours().toString().padStart(2,'0')}:${new Date(now + m.remSec * 1000).getMinutes().toString().padStart(2,'0')}`;
-
                 return `
                 <div class="${m.isFull?'card-full-highlight':'card-standard'} p-8 rounded-[2.5rem] flex flex-col relative transition-all duration-500 shadow-sm">
                     <button onclick="removeMonitor('${m.charId}', ${m.actIdx})" class="absolute top-6 right-8 text-[#D7D3CC] hover:text-[#AF7A7D] text-2xl transition-colors">✕</button>
@@ -310,14 +279,8 @@
                         <h4 class="text-2xl font-black text-[#6D6875]">${m.charName}</h4>
                         <div class="flex flex-col items-center">
                             <div onclick="quickUpdateStamina('${m.charId}', ${m.actIdx}, ${m.actMax})" class="relative w-20 h-20 cursor-pointer active:scale-90 transition-transform">
-                                <svg class="w-20 h-20">
-                                    <circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/>
-                                    <circle style="stroke: ${ringColor}" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/>
-                                </svg>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center font-black">
-                                    <span class="text-xl text-[#6D6875] leading-none">${m.current}</span>
-                                    <span class="text-[7px] text-[#A5A5A5] mt-1 animate-guide">刷新體力</span>
-                                </div>
+                                <svg class="w-20 h-20"><circle class="text-[#F0EFEB]" stroke-width="8" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40"/><circle style="stroke: ${ringColor}" class="progress-ring-circle" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="${201-(201*percent/100)}" stroke-linecap="round" fill="transparent" r="32" cx="40" cy="40"/></svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center font-black"><span class="text-xl text-[#6D6875] leading-none">${m.current}</span><span class="text-[7px] text-[#A5A5A5] mt-1 animate-guide">刷新體力</span></div>
                             </div>
                         </div>
                     </div>
@@ -329,110 +292,164 @@
             }).join('');
         }
 
-        // --- 名單管理 UI ---
-        function renderManageUI() {
-            const area = document.getElementById('groupListArea');
-            area.innerHTML = db.groups.map((g, gi) => {
-                const isDefault = g.id === 'default';
-                return `
-                <div class="bg-[#F4F2EE] p-5 md:p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
-                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
-                        <div class="flex items-center gap-3">
-                            <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
-                            ${!isDefault ? `
-                            <button onclick="editGroupName('${g.id}')" class="fat-pencil-btn">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1);">
-                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                </svg>
-                            </button>` : ''}
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-red-50 transition-colors">清空</button>
-                            ${!isDefault ? `<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-[#9B6B6E] transition-colors">刪除</button>` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-wrap gap-2 mb-4 bg-white/50 p-1.5 rounded-xl border border-dashed border-[#D7D3CC]">
-                        <input type="text" placeholder="新增人物..." class="flex-1 min-w-[120px] p-3 rounded-lg text-sm font-bold border-none bg-white shadow-inner outline-none">
-                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-5 py-2.5 rounded-lg text-xs font-black transition-all active:scale-95 whitespace-nowrap">新增</button>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3 min-h-[50px] member-list" data-gid="${g.id}">
-                        ${g.members.map((m, mi) => `
-                            <div draggable="true" 
-                                 ondragstart="handleDragStart(event, '${g.id}', ${mi})" 
-                                 ondragend="handleDragEnd(event)"
-                                 class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between items-center border border-[#D7D3CC] cursor-move shadow-sm hover:shadow-md transition-all">
-                                <span class="truncate pr-2">${m.name}</span>
-                                <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-[#AF7A7D] flex-shrink-0">✕</button>
-                            </div>`).join('')}
-                    </div>
-                </div>`;
-            }).join('');
-            setupDragAndDrop();
-        }
-
-        // --- 核心修正：座標精準定位邏輯 (滑到哪放哪) ---
+        // --- 修正後的精準拖拽邏輯 ---
         let dragInfo = null;
-        function handleDragStart(e, gid, mi) { 
-            dragInfo = { gid, mi }; 
-            e.target.classList.add('dragging'); 
-            e.dataTransfer.effectAllowed = 'move'; 
-        }
+        function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); }
         function handleDragEnd(e) { e.target.classList.remove('dragging'); }
 
         function setupDragAndDrop() {
             const zones = document.querySelectorAll('.drop-zone');
             zones.forEach(zone => {
-                zone.ondragover = e => { e.preventDefault(); };
+                zone.ondragover = e => e.preventDefault();
                 zone.ondrop = e => {
                     e.preventDefault();
                     if (!dragInfo) return;
-
                     const targetGid = zone.dataset.gid;
                     const sGroup = db.groups.find(g => g.id === dragInfo.gid);
                     const tGroup = db.groups.find(g => g.id === targetGid);
-                    
-                    // 先從原組中移出
                     const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
                     
                     const container = zone.querySelector('.member-list');
-                    // 使用歐幾里得距離找最近的元素，實現「滑到哪放哪」
-                    const afterElement = getClosestElement(container, e.clientX, e.clientY);
+                    const dropResult = getInsertPosition(container, e.clientX, e.clientY);
                     
-                    if (!afterElement) {
+                    if (!dropResult.element) {
                         tGroup.members.push(movingItem);
                     } else {
-                        const afterName = afterElement.querySelector('span').innerText;
-                        const afterIdx = tGroup.members.findIndex(m => m.name === afterName);
-                        tGroup.members.splice(afterIdx, 0, movingItem);
+                        const targetName = dropResult.element.querySelector('span').innerText;
+                        const targetIdx = tGroup.members.findIndex(m => m.name === targetName);
+                        // 如果滑鼠在目標元素的「右側或下方」，則插入在該元素之後
+                        const finalIdx = dropResult.after ? targetIdx + 1 : targetIdx;
+                        tGroup.members.splice(finalIdx, 0, movingItem);
                     }
-
                     saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null;
                 };
             });
         }
 
-        // 核心算法：計算滑鼠座標與各個卡片中心點的絕對距離
-        function getClosestElement(container, x, y) {
+        function getInsertPosition(container, x, y) {
             const items = [...container.querySelectorAll('.member-item:not(.dragging)')];
-            return items.reduce((closest, child) => {
+            let closest = { distance: Number.POSITIVE_INFINITY, element: null, after: false };
+
+            items.forEach(child => {
                 const box = child.getBoundingClientRect();
                 const centerX = box.left + box.width / 2;
                 const centerY = box.top + box.height / 2;
-                
-                // 計算平方距離 (歐氏距離)
+                // 計算滑鼠與元素中心點的距離（歐幾里得距離）
                 const distance = Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2);
-                
+
                 if (distance < closest.distance) {
-                    return { distance: distance, element: child };
-                } else {
-                    return closest;
+                    // 判斷邏輯：如果滑鼠位置超過中心點（X 或 Y 較大），視為「之後」
+                    const isAfter = (y > centerY + 5) || (y > box.top && x > centerX + 10);
+                    closest = { distance, element: child, after: isAfter };
                 }
-            }, { distance: Number.POSITIVE_INFINITY }).element;
+            });
+            return closest;
         }
 
-        // --- 其他功能函數 (完整比對並保留自 test3.html) ---
+        // --- 管理介面渲染與操作 (補回漏掉的函數) ---
+        function renderManageUI() {
+            const area = document.getElementById('groupListArea');
+            area.innerHTML = db.groups.map((g, gi) => `
+                <div class="bg-[#F4F2EE] p-6 rounded-[2rem] border border-[#D7D3CC] drop-zone" data-gid="${g.id}">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl font-black text-[#6D6875]">${g.name}</span>
+                            ${g.id!=='default'?`<button onclick="editGroupName('${g.id}')" class="fat-pencil-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1);"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>`:''}
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="askClearGroup('${g.id}')" class="text-xs text-[#AF7A7D] bg-white border border-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-red-50">清空</button>
+                            ${g.id!=='default'?`<button onclick="askRemoveGroup(${gi})" class="text-xs text-white bg-[#AF7A7D] px-3 py-1.5 rounded-lg font-black hover:bg-[#9B6B6E]">刪除</button>`:''}
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mb-4 bg-white/50 p-1.5 rounded-xl border border-dashed border-[#D7D3CC]">
+                        <input type="text" placeholder="新增人物..." class="flex-1 p-3 rounded-lg text-sm font-bold border-none outline-none bg-white shadow-inner">
+                        <button onclick="addMemberInLine(this, '${g.id}')" class="bg-[#8E9AAF] text-white px-5 rounded-lg text-xs font-black hover:bg-[#7D7684]">新增</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 min-h-[50px] member-list">
+                        ${g.members.map((m, mi) => `
+                            <div draggable="true" ondragstart="handleDragStart(event, '${g.id}', ${mi})" ondragend="handleDragEnd(event)"
+                                 class="member-item bg-white p-3 rounded-xl text-sm font-black flex justify-between items-center border border-[#D7D3CC] cursor-move shadow-sm hover:shadow-md transition-all">
+                                <span class="truncate pr-2">${m.name}</span>
+                                <button onclick="removeMember('${g.id}', ${mi})" class="text-[#D7D3CC] hover:text-[#AF7A7D]">✕</button>
+                            </div>`).join('')}
+                    </div>
+                </div>`).join('');
+            setupDragAndDrop();
+        }
+
+        // --- 完整的管理功能函數 ---
+        function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
+        function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
+        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
+        function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
+        function openNotifyModal() { document.getElementById('notifyModal').classList.replace('hidden', 'flex'); }
+        
+        function addGroup() { 
+            const n = document.getElementById('newGroupName').value; 
+            if(n){ 
+                db.groups.push({id:'g'+Date.now(), name:n, members:[]}); 
+                document.getElementById('newGroupName').value=""; 
+                saveDB(); renderManageUI(); 
+            }
+        }
+        
+        function addMemberInLine(btn, gid) { 
+            const inp = btn.previousElementSibling; 
+            if(inp.value){ 
+                db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); 
+                inp.value=""; 
+                saveDB(); renderManageUI(); 
+            }
+        }
+
+        function removeMember(gid, mi) { 
+            const g = db.groups.find(g=>g.id===gid); 
+            g.members.splice(mi,1); 
+            saveDB(); renderManageUI(); 
+        }
+
+        function editGroupName(gid) { 
+            const g = db.groups.find(g => g.id === gid); 
+            openCustomPrompt("編輯群組名稱", "請輸入新名稱", g.name, false, (n) => { 
+                if(n && n.trim() !== ""){ g.name=n.trim(); saveDB(); renderManageUI(); renderMonitoring(); }
+            }); 
+        }
+
+        function getGroupNameByCharId(id) { 
+            for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } 
+            return "未分類"; 
+        }
+
+        function changeSort(dir) { 
+            sortMode = (sortMode + dir + 4) % 4; 
+            document.getElementById('sortModeText').innerText = sortTexts[sortMode]; 
+            renderMonitoring(); 
+        }
+
+        function askClearAll() { 
+            openCustomPrompt("確定清空？", "這將移除主介面上所有正在監測的項目。", "", true, () => { 
+                monitors = []; saveActive(); renderMonitoring(); 
+            }); 
+        }
+
+        function askClearGroup(gid) { 
+            openCustomPrompt("清空成員？", "將移除此群組內的所有人物。", "", true, () => { 
+                db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); 
+            }); 
+        }
+
+        function askRemoveGroup(gi) { 
+            openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", true, () => { 
+                db.groups.splice(gi,1); saveDB(); renderManageUI(); 
+            }); 
+        }
+
+        function removeMonitor(charId, actIdx) { 
+            monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); 
+            saveActive(); renderMonitoring(); 
+        }
+
+        // --- 批量加入功能 (補回 toggleGroupBatch 等) ---
         function openBatchModal() {
             const actIdx = document.getElementById('activitySelect').value;
             const act = activities[actIdx];
@@ -461,66 +478,45 @@
             document.getElementById('batchModal').classList.replace('hidden', 'flex');
         }
 
-        function toggleAllBatch(checked) { document.querySelectorAll('.char-cb').forEach(cb => cb.checked = checked); }
-        function toggleGroupBatch(gid, checked) { document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => cb.checked = checked); }
+        function toggleAllBatch(c) { document.querySelectorAll('.char-cb').forEach(cb => cb.checked = c); }
+        function toggleGroupBatch(gid, c) { document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => cb.checked = c); }
 
         function submitBatch() {
             const actIdx = document.getElementById('activitySelect').value;
-            const cbs = document.querySelectorAll('.char-cb:checked');
-            if (cbs.length === 0) return alert('請選擇至少一位人物');
-            cbs.forEach(cb => {
+            document.querySelectorAll('.char-cb:checked').forEach(cb => {
                 const row = cb.closest('.flex');
                 const val = parseInt(row.querySelector('.stamina-input').value) || 0;
                 const charId = cb.dataset.id;
-                const data = { charId: charId, charName: cb.dataset.name, actIdx: actIdx, initStamina: val, startTime: Date.now() };
+                const data = { charId, charName: cb.dataset.name, actIdx, initStamina: val, startTime: Date.now() };
                 const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
                 if(idx > -1) monitors[idx] = data; else monitors.push(data);
             });
             saveActive(); closeModal('batchModal'); renderMonitoring();
         }
 
-        function quickUpdateStamina(charId, actIdx, maxStamina) {
-            openCustomPrompt("快速刷新體力", `輸入目前的體力 (上限：${maxStamina})`, "0", false, (val) => {
-                const num = parseInt(val);
-                if (isNaN(num) || num < 0) return;
-                const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
-                if(idx > -1) {
-                    monitors[idx].initStamina = Math.min(num, maxStamina);
-                    monitors[idx].startTime = Date.now();
-                    saveActive(); renderMonitoring();
+        // --- 快速更新體力與對話框 ---
+        function quickUpdateStamina(charId, actIdx, max) { 
+            openCustomPrompt("快速刷新體力", `輸入目前的體力 (上限：${max})`, "0", false, (v) => { 
+                const n = parseInt(v); 
+                if(!isNaN(n) && n >= 0){ 
+                    const i = monitors.findIndex(m=>m.charId===charId&&m.actIdx==actIdx); 
+                    if(i>-1){ 
+                        monitors[i].initStamina=Math.min(n,max); 
+                        monitors[i].startTime=Date.now(); 
+                        saveActive(); renderMonitoring(); 
+                    }
                 }
-            });
+            }); 
         }
 
-        function openCustomPrompt(t, s, d, c, f) {
-            document.getElementById('promptTitle').innerText = t; 
-            document.getElementById('promptSub').innerText = s;
-            const inp = document.getElementById('promptInput'); 
-            inp.style.display = c ? 'none' : 'block'; 
-            inp.value = d || "";
-            document.getElementById('customPromptModal').classList.replace('hidden', 'flex');
-            document.getElementById('promptConfirmBtn').onclick = () => { f(inp.value); closeModal('customPromptModal'); };
-        }
-
-        function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
-        function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
-        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
-        function openManageModal() { renderManageUI(); document.getElementById('manageModal').classList.replace('hidden', 'flex'); }
-        function openNotifyModal() { document.getElementById('notifyModal').classList.replace('hidden', 'flex'); }
-        function addGroup() { const n = document.getElementById('newGroupName').value; if(n){ db.groups.push({id:'g'+Date.now(), name:n, members:[]}); document.getElementById('newGroupName').value=""; saveDB(); renderManageUI(); }}
-        function addMemberInLine(btn, gid) { const inp = btn.previousElementSibling; if(inp.value){ db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); }}
-        function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
-        function getGroupNameByCharId(id) { for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } return "未分類"; }
-        function changeSort(dir) { sortMode = (sortMode + dir + 4) % 4; document.getElementById('sortModeText').innerText = sortTexts[sortMode]; renderMonitoring(); }
-        function askClearAll() { openCustomPrompt("確定清空？", "這將移除主介面上所有正在監測的項目。", "", true, () => { monitors = []; saveActive(); renderMonitoring(); }); }
-        function askClearGroup(gid) { openCustomPrompt("清空成員？", "將移除此群組內的所有人物。", "", true, () => { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); }); }
-        function askRemoveGroup(gi) { openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", true, () => { db.groups.splice(gi,1); saveDB(); renderManageUI(); }); }
-        function removeMonitor(charId, actIdx) { monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); saveActive(); renderMonitoring(); }
-        function editGroupName(gid) {
-            const group = db.groups.find(g => g.id === gid);
-            openCustomPrompt("編輯群組名稱", "請輸入新名稱：", group.name, false, (n) => {
-                if(n && n.trim() !== ""){ group.name = n.trim(); saveDB(); renderManageUI(); renderMonitoring(); }
-            });
+        function openCustomPrompt(t,s,d,c,f) {
+            document.getElementById('promptTitle').innerText=t; 
+            document.getElementById('promptSub').innerText=s;
+            const inp=document.getElementById('promptInput'); 
+            inp.style.display=c?'none':'block'; 
+            inp.value=d||"";
+            document.getElementById('customPromptModal').classList.replace('hidden','flex');
+            document.getElementById('promptConfirmBtn').onclick=()=>{f(inp.value);closeModal('customPromptModal');};
         }
     </script>
 </body>
