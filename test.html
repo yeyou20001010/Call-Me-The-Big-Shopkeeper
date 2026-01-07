@@ -38,7 +38,7 @@
                         <span class="text-lg font-black text-[#FF9D6F]">{{ finalRecommendation.strategy }}</span>
                     </div>
                     <div class="bg-white p-3 rounded-xl shadow-sm border border-[#5E548E]/30">
-                        <span class="text-[10px] block font-bold text-gray-400">預估總淨利 (貝里)</span>
+                        <span class="text-[10px] block font-bold text-gray-400">預估總淨利</span>
                         <span class="text-lg font-black text-[#5E548E]">{{ format(finalRecommendation.profit) }}</span>
                     </div>
                     <div class="flex items-center">
@@ -112,7 +112,7 @@
                     </div>
                 </div>
                 <table class="w-full text-xs">
-                    <thead><tr class="text-[#A5A5A5] border-b"><th>搭配副產</th><th>副產售價</th><th>副產漲跌%</th><th>可買數量(整數)</th><th>副產淨利</th></tr></thead>
+                    <thead><tr class="text-[#A5A5A5] border-b"><th>搭配副產</th><th>副產售價</th><th>副產漲跌%</th><th>可買數量</th><th>副產淨利</th></tr></thead>
                     <tbody>
                         <tr v-for="s in t1.subs" class="border-b border-gray-50 last:border-0">
                             <td class="py-4 font-black text-gray-700">{{ s.name }}</td>
@@ -150,7 +150,7 @@
                     </div>
                 </div>
                 <table class="w-full text-xs">
-                    <thead><tr class="text-[#A5A5A5] border-b"><th>搭配產品</th><th>搭配地售價</th><th>搭配地漲跌%</th><th>可買數量</th><th>剩餘淨利</th></tr></thead>
+                    <thead><tr class="text-[#A5A5A5] border-b"><th>搭配產品</th><th>該物在目的地售價</th><th>該物在目的地漲跌%</th><th>可買數量</th><th>剩餘淨利</th></tr></thead>
                     <tbody>
                         <tr v-for="item in t2Items" class="border-b border-gray-50 last:border-0">
                             <td class="py-4 font-black text-gray-700">{{ item.name }}</td>
@@ -196,7 +196,7 @@
                     // 自動定義副產 N：為除了特產與目前毛利王之外的產品
                     const others = this.products.filter(p => p.name !== this.rankMargin.name);
                     return [
-                        { name: '特產(D)', sPrice: this.t2.items[0].sPrice, sTrend: this.t2.items[0].sTrend },
+                        { name: '特產', sPrice: this.t2.items[0].sPrice, sTrend: this.t2.items[0].sTrend },
                         { name: others[1] ? others[1].name : others[0].name, sPrice: this.t2.items[1].sPrice, sTrend: this.t2.items[1].sTrend }
                     ];
                 },
