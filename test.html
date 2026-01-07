@@ -2,14 +2,167 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>測試頁面</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>偉大航線：精準投資決策系統 v2</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;900&family=Varela+Round&display=swap" rel="stylesheet">
+    <style>
+        :root { --hpink: #FF9D6F; --mbg: #FBFBF9; --spurple: #5E548E; --fgreen: #02C874; --loss-green: #00897B; --gain-red: #E53935; }
+        body { font-family: 'Varela Round', 'Noto Sans TC', sans-serif; background-color: #EAE8E4; color: #6D6875; }
+        [v-cloak] { display: none; }
+        .card-std { background: var(--mbg); border: 1px solid #D7D3CC; border-radius: 1.5rem; }
+        .input-box { background: #FFFFFF; border: 1px solid #D7D3CC; border-radius: 0.5rem; padding: 0.4rem; text-align: right; width: 100%; font-weight: 900; }
+        .text-gain { color: var(--gain-red); }
+        .text-loss { color: var(--loss-green); }
+        th { font-size: 0.7rem; color: #A5A5A5; padding-bottom: 0.5rem; }
+    </style>
 </head>
-<body class="bg-slate-100 p-10">
-    <div class="max-w-md mx-auto bg-white p-8 rounded-3xl shadow-lg text-center">
-        <h1 class="text-2xl font-black mb-4">🧪 測試沙盒</h1>
-        <p class="text-slate-500 mb-6">這是一個獨立的測試頁面。</p>
-        <button onclick="location.href='portal.html'" class="bg-slate-500 text-white px-6 py-2 rounded-xl font-bold">返回主選單</button>
+<body class="p-2 md:p-6">
+    <div id="app" v-cloak class="max-w-[1500px] mx-auto">
+        
+        <div class="card-std p-6 mb-6 shadow-sm">
+            <h2 class="font-black text-xl text-[#5E548E] mb-4">【表 0】產品基礎與毛利排位分析</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-center">
+                    <thead>
+                        <tr>
+                            <th class="text-left">產品名稱</th>
+                            <th>買入成本(D5)</th><th>買地漲跌%(D6)</th><th>可買數量(D7)</th>
+                            <th>賣出售價(D8)</th><th>賣地漲跌%(D9)</th><th>利差(D10)</th>
+                            <th>漲跌幅(D11)</th><th>毛利(D12)</th><th>淨利(D13)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(p, i) in products" :key="i" class="border-t border-[#F0EFEB]">
+                            <td class="py-3 font-black text-sm text-left">{{ p.name }}</td>
+                            <td><input type="number" v-model.number="p.bPrice" class="input-box"></td>
+                            <td><input type="number" v-model.number="p.bTrend" class="input-box" :class="colorScale(p.bTrend)"></td>
+                            <td><input type="number" v-model.number="p.stock" class="input-box"></td>
+                            <td><input type="number" v-model.number="p.sPrice" class="input-box"></td>
+                            <td><input type="number" v-model.number="p.sTrend" class="input-box" :class="colorScale(p.sTrend)"></td>
+                            <td class="font-bold text-xs" :class="colorScale(p.sPrice - p.bPrice)">{{ p.sPrice - p.bPrice }}</td>
+                            <td class="font-bold text-xs" :class="colorScale(p.sTrend - p.bTrend)">{{ p.sTrend - p.bTrend }}%</td>
+                            <td class="font-black text-sm" :class="colorScale(calcT0(p).margin)">{{ format(calcT0(p).margin) }}</td>
+                            <td class="font-black text-sm" :class="colorScale(calcT0(p).net)">{{ format(calcT0(p).net) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 grid grid-cols-3 gap-4 text-[10px] font-black uppercase tracking-tighter">
+                <div class="p-2 bg-white rounded border">🥇 毛利最高 (D14)：<span class="text-red-500">{{ rank.max.name }}</span></div>
+                <div class="p-2 bg-white rounded border">🥈 毛利中間 (D17)：<span class="text-orange-500">{{ rank.mid.name }}</span></div>
+                <div class="p-2 bg-white rounded border">🥉 毛利最低 (D16)：<span class="text-teal-600">{{ rank.min.name }}</span></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="card-std p-5 shadow-sm border-t-8 border-[#FF9D6F]">
+                <h3 class="font-black text-[#5E548E] mb-3">【表 1】特產買空方案 (D13 + 剩餘)</h3>
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div><label class="label-text">現有資金 (H5)</label><input type="number" v-model.number="t1.fund" class="input-box"></div>
+                    <div><label class="label-text">扣除資金 (I5)</label><input type="number" v-model.number="t1.minus" class="input-box"></div>
+                    <div class="bg-white/50 p-2 rounded border"><label class="label-text">剩餘資金 (J5)</label><div class="text-right font-black text-sm">{{ format(t1.fund - t1.minus) }}</div></div>
+                </div>
+                <table class="w-full text-xs">
+                    <thead><tr class="text-[#A5A5A5]"><th>搭配副產</th><th>該地售價</th><th>該地漲跌%</th><th>可買量</th><th>剩餘淨利</th></tr></thead>
+                    <tbody>
+                        <tr v-for="s in t1.subs" class="border-t">
+                            <td class="py-2 font-black">{{ s.name }}</td>
+                            <td><input type="number" v-model.number="s.sPrice" class="input-box"></td>
+                            <td><input type="number" v-model.number="s.sTrend" class="input-box"></td>
+                            <td class="text-center font-bold">{{ calcT1Sub(s).qty }}</td>
+                            <td class="text-right font-black" :class="colorScale(calcT1Sub(s).net)">{{ format(calcT1Sub(s).net) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="mt-4 p-3 bg-[#5E548E] text-white rounded-xl flex justify-between font-black">
+                    <span>總淨利 (IJ15)</span><span>{{ format(t1Total) }}</span>
+                </div>
+            </div>
+
+            <div class="card-std p-5 shadow-sm border-t-8 border-[#5E548E]">
+                <h3 class="font-black text-[#5E548E] mb-3">【表 2】高毛利副產買空方案 (最高毛利D13 + 剩餘)</h3>
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div><label class="label-text">現有資金 (L5)</label><input type="number" v-model.number="t2.fund" class="input-box"></div>
+                    <div><label class="label-text">扣除資金 (M5)</label><input type="number" v-model.number="t2.minus" class="input-box"></div>
+                    <div class="bg-white/50 p-2 rounded border"><label class="label-text">剩餘資金 (N5)</label><div class="text-right font-black text-sm">{{ format(t2.fund - t2.minus) }}</div></div>
+                </div>
+                <table class="w-full text-xs">
+                    <thead><tr class="text-[#A5A5A5]"><th>搭配產品</th><th>該地售價</th><th>該地漲跌%</th><th>可買量</th><th>剩餘淨利</th></tr></thead>
+                    <tbody>
+                        <tr v-for="item in t2.items" class="border-t">
+                            <td class="py-2 font-black">{{ item.name }}</td>
+                            <td><input type="number" v-model.number="item.sPrice" class="input-box"></td>
+                            <td><input type="number" v-model.number="item.sTrend" class="input-box"></td>
+                            <td class="text-center font-bold">{{ calcT2Sub(item).qty }}</td>
+                            <td class="text-right font-black" :class="colorScale(calcT2Sub(item).net)">{{ format(calcT2Sub(item).net) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="mt-4 p-3 bg-[#FF9D6F] text-white rounded-xl flex justify-between font-black">
+                    <span>總淨利 (MN15)</span><span>{{ format(t2Total) }}</span>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    products: [
+                        { id: 'D', name: '特產(D)', bPrice: 0, bTrend: 0, sPrice: 0, sTrend: 0, stock: 0 },
+                        { id: 'E', name: '副產1(E)', bPrice: 0, bTrend: 0, sPrice: 0, sTrend: 0, stock: 0 },
+                        { id: 'F', name: '副產2(F)', bPrice: 0, bTrend: 0, sPrice: 0, sTrend: 0, stock: 0 }
+                    ],
+                    t1: { fund: 0, minus: 0, subs: [{ name: '副產1(E)', sPrice: 0, sTrend: 0 }, { name: '副產2(F)', sPrice: 0, sTrend: 0 }] },
+                    t2: { fund: 0, minus: 0, items: [{ name: '特產(D)', sPrice: 0, sTrend: 0 }, { name: '副產2(F)', sPrice: 0, sTrend: 0 }] }
+                }
+            },
+            computed: {
+                rank() {
+                    let sorted = [...this.products].sort((a,b) => this.calcT0(b).margin - this.calcT0(a).margin);
+                    return { max: sorted[0], mid: sorted[1], min: sorted[2] };
+                },
+                t1Total() {
+                    const spNet = this.calcT0(this.products[0]).net;
+                    const subNets = this.t1.subs.map(s => this.calcT1Sub(s).net);
+                    return spNet + Math.max(...subNets, 0);
+                },
+                t2Total() {
+                    const highMarginNet = this.calcT0(this.rank.max).net;
+                    const itemNets = this.t2.items.map(s => this.calcT2Sub(s).net);
+                    return highMarginNet + Math.max(...itemNets, 0);
+                }
+            },
+            methods: {
+                calcT0(p) {
+                    const diff = p.sPrice - p.bPrice; // D10
+                    const trend = p.sTrend - p.bTrend; // D11
+                    const margin = diff * trend; // D12
+                    return { margin, net: margin * p.stock }; // D13
+                },
+                calcT1Sub(s) {
+                    const remain = this.t1.fund - this.t1.minus;
+                    const p0 = this.products.find(p => p.name === s.name) || this.products[1];
+                    const qty = p0.bPrice > 0 ? Math.floor(remain / p0.bPrice) : 0;
+                    const net = (s.sPrice - p0.bPrice) * (s.sTrend - p0.bTrend) * qty;
+                    return { qty, net };
+                },
+                calcT2Sub(item) {
+                    const remain = this.t2.fund - this.t2.minus;
+                    // N8 邏輯：分母引用毛利中間值 (Median)
+                    const refProduct = (item.name.includes('特產')) ? this.products[0] : this.rank.mid;
+                    const qty = refProduct.bPrice > 0 ? Math.floor(remain / refProduct.bPrice) : 0;
+                    const net = (item.sPrice - refProduct.bPrice) * (item.sTrend - refProduct.bTrend) * qty;
+                    return { qty, net };
+                },
+                colorScale(v) { return v > 0 ? 'text-gain' : (v < 0 ? 'text-loss' : ''); },
+                format(v) { return (v || 0).toLocaleString(); }
+            }
+        }).mount('#app');
+    </script>
 </body>
 </html>
