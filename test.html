@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>偉大航線：決策中心</title>
+    <title>偉大航線：策略分析系統</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;900&family=Varela+Round&display=swap" rel="stylesheet">
@@ -15,36 +15,30 @@
         .input-box { background: #FFFFFF; border: 1px solid #D7D3CC; border-radius: 0.5rem; padding: 0.4rem; text-align: right; width: 100%; font-weight: 900; }
         .text-gain { color: var(--gain-red); }
         .text-loss { color: var(--fgreen); }
-        th { font-size: 0.65rem; color: #A5A5A5; padding-bottom: 0.5rem; text-transform: uppercase; }
-        .strategy-tag { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 900; }
+        th { font-size: 0.7rem; color: #A5A5A5; padding-bottom: 0.5rem; }
+        .btn-ctrl { transition: all 0.2s; font-weight: 900; padding: 0.5rem 1.5rem; border-radius: 0.75rem; }
+        .btn-ctrl:active { transform: scale(0.95); }
     </style>
 </head>
-<body class="p-3 md:p-6">
-    <div id="app" v-cloak class="max-w-[1500px] mx-auto pb-24">
+<body class="p-4 md:p-8">
+    <div id="app" v-cloak class="max-w-[1400px] mx-auto">
         
-        <div class="card-std p-6 mb-6 shadow-sm flex flex-wrap gap-6 items-end">
-            <div class="flex-1 min-w-[200px]">
-                <label class="block text-[10px] font-black mb-1">💰 當前現有資金</label>
-                <input type="number" v-model.number="currentFund" class="input-box text-xl text-[#5E548E]">
-            </div>
-            <div class="flex-1 min-w-[200px]">
-                <div class="text-[10px] font-black text-[#A5A5A5]">系統即時策略提示</div>
-                <div class="text-lg font-black mt-1" :class="strategyHint.color">{{ strategyHint.text }}</div>
-            </div>
+        <div class="flex justify-between items-center mb-6">
+            <button @click="backToMenu" class="btn-ctrl bg-[#8E9AAF] text-white shadow-md">🔙 返回選單</button>
+            <h1 class="text-2xl font-black text-[#5E548E]">🚢 VOYAGE 決策中心</h1>
+            <button @click="resetAll" class="btn-ctrl bg-[#AF7A7D] text-white shadow-md">🧹 全部清除</button>
         </div>
 
-        <div class="card-std p-6 mb-6 shadow-sm">
-            <h2 class="font-black text-xl text-[#5E548E] mb-4 flex items-center gap-2">
-                <span class="w-2 h-6 bg-[#FF9D6F] rounded-full"></span> 【表 0】產地利潤初步分析
-            </h2>
+        <div class="card-std p-6 mb-8 shadow-sm">
+            <h2 class="font-black text-xl text-[#5E548E] mb-4">【表 0】基礎產地與單一購買分析</h2>
             <div class="overflow-x-auto">
                 <table class="w-full text-center">
                     <thead>
                         <tr>
                             <th class="text-left">產品名稱</th>
-                            <th>買入成本(D5)</th><th>買地漲跌%(D6)</th>
-                            <th>賣出售價(D8)</th><th>賣地漲跌%(D9)</th><th>利差(D10)</th>
-                            <th>漲跌幅(D11)</th><th>單件毛利(D12)</th>
+                            <th>買入成本(D5)</th><th>買地漲跌%(D6)</th><th>可買數量(D7)</th>
+                            <th>賣出售價(D8)</th><th>賣地漲跌%(D9)</th>
+                            <th>利差(D10)</th><th>漲跌幅(D11)</th><th>毛利(D12)</th><th>淨利(D13)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -52,80 +46,90 @@
                             <td class="py-4 font-black text-sm text-left">{{ p.name }}</td>
                             <td><input type="number" v-model.number="p.bPrice" class="input-box"></td>
                             <td><input type="number" v-model.number="p.bTrend" class="input-box" :class="colorScale(p.bTrend)"></td>
+                            <td><input type="number" v-model.number="p.stock" class="input-box"></td>
                             <td><input type="number" v-model.number="p.sPrice" class="input-box"></td>
                             <td><input type="number" v-model.number="p.sTrend" class="input-box" :class="colorScale(p.sTrend)"></td>
                             <td class="font-bold text-xs" :class="colorScale(p.sPrice - p.bPrice)">{{ p.sPrice - p.bPrice }}</td>
                             <td class="font-bold text-xs" :class="colorScale(p.sTrend - p.bTrend)">{{ p.sTrend - p.bTrend }}%</td>
                             <td class="font-black text-sm" :class="colorScale(calcT0(p).margin)">{{ format(calcT0(p).margin) }}</td>
+                            <td class="font-black text-sm" :class="colorScale(calcT0(p).net)">{{ format(calcT0(p).net) }}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div class="mt-4 flex gap-4 text-xs font-black">
+                <div class="bg-white px-4 py-2 rounded-lg border">🥇 淨利最高：<span class="text-red-500">{{ rankNet.max.name }}</span></div>
+                <div class="bg-white px-4 py-2 rounded-lg border">💎 毛利最高：<span class="text-blue-500">{{ rankMargin.max.name }}</span></div>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="card-std p-5 shadow-sm border-t-8 border-[#FF9D6F]">
-                <div class="flex justify-between items-start mb-4">
-                    <h3 class="font-black text-[#5E548E]">【表 1】特產買空組合試算</h3>
-                    <div class="text-[10px] font-black text-[#8E9AAF] text-right">
-                        剩餘資金 (J5): <span class="text-[#FF9D6F]">{{ format(t1RemainFund) }}</span>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <div class="card-std p-6 shadow-sm border-t-8 border-[#FF9D6F]">
+                <h3 class="font-black text-lg text-[#5E548E] mb-4">【表 1】特產淨利最高方案</h3>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-[10px] font-black mb-1">現有資金 (H5)</label>
+                        <input type="number" v-model.number="t1.fund" class="input-box">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black mb-1">扣除買空特產資金 (I5)</label>
+                        <input type="number" v-model.number="t1.minus" class="input-box !text-red-500">
                     </div>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-[10px] font-black mb-1">➖ 扣除買空特產所需資金 (I5)</label>
-                    <input type="number" v-model.number="t1.minus" class="input-box !text-red-500">
-                </div>
-                <table class="w-full text-xs">
-                    <thead><tr class="text-[#A5A5A5]"><th>搭配副產</th><th>該地售價</th><th>該地漲跌%</th><th>自動計算可買量</th><th>剩餘淨利</th></tr></thead>
+                <p class="text-[10px] font-black mb-2 opacity-60">※ 剩餘資金 (J5): {{ format(t1.fund - t1.minus) }}</p>
+                <table class="w-full text-xs mb-6">
+                    <thead><tr class="text-[#A5A5A5]"><th>搭配副產</th><th>該地售價</th><th>該地漲跌%</th><th>可買量</th><th>剩餘淨利</th></tr></thead>
                     <tbody>
                         <tr v-for="s in t1.subs" class="border-t border-[#F0EFEB]">
                             <td class="py-3 font-black">{{ s.name }}</td>
                             <td><input type="number" v-model.number="s.sPrice" class="input-box"></td>
                             <td><input type="number" v-model.number="s.sTrend" class="input-box"></td>
-                            <td class="text-center font-bold text-[#8E9AAF]">{{ calcT1Sub(s).qty }}</td>
+                            <td class="text-center font-bold">{{ calcT1Sub(s).qty }}</td>
                             <td class="text-right font-black" :class="colorScale(calcT1Sub(s).net)">{{ format(calcT1Sub(s).net) }}</td>
                         </tr>
                     </tbody>
                 </table>
+                <div class="p-4 bg-[#5E548E] text-white rounded-xl flex justify-between font-black items-center shadow-lg">
+                    <div>
+                        <div class="text-[10px] opacity-60">表 1 總淨利 (D13+剩餘)</div>
+                        <div class="text-xl">{{ format(t1Total) }}</div>
+                    </div>
+                    <div class="text-[10px] bg-white/20 px-3 py-1 rounded-full">策略：買空特產+搭配</div>
+                </div>
             </div>
 
-            <div class="card-std p-5 shadow-sm border-t-8 border-[#5E548E]">
-                <div class="flex justify-between items-start mb-4">
-                    <h3 class="font-black text-[#5E548E]">【表 2】高毛利副產買空組合試算</h3>
-                    <div class="text-[10px] font-black text-[#8E9AAF] text-right">
-                        剩餘資金 (N5): <span class="text-[#5E548E]">{{ format(t2RemainFund) }}</span>
+            <div class="card-std p-6 shadow-sm border-t-8 border-[#5E548E]">
+                <h3 class="font-black text-lg text-[#5E548E] mb-4">【表 2】副產/毛利錯位方案</h3>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-[10px] font-black mb-1">現有資金 (L5)</label>
+                        <input type="number" v-model.number="t2.fund" class="input-box">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black mb-1">扣除高毛利副產資金 (M5)</label>
+                        <input type="number" v-model.number="t2.minus" class="input-box !text-red-500">
                     </div>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-[10px] font-black mb-1">➖ 扣除高毛利副產資金 (M5)</label>
-                    <input type="number" v-model.number="t2.minus" class="input-box !text-red-500">
-                </div>
-                <table class="w-full text-xs">
-                    <thead><tr class="text-[#A5A5A5]"><th>搭配產品</th><th>該地售價</th><th>該地漲跌%</th><th>自動計算可買量</th><th>剩餘淨利</th></tr></thead>
+                <p class="text-[10px] font-black mb-2 opacity-60">※ 剩餘資金 (N5): {{ format(t2.fund - t2.minus) }}</p>
+                <table class="w-full text-xs mb-6">
+                    <thead><tr class="text-[#A5A5A5]"><th>搭配產品</th><th>該地售價</th><th>該地漲跌%</th><th>可買量</th><th>剩餘淨利</th></tr></thead>
                     <tbody>
                         <tr v-for="item in t2.items" class="border-t border-[#F0EFEB]">
                             <td class="py-3 font-black">{{ item.name }}</td>
                             <td><input type="number" v-model.number="item.sPrice" class="input-box"></td>
                             <td><input type="number" v-model.number="item.sTrend" class="input-box"></td>
-                            <td class="text-center font-bold text-[#8E9AAF]">{{ calcT2Sub(item).qty }}</td>
+                            <td class="text-center font-bold">{{ calcT2Sub(item).qty }}</td>
                             <td class="text-right font-black" :class="colorScale(calcT2Sub(item).net)">{{ format(calcT2Sub(item).net) }}</td>
                         </tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4">
-            <div class="bg-[#5E548E] text-white p-4 rounded-[2rem] shadow-2xl flex items-center justify-between border-4 border-white">
-                <div class="flex gap-4 items-center">
-                    <div class="bg-white/20 p-2 rounded-full px-4">
-                        <span class="text-[10px] font-bold block opacity-60">推薦買入策略</span>
-                        <span class="text-sm font-black">{{ finalDecision.strategy }}</span>
+                <div class="p-4 bg-[#FF9D6F] text-white rounded-xl flex justify-between font-black items-center shadow-lg">
+                    <div>
+                        <div class="text-[10px] opacity-60">表 2 總淨利 (毛利王D13+剩餘)</div>
+                        <div class="text-xl">{{ format(t2Total) }}</div>
                     </div>
-                </div>
-                <div class="text-right px-4">
-                    <span class="text-[10px] font-bold block opacity-60">預估最高總淨利</span>
-                    <span class="text-2xl font-black text-[#FF9D6F]">{{ format(finalDecision.profit) }}</span>
+                    <div class="text-[10px] bg-white/20 px-3 py-1 rounded-full">策略：買空高毛利副產+搭配</div>
                 </div>
             </div>
         </div>
@@ -137,69 +141,55 @@
         createApp({
             data() {
                 return {
-                    currentFund: 0,
                     products: [
-                        { id: 'D', name: '特產(D)', bPrice: 0, bTrend: 0, sPrice: 0, sTrend: 0, stock: 100 },
-                        { id: 'E', name: '副產1(E)', bPrice: 0, bTrend: 0, sPrice: 0, sTrend: 0, stock: 100 },
-                        { id: 'F', name: '副產2(F)', bPrice: 0, bTrend: 0, sPrice: 0, sTrend: 0, stock: 100 }
+                        { name: '特產(D)', bPrice: 0, bTrend: 0, sPrice: 0, sTrend: 0, stock: 0 },
+                        { name: '副產1(E)', bPrice: 0, bTrend: 0, sPrice: 0, sTrend: 0, stock: 0 },
+                        { name: '副產2(F)', bPrice: 0, bTrend: 0, sPrice: 0, sTrend: 0, stock: 0 }
                     ],
-                    t1: { minus: 0, subs: [{ name: '副產1(E)', sPrice: 0, sTrend: 0 }, { name: '副產2(F)', sPrice: 0, sTrend: 0 }] },
-                    t2: { minus: 0, items: [{ name: '特產(D)', sPrice: 0, sTrend: 0 }, { name: '副產2(F)', sPrice: 0, sTrend: 0 }] }
+                    t1: { fund: 0, minus: 0, subs: [{ name: '副產1(E)', sPrice: 0, sTrend: 0 }, { name: '副產2(F)', sPrice: 0, sTrend: 0 }] },
+                    t2: { fund: 0, minus: 0, items: [{ name: '特產(D)', sPrice: 0, sTrend: 0 }, { name: '副產2(F)', sPrice: 0, sTrend: 0 }] }
                 }
             },
             computed: {
-                t1RemainFund() { return this.currentFund - this.t1.minus; },
-                t2RemainFund() { return this.currentFund - this.t2.minus; },
-                rank() {
-                    let sorted = [...this.products].sort((a,b) => this.calcT0(b).margin - this.calcT0(a).margin);
-                    return { max: sorted[0], mid: sorted[1], min: sorted[2] };
+                rankNet() { return [...this.products].sort((a,b) => this.calcT0(b).net - this.calcT0(a).net)[0] || this.products[0]; },
+                rankMargin() { return [...this.products].sort((a,b) => this.calcT0(b).margin - this.calcT0(a).margin)[0] || this.products[0]; },
+                t1Total() {
+                    const spNet = this.calcT0(this.products[0]).net;
+                    const subBestNet = Math.max(...this.t1.subs.map(s => this.calcT1Sub(s).net), 0);
+                    return spNet + subBestNet;
                 },
-                strategyHint() {
-                    // 這裡根據你的思路做簡單邏輯提示
-                    if (this.currentFund <= 0) return { text: "請輸入現有資金", color: "text-[#A5A5A5]" };
-                    const totalStockValue = this.products.reduce((acc, p) => acc + (p.bPrice * p.stock), 0);
-                    if (this.currentFund <= totalStockValue) return { text: "資金充足：請參考表0選擇最高淨利單買", color: "text-[#00897B]" };
-                    return { text: "資金超出庫存：請進行表1或表2搭配試算", color: "text-[#FF9D6F]" };
-                },
-                finalDecision() {
-                    const t0Nets = this.products.map(p => ({ name: p.name, profit: this.calcT0(p).margin * p.stock }));
-                    const bestT0 = t0Nets.sort((a,b) => b.profit - a.profit)[0];
-                    
-                    // 表1總淨利 (特產D13 + 最佳剩餘)
-                    const t1SubBest = Math.max(...this.t1.subs.map(s => this.calcT1Sub(s).net), 0);
-                    const totalT1 = (this.calcT0(this.products[0]).margin * this.products[0].stock) + t1SubBest;
-
-                    // 表2總淨利 (高毛利D13 + 最佳剩餘)
-                    const t2SubBest = Math.max(...this.t2.items.map(s => this.calcT2Sub(s).net), 0);
-                    const totalT2 = (this.calcT0(this.rank.max).margin * this.rank.max.stock) + t2SubBest;
-
-                    let final = { strategy: "表0: " + bestT0.name, profit: bestT0.profit };
-                    if (totalT1 > final.profit) final = { strategy: "表1: 特產+搭配", profit: totalT1 };
-                    if (totalT2 > final.profit) final = { strategy: "表2: 高毛利+搭配", profit: totalT2 };
-
-                    return final;
+                t2Total() {
+                    const highMarginProd = this.rankMargin;
+                    const highMarginNet = this.calcT0(highMarginProd).net;
+                    const itemBestNet = Math.max(...this.t2.items.map(i => this.calcT2Sub(i).net), 0);
+                    return highMarginNet + itemBestNet;
                 }
             },
             methods: {
                 calcT0(p) {
                     const diff = p.sPrice - p.bPrice;
                     const trend = p.sTrend - p.bTrend;
-                    return { margin: diff * trend };
+                    const margin = diff * trend;
+                    return { margin, net: margin * p.stock };
                 },
                 calcT1Sub(s) {
-                    const p0 = this.products.find(p => p.name === s.name) || this.products[1];
-                    const qty = p0.bPrice > 0 ? Math.floor(this.t1RemainFund / p0.bPrice) : 0;
+                    const remain = this.t1.fund - this.t1.minus;
+                    const p0 = this.products.find(p => p.name === s.name);
+                    const qty = (p0 && p0.bPrice > 0) ? Math.floor(remain / p0.bPrice) : 0;
                     const net = (s.sPrice - p0.bPrice) * (s.sTrend - p0.bTrend) * qty;
                     return { qty, net };
                 },
                 calcT2Sub(item) {
-                    const refProduct = (item.name.includes('特產')) ? this.products[0] : this.rank.mid;
-                    const qty = refProduct.bPrice > 0 ? Math.floor(this.t2RemainFund / refProduct.bPrice) : 0;
-                    const net = (item.sPrice - refProduct.bPrice) * (item.sTrend - refProduct.bTrend) * qty;
+                    const remain = this.t2.fund - this.t2.minus;
+                    const p0 = this.products.find(p => p.name === item.name);
+                    const qty = (p0 && p0.bPrice > 0) ? Math.floor(remain / p0.bPrice) : 0;
+                    const net = (item.sPrice - p0.bPrice) * (item.sTrend - p0.bTrend) * qty;
                     return { qty, net };
                 },
                 colorScale(v) { return v > 0 ? 'text-gain' : (v < 0 ? 'text-loss' : ''); },
-                format(v) { return Math.floor(v || 0).toLocaleString(); }
+                format(v) { return Math.floor(v || 0).toLocaleString(); },
+                resetAll() { if(confirm("確定要清空所有數據嗎？")) location.reload(); },
+                backToMenu() { window.history.back(); }
             }
         }).mount('#app');
     </script>
