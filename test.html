@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>偉大航線決策系統 v19.9.5</title>
+    <title>偉大航線決策系統 v19.9.6</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&display=swap" rel="stylesheet">
@@ -30,7 +30,7 @@
         .text-loss { color: var(--fgreen) !important; }
         .row-label { font-size: 13px; color: #8E9AAF; font-weight: 900; margin-bottom: 2px; display: block; }
         .locked-overlay {
-            position: absolute; inset: 0; background: rgba(240, 239, 235, 0.9);
+            position: absolute; inset: 0; background: rgba(240, 239, 235, 0.92);
             display: flex; align-items: center; justify-content: center;
             z-index: 10; border-radius: 1.5rem; cursor: not-allowed;
         }
@@ -57,9 +57,12 @@
         <div v-if="showTrendModal" class="modal-overlay" @click="showTrendModal = false"></div>
         <div v-if="showTrendModal" class="custom-modal !max-w-lg">
             <h3 class="text-2xl font-black text-[#5E548E] mb-6">📈 漲跌幅數據分析</h3>
-            <div class="space-y-6">
+            <div class="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
                 <div v-for="(p, i) in products" :key="i" class="bg-gray-50 p-4 rounded-2xl border-2 border-gray-100">
-                    <p class="font-black text-lg text-gray-800 mb-2">{{ p.label }} - {{ p.name || '未設品項' }}</p>
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="font-black text-lg text-gray-800">{{ p.label }} - {{ p.name || '未設品項' }}</p>
+                        <span class="text-sm font-black" :class="colorScale(p.sTrend - p.bTrend)">幅度: {{ (p.sTrend - p.bTrend).toFixed(1) }}%</span>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div><label class="row-label">買地漲跌%</label><input type="number" v-model.number="p.bTrend" :class="colorScale(p.bTrend)" class="input-inline"></div>
                         <div><label class="row-label">賣地漲跌%</label><input type="number" v-model.number="p.sTrend" :class="colorScale(p.sTrend)" class="input-inline"></div>
@@ -72,7 +75,7 @@
         <div class="flex flex-col lg:flex-row justify-between items-center mb-6 bg-white p-6 rounded-[2rem] shadow-md border-2 border-[#D7D3CC] gap-4">
             <div class="flex items-center gap-5">
                 <div class="w-14 h-14 bg-[#5E548E] rounded-2xl flex items-center justify-center text-white text-3xl">🚢</div>
-                <h2 class="text-3xl font-black text-[#5E548E]">智慧決策系統 v19.9.5</h2>
+                <h2 class="text-3xl font-black text-[#5E548E]">智慧決策系統 v19.9.6</h2>
             </div>
             <div class="flex gap-3">
                 <button @click="saveData" class="bg-[#6D6875] text-white px-6 py-2 rounded-xl text-lg font-black">💾 暫存</button>
@@ -140,14 +143,14 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="card-std border-t-8 border-orange-400 relative">
                         <div v-if="!canMultiBuy('特產')" class="locked-overlay">
-                            <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-orange-200">
-                                <p class="text-orange-600 font-black text-xl">🔒 剩餘資金不足以投資</p>
-                                <p class="text-gray-400 text-sm">目前的資金已全額投入特產</p>
+                            <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-orange-200 mx-4">
+                                <p class="text-orange-600 font-black text-xl">🔒 剩餘資金不足以投資副產</p>
+                                <p class="text-gray-400 text-sm mt-1">目前資金已全額用於特產購買</p>
                             </div>
                         </div>
                         <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 1】特產買空方案</h3>
                         <table class="w-full text-sm font-black">
-                            <thead class="text-[#8E9AAF] border-b-2 text-right"><tr><th class="text-left pb-3">品項</th><th>該產品在特產稀缺地售價</th><th>數量</th><th>淨利</th></tr></thead>
+                            <thead class="text-[#8E9AAF] border-b-2 text-right"><tr><th class="text-left pb-3">品項</th><th>該產品在特產地售價</th><th>數量</th><th>淨利</th></tr></thead>
                             <tbody class="text-right">
                                 <tr v-for="(p, idx) in [products[1], products[2]]" :key="idx" class="border-b border-gray-100">
                                     <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
@@ -162,14 +165,14 @@
 
                     <div class="card-std border-t-8 border-purple-500 relative">
                         <div v-if="!canMultiBuy('毛利王')" class="locked-overlay">
-                            <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-purple-200">
-                                <p class="text-purple-600 font-black text-xl">🔒 剩餘資金不足以投資</p>
-                                <p class="text-gray-400 text-sm">資金已優先由高毛利品項佔用</p>
+                            <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-purple-200 mx-4">
+                                <p class="text-purple-600 font-black text-xl">🔒 剩餘資金不足以投資副產</p>
+                                <p class="text-gray-400 text-sm mt-1">毛利王 ({{getMarginKingObj().name || '未設品項'}}) 已佔用所有資金</p>
                             </div>
                         </div>
                         <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 2】毛利王方案</h3>
                         <table class="w-full text-sm font-black">
-                            <thead class="text-[#8E9AAF] border-b-2 text-right"><tr><th class="text-left pb-3">品項</th><th>該產品在毛利王稀缺地售價</th><th>數量</th><th>淨利</th></tr></thead>
+                            <thead class="text-[#8E9AAF] border-b-2 text-right"><tr><th class="text-left pb-3">品項</th><th>該產品在毛利王地售價</th><th>數量</th><th>淨利</th></tr></thead>
                             <tbody class="text-right">
                                 <tr v-for="(p, idx) in getT2List()" :key="idx" class="border-b border-gray-100">
                                     <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
@@ -199,9 +202,9 @@
                     </div>
                     <div class="bg-slate-900/50 p-6 rounded-3xl space-y-3">
                         <ul class="text-xs text-slate-300 space-y-2 font-bold">
-                            <li class="flex gap-2"><span>●</span><span>遊戲內售價已包含漲跌幅加成後之變動，📈僅當漲跌趨勢參考。</span></li>
-                            <li class="flex gap-2"><span>●</span><span>盈虧為依照遊戲機制實際運算後的結果，並非直接以漲跌去計算。</span></li>
-                            <li class="flex gap-2"><span>●</span><span>若組合方案之副產數量為 0，系統自動判定為單買。</span></li>
+                            <li>● 漲幅設定已包含「幅度相減」分析。</li>
+                            <li>● 當資金不足買空大項時，推薦策略自動鎖定「單買最優」。</li>
+                            <li>● 表1/表2開啟條件：資金需大於大項庫存成本，且組合利潤須大於單買。</li>
                         </ul>
                     </div>
                 </div>
@@ -249,7 +252,8 @@
 
                 calcSub(targetP, inputS, lockP) {
                     const lockRes = this.calcT0(lockP);
-                    const remainBase = this.fund - lockRes.cost;
+                    // 核心修正：如果鎖定的大項沒買空，剩餘資金強行歸零，防止割裂
+                    const remainBase = (lockP.stock > 0 && lockRes.qty >= lockP.stock) ? (this.fund - lockRes.cost) : 0;
                     if (remainBase <= 0 || !targetP.bPrice) return { qty: 0, net: 0, remain: Math.max(0, remainBase) };
                     const qty = Math.floor(remainBase / targetP.bPrice);
                     const net = inputS ? Math.max(0, (inputS - targetP.bPrice) * qty * (1 + this.profitBonus/100)) : 0;
@@ -259,7 +263,8 @@
                 canMultiBuy(type) {
                     const target = type === '特產' ? this.products[0] : this.getMarginKingObj();
                     const res = this.calcT0(target);
-                    return target.stock > 0 && res.qty >= target.stock && res.remain > 0;
+                    // 必須資金大於買空成本，且確實有輸入庫存
+                    return target.stock > 0 && res.qty >= target.stock && (this.fund - res.cost) > 0;
                 },
 
                 getMarginKingObj() {
@@ -273,12 +278,13 @@
 
                 getRankLabels() {
                     let m = '---', n = '---', maxR = -999, maxN = -999;
+                    let bestObj = null;
                     this.products.forEach(p => {
                         const res = this.calcT0(p);
-                        if (res.rate > maxR && p.bPrice) { maxR = res.rate; m = (p.name || p.label); }
-                        if (res.net > maxN && p.bPrice) { maxN = res.net; n = (p.name || p.label); }
+                        if (res.rate > maxR && p.bPrice) { maxR = res.rate; m = this.getDisplayName(p); }
+                        if (res.net > maxN && p.bPrice) { maxN = res.net; n = this.getDisplayName(p); bestObj = p; }
                     });
-                    return { margin: m, net: n };
+                    return { margin: m, net: n, obj: bestObj };
                 },
 
                 getT2List() {
@@ -287,12 +293,14 @@
                 },
 
                 getT1Total() {
+                    if (!this.canMultiBuy('特產')) return 0;
                     const p0 = this.calcT0(this.products[0]);
                     const subNets = this.t1Inputs.map((input, i) => this.calcSub(this.products[i+1], input.sPrice, this.products[0]).net);
                     return p0.net + Math.max(0, ...subNets);
                 },
 
                 getT2Total() {
+                    if (!this.canMultiBuy('毛利王')) return 0;
                     const mk = this.getMarginKingObj();
                     const mkRes = this.calcT0(mk);
                     const list = this.getT2List();
@@ -307,24 +315,28 @@
 
                 getDecision() {
                     if (this.fund <= 0 || !this.products[0].bPrice) return { msg: "等待數據...", detail: "請輸入資金與報價。" };
+                    
                     const max = this.getMaxProfit();
                     const t1 = this.getT1Total();
                     const t2 = this.getT2Total();
+                    const ranks = this.getRankLabels();
 
-                    if (this.canMultiBuy('特產') && max === t1 && t1 > 0) {
+                    // 如果方案 1 或方案 2 的獲利確實大於單買，且資金允許買空
+                    if (this.canMultiBuy('特產') && max === t1 && t1 > max * 0.9) {
                         const bestSubIdx = this.t1Inputs[0].sPrice >= this.t1Inputs[1].sPrice ? 1 : 2;
-                        const subName = this.products[bestSubIdx].name || this.products[bestSubIdx].label;
+                        const subName = this.getDisplayName(this.products[bestSubIdx]);
                         return { msg: "🏆 方案一：特產買空方案", detail: `建議：買空 ${this.getDisplayName(this.products[0])}，剩餘資金全部投入 ${subName}。` };
                     }
-                    if (this.canMultiBuy('毛利王') && max === t2 && t2 > 0) {
+                    if (this.canMultiBuy('毛利王') && max === t2 && t2 > max * 0.9) {
                         const mk = this.getMarginKingObj();
                         const list = this.getT2List();
                         const bestSubIdx = this.t2Inputs[0].sPrice >= this.t2Inputs[1].sPrice ? 0 : 1;
-                        const subName = list[bestSubIdx].name || list[bestSubIdx].label;
+                        const subName = this.getDisplayName(list[bestSubIdx]);
                         return { msg: "🏆 方案二：毛利王方案", detail: `建議：優先買空 ${this.getDisplayName(mk)}，剩餘資金投入 ${subName}。` };
                     }
-                    const bestSingle = this.getRankLabels().net;
-                    return { msg: `🎯 建議單買：${bestSingle}`, detail: "目前剩餘資金不足以拆分購買，全額投入單一品項獲利最高。" };
+
+                    // 邏輯歸一：若不能多買，右側強制顯示單買最優，解決割裂感
+                    return { msg: `🎯 建議單買：${ranks.net}`, detail: "目前資金已由最優淨利品項全額佔用，單買此項收益最高。" };
                 },
 
                 colorScale(v) { return v > 0 ? 'text-gain' : (v < 0 ? 'text-loss' : 'text-gray-400'); },
