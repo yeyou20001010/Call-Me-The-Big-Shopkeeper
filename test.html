@@ -96,9 +96,9 @@
                                 </select>
                             </div>
                             <div class="space-y-3">
-                                <div><label class="row-label">出發地成本</label><input type="text" :value="formatWithComma(p.bPrice)" @input="p.bPrice = parseNum($event.target.value)" class="input-inline"></div>
+                                <div><label class="row-label">買地售價</label><input type="text" :value="formatWithComma(p.bPrice)" @input="p.bPrice = parseNum($event.target.value)" class="input-inline"></div>
                                 <div><label class="row-label">可買數量</label><input type="number" v-model.number="p.stock" min="0" class="input-inline" @input="p.stock = Math.floor(Math.abs(p.stock))"></div>
-                                <div><label class="row-label">稀缺地(目的地)售價</label><input type="text" :value="formatWithComma(p.sPrice)" @input="p.sPrice = parseNum($event.target.value)" class="input-inline"></div>
+                                <div><label class="row-label">賣地(稀缺地)售價</label><input type="text" :value="formatWithComma(p.sPrice)" @input="p.sPrice = parseNum($event.target.value)" class="input-inline"></div>
                                 
                                 <div class="bg-gray-50 p-2 rounded-xl border border-dashed text-[10px] font-bold space-y-1">
                                     <div class="flex justify-between text-slate-400"><span>已耗資:</span><span class="text-slate-600">{{ formatWithComma(calcT0(p).cost) }}</span></div>
