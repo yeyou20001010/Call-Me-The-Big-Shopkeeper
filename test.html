@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>偉大航線決策系統 v18</title>
+    <title>偉大航線決策系統</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
@@ -97,8 +97,8 @@
                             </div>
                             <div class="space-y-3">
                                 <div><label class="row-label">單位成本</label><input type="text" :value="formatWithComma(p.bPrice)" @input="p.bPrice = parseNum($event.target.value)" class="input-inline"></div>
-                                <div><label class="row-label">庫存 (數量限制)</label><input type="number" v-model.number="p.stock" min="0" class="input-inline" @input="p.stock = Math.floor(Math.abs(p.stock))"></div>
-                                <div><label class="row-label">目的地售價</label><input type="text" :value="formatWithComma(p.sPrice)" @input="p.sPrice = parseNum($event.target.value)" class="input-inline"></div>
+                                <div><label class="row-label">可買數量</label><input type="number" v-model.number="p.stock" min="0" class="input-inline" @input="p.stock = Math.floor(Math.abs(p.stock))"></div>
+                                <div><label class="row-label">稀缺地售價</label><input type="text" :value="formatWithComma(p.sPrice)" @input="p.sPrice = parseNum($event.target.value)" class="input-inline"></div>
                                 
                                 <div class="bg-gray-50 p-2 rounded-xl border border-dashed text-[10px] font-bold space-y-1">
                                     <div class="flex justify-between text-slate-400"><span>已耗資:</span><span class="text-slate-600">{{ formatWithComma(calcT0(p).cost) }}</span></div>
@@ -121,9 +121,9 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6" :class="{'opacity-40 grayscale': !isMultiBuyNeeded}">
                     <div class="card-std border-t-4 border-orange-400">
-                        <h3 class="font-black text-sm text-[#5E548E] mb-4">【表 1】特產買空分配</h3>
+                        <h3 class="font-black text-sm text-[#5E548E] mb-4">【表 1】特產買空後搭配其他副產品</h3>
                         <table class="w-full text-xs font-bold">
-                            <thead class="text-[#8E9AAF] border-b text-right"><tr ><th class="text-left pb-2">品項</th><th>售價</th><th>數量</th><th>剩餘資金</th><th>淨利</th></tr></thead>
+                            <thead class="text-[#8E9AAF] border-b text-right"><tr ><th class="text-left pb-2">品項</th><th>該產品在「特產稀缺地」售價</th><th>數量</th><th>剩餘資金</th><th>淨利</th></tr></thead>
                             <tbody class="text-right">
                                 <tr v-for="(p, idx) in [products[1], products[2]]" :key="idx" class="border-b border-gray-50">
                                     <td class="py-3 text-left text-slate-500">{{ p.name || p.label }}</td>
@@ -138,9 +138,9 @@
                     </div>
 
                     <div class="card-std border-t-4 border-purple-500">
-                        <h3 class="font-black text-sm text-[#5E548E] mb-4">【表 2】毛利王買空分配</h3>
+                        <h3 class="font-black text-sm text-[#5E548E] mb-4">【表 2】毛利王買空後搭配其他順位產品</h3>
                         <table class="w-full text-xs font-bold">
-                            <thead class="text-[#8E9AAF] border-b text-right"><tr><th class="text-left pb-2">品項</th><th>售價</th><th>數量</th><th>剩餘資金</th><th>淨利</th></tr></thead>
+                            <thead class="text-[#8E9AAF] border-b text-right"><tr><th class="text-left pb-2">品項</th><th>該產品在「毛利王稀缺地」售價</th><th>數量</th><th>剩餘資金</th><th>淨利</th></tr></thead>
                             <tbody class="text-right">
                                 <tr v-for="(p, idx) in getT2List()" :key="idx" class="border-b border-gray-50">
                                     <td class="py-3 text-left text-slate-500">{{ p.name || p.label }}</td>
@@ -175,8 +175,8 @@
                     <div class="bg-slate-700/50 p-4 rounded-xl">
                         <h5 class="text-xs font-black mb-2">💡 操作提示</h5>
                         <ul class="text-[10px] space-y-2 opacity-70 font-bold">
-                            <li>● 漲幅設定已移入彈窗，點擊上方按鈕開啟。</li>
-                            <li>● 所有金額欄位皆支援「自動逗號」顯示。</li>
+                            <li>● 遊戲內售價已為漲跌幅加成變動後的結果，如需另當參考，請點擊📈按鈕。</li>
+                            <li>● 盈虧為依照遊戲機制實際運算後的結果(售價-成本)/成本*100%，與顯示的漲跌幅無關。</li>
                             <li>● 若組合方案之副產數量為 0，系統自動判定為單買。</li>
                         </ul>
                     </div>
