@@ -145,7 +145,7 @@
                         <div v-if="!canMultiBuy('特產')" class="locked-overlay">
                             <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-orange-200 mx-4">
                                 <p class="text-orange-600 font-black text-xl">🔒 剩餘資金不足以投資副產</p>
-                                <p class="text-gray-400 text-sm mt-1">目前資金已全額用於特產購買</p>
+                                <p class="text-gray-400 text-sm mt-1">1.淨利王為[特產]；2.淨利王為[副產]且毛利王為[特產]。以上狀況使用此表。</p>
                             </div>
                         </div>
                         <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 1】特產買空方案</h3>
@@ -167,7 +167,7 @@
                         <div v-if="!canMultiBuy('毛利王')" class="locked-overlay">
                             <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-purple-200 mx-4">
                                 <p class="text-purple-600 font-black text-xl">🔒 剩餘資金不足以投資副產</p>
-                                <p class="text-gray-400 text-sm mt-1">毛利王 ({{getMarginKingObj().name || '未設品項'}}) 已佔用所有資金</p>
+                                <p class="text-gray-400 text-sm mt-1">毛利王 ({{getMarginKingObj().name || '未設品項'}}) 與淨利王為不同副產，使用此表。</p>
                             </div>
                         </div>
                         <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 2】毛利王方案</h3>
@@ -202,8 +202,8 @@
                     </div>
                     <div class="bg-slate-900/50 p-6 rounded-3xl space-y-3">
                         <ul class="text-xs text-slate-300 space-y-2 font-bold">
-                            <li>● 漲幅設定已包含「幅度相減」分析。</li>
-                            <li>● 當資金不足買空大項時，推薦策略自動鎖定「單買最優」。</li>
+                            <li>● 遊戲內售價已包含漲跌幅加成後之變動，📈僅當漲跌趨勢參考。</li>
+                            <li>● 盈虧為依照遊戲機制實際運算後的結果，並非直接以漲跌去計算。</li>
                             <li>● 表1/表2開啟條件：資金需大於大項庫存成本，且組合利潤須大於單買。</li>
                         </ul>
                     </div>
@@ -370,3 +370,4 @@
     </script>
 </body>
 </html>
+
