@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -145,12 +146,18 @@
                         <div v-if="!canMultiBuy('特產')" class="locked-overlay">
                             <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-orange-200 mx-4">
                                 <p class="text-orange-600 font-black text-xl">🔒 剩餘資金不足以投資副產</p>
-                                <p class="text-gray-400 text-sm mt-1">使用時機:1.淨利王為[特產] or 2.淨利王為[副產]且毛利王為[特產]。</p>
+                                <div class="text-gray-400 text-sm mt-2 flex text-left justify-center">
+                                    <span class="shrink-0">使用時機：</span>
+                                    <div class="flex flex-col">
+                                        <span>1. 淨利王為 [特產] or</span>
+                                        <span>2. 淨利王為 [副產] 且毛利王為 [特產]。</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 1】特產買空方案</h3>
                         <table class="w-full text-sm font-black">
-                            <thead class="text-[#8E9AAF] border-b-2 text-right"><tr><th class="text-left pb-3">品項</th><th>該產品在特產地售價</th><th>數量</th><th>淨利</th></tr></thead>
+                            <thead class="text-[#8E9AAF] border-b-2 text-right"><tr><th class="text-left pb-3">品項</th><th>該產品在特產產地售價</th><th>數量</th><th>淨利</th></tr></thead>
                             <tbody class="text-right">
                                 <tr v-for="(p, idx) in [products[1], products[2]]" :key="idx" class="border-b border-gray-100">
                                     <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
@@ -167,12 +174,17 @@
                         <div v-if="!canMultiBuy('毛利王')" class="locked-overlay">
                             <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-purple-200 mx-4">
                                 <p class="text-purple-600 font-black text-xl">🔒 剩餘資金不足以投資副產</p>
-                                <p class="text-gray-400 text-sm mt-1">使用時機:毛利王({{getMarginKingObj().name || '未設品項'}})與淨利王為不同副產時。</p>
+                                <div class="text-gray-400 text-sm mt-2 flex text-left justify-center">
+                                    <span class="shrink-0">使用時機：</span>
+                                    <div class="flex flex-col">
+                                        <span>毛利王({{getMarginKingObj().name || '未設品項'}})與淨利王為不同副產時。</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 2】毛利王方案</h3>
+                        <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 2】毛利王買空方案</h3>
                         <table class="w-full text-sm font-black">
-                            <thead class="text-[#8E9AAF] border-b-2 text-right"><tr><th class="text-left pb-3">品項</th><th>該產品在毛利王地售價</th><th>數量</th><th>淨利</th></tr></thead>
+                            <thead class="text-[#8E9AAF] border-b-2 text-right"><tr><th class="text-left pb-3">品項</th><th>該產品在毛利王產地售價</th><th>數量</th><th>淨利</th></tr></thead>
                             <tbody class="text-right">
                                 <tr v-for="(p, idx) in getT2List()" :key="idx" class="border-b border-gray-100">
                                     <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
@@ -370,4 +382,3 @@
     </script>
 </body>
 </html>
-
