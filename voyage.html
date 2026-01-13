@@ -3,215 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>偉大航線投資決策</title>
+    <title>偉大航線決策系統 v19.9.6</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;900&family=Varela+Round&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --highlight-pink: #FF9D6F;
-            --morandi-bg: #FBFBF9;
-            --tag-bg: #F0EFEB;
-            --accent-purple: #5E548E;
-        }
+        :root { --hpink: #FF9D6F; --mbg: #FBFBF9; --spurple: #5E548E; --gain-red: #E53935; --fgreen: #00897B; }
         body { 
-            font-family: 'Varela Round', 'Noto Sans TC', "Microsoft JhengHei", sans-serif;
-            background-color: #EAE8E4; 
-            color: #6D6875;
+            font-family: 'Noto Sans TC', "Microsoft JhengHei", sans-serif;
+            background-color: #EAE8E4; color: #4A4655; font-weight: 700; 
         }
         [v-cloak] { display: none; }
-        
-        /* 統一圓角與陰影 */
-        .card-standard { 
-            background-color: var(--morandi-bg); 
-            border: 1px solid #D7D3CC;
-            border-radius: 2rem;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        .card-std { background: var(--mbg); border: 2px solid #D7D3CC; border-radius: 1.5rem; padding: 1.5rem; }
+        .input-inline {
+            background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem;
+            padding: 6px 10px; text-align: right; font-weight: 900; color: var(--spurple);
+            outline: none; font-size: 16px; width: 100%;
         }
-
-        /* 輸入框樣式優化 */
-        input {
-            background-color: #F4F2EE !important;
-            border: 1px solid #D7D3CC !important;
-            border-radius: 0.75rem !important;
-            padding: 0.5rem !important;
-            text-align: right;
-            font-weight: 900;
-            color: var(--accent-purple);
+        .custom-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3);
+            z-index: 100; width: 90%; max-width: 450px; padding: 2rem; border: 2px solid #5E548E;
         }
-        input:focus { outline: 2px solid var(--highlight-pink); border-color: transparent !important; }
-
-        /* 標籤樣式 */
-        .section-tag {
-            background-color: var(--tag-bg);
-            color: var(--accent-purple);
-            padding: 4px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 900;
-            display: inline-block;
-            margin-bottom: 1rem;
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
+        .text-gain { color: var(--gain-red) !important; }
+        .text-loss { color: var(--fgreen) !important; }
+        .row-label { font-size: 13px; color: #8E9AAF; font-weight: 900; margin-bottom: 2px; display: block; }
+        .locked-overlay {
+            position: absolute; inset: 0; background: rgba(240, 239, 235, 0.92);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10; border-radius: 1.5rem; cursor: not-allowed;
         }
-
-        .highlight-box {
-            background: linear-gradient(135deg, #FDF2F0 0%, #FBFBF9 100%);
-            border: 2px solid var(--highlight-pink);
-        }
-        
-        /* 隱藏數值調節器 */
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-3 md:p-6 text-lg">
     <div id="app" v-cloak class="max-w-7xl mx-auto">
         
-        <div class="flex flex-col lg:flex-row justify-between items-center mb-8 bg-[#FBFBF9] p-8 rounded-[2rem] shadow-sm border border-[#D7D3CC] gap-6">
-            <div class="flex items-center gap-5">
-                <div class="w-16 h-16 bg-[#5E548E] rounded-2xl flex items-center justify-center text-[#F4F2EE] text-3xl font-black">🚢</div>
-                <div>
-                    <h2 class="text-3xl font-black text-[#5E548E] tracking-tight">偉大航線投資決策</h2>
-                    <p class="text-xs font-bold text-[#8E9AAF] tracking-widest">GRAND LINE INVESTMENT</p>
+        <div v-if="showModal" class="modal-overlay" @click="showModal = false"></div>
+        <div v-if="showModal" class="custom-modal">
+            <h3 class="text-2xl font-black text-[#5E548E] mb-4">{{ modalTitle }}</h3>
+            <p class="text-gray-600 mb-8 font-bold text-lg">{{ modalMsg }}</p>
+            <div class="flex gap-4">
+                <template v-if="modalType === 'confirm'">
+                    <button @click="confirmAction" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-black">確定執行</button>
+                    <button @click="showModal = false" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
+                </template>
+                <template v-else>
+                    <button @click="showModal = false" class="w-full bg-[#5E548E] text-white py-3 rounded-xl font-black">確定</button>
+                </template>
+            </div>
+        </div>
+
+        <div v-if="showTrendModal" class="modal-overlay" @click="showTrendModal = false"></div>
+        <div v-if="showTrendModal" class="custom-modal !max-w-lg">
+            <h3 class="text-2xl font-black text-[#5E548E] mb-6">📈 漲跌幅數據分析</h3>
+            <div class="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                <div v-for="(p, i) in products" :key="i" class="bg-gray-50 p-4 rounded-2xl border-2 border-gray-100">
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="font-black text-lg text-gray-800">{{ p.label }} - {{ p.name || '未設品項' }}</p>
+                        <span class="text-sm font-black" :class="colorScale(p.sTrend - p.bTrend)">幅度: {{ (p.sTrend - p.bTrend).toFixed(1) }}%</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="row-label">買地漲跌%</label><input type="number" v-model.number="p.bTrend" :class="colorScale(p.bTrend)" class="input-inline"></div>
+                        <div><label class="row-label">賣地漲跌%</label><input type="number" v-model.number="p.sTrend" :class="colorScale(p.sTrend)" class="input-inline"></div>
+                    </div>
                 </div>
             </div>
+            <button @click="showTrendModal = false" class="w-full mt-8 bg-[#5E548E] text-white py-3 rounded-xl font-black text-xl">關閉</button>
+        </div>
+
+        <div class="flex flex-col lg:flex-row justify-between items-center mb-6 bg-white p-6 rounded-[2rem] shadow-md border-2 border-[#D7D3CC] gap-4">
+            <div class="flex items-center gap-5">
+                <div class="w-14 h-14 bg-[#5E548E] rounded-2xl flex items-center justify-center text-white text-3xl">🚢</div>
+                <h2 class="text-3xl font-black text-[#5E548E]">偉大航線決策系統 v19.9.6</h2>
+            </div>
             <div class="flex gap-3">
-                <button @click="resetData" class="bg-[#AF7A7D] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">🗑️ 重置資料</button>
-                <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-6 py-4 rounded-2xl text-base font-black shadow-sm">返回入口</button>
+                <button @click="saveData" class="bg-[#6D6875] text-white px-6 py-2 rounded-xl text-lg font-black">💾 暫存</button>
+                <button @click="triggerModal('系統確認','確定要清除所有資料嗎？', 'confirm', 'clear')" class="bg-[#AF7A7D] text-white px-6 py-2 rounded-xl text-lg font-black">🗑️ 清除</button>
+                <button @click="goToPortal" class="bg-slate-400 text-white px-6 py-2 rounded-xl text-lg font-black">🔄 返回</button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            
             <div class="xl:col-span-8 space-y-6">
-                <div class="card-standard">
-                    <span class="section-tag">表₀ 基礎資料輸入</span>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <div class="flex flex-col gap-1">
-                            <label class="text-xs font-black text-[#8E9AAF] ml-2">可用資金</label>
-                            <input type="number" v-model.number="fund" placeholder="資金">
+                <div class="card-std relative overflow-hidden">
+                    <div class="flex flex-wrap justify-between items-center mb-6 border-b-2 border-gray-100 pb-4 gap-4">
+                        <div class="flex items-center gap-3">
+                            <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black">【表 0】基礎分析</span>
+                            <button @click="showTrendModal = true" class="bg-orange-400 text-white px-4 py-1 rounded-lg text-sm font-black shadow-sm hover:scale-105 transition-transform">📈 漲幅設定</button>
                         </div>
-                        <div class="flex flex-col gap-1">
-                            <label class="text-xs font-black text-[#8E9AAF] ml-2">剩餘載重</label>
-                            <input type="number" v-model.number="capacity" placeholder="載重">
+                        <div class="flex items-center gap-6">
+                            <div class="text-right">
+                                <span class="row-label">現有總資金</span>
+                                <span class="text-lg font-black text-orange-500">{{ formatWan(fund) }}</span>
+                            </div>
+                            <input type="text" :value="formatWithComma(fund)" @input="updateFund" class="input-inline !w-48 !bg-orange-50 !text-2xl !text-orange-600 border-2 border-orange-200">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="row-label">商船利潤</span>
+                            <select v-model.number="profitBonus" class="input-inline !w-28 border-2">
+                                <option :value="0">0%</option>
+                                <option :value="12">12%</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="text-[#8E9AAF] text-xs font-black uppercase">
-                                    <th class="p-2">品項</th>
-                                    <th class="p-2 text-right">交易差價</th>
-                                    <th class="p-2 text-right">漲跌%</th>
-                                    <th class="p-2 text-right">購買量</th>
-                                    <th class="p-2 text-right">單位毛利</th>
-                                    <th class="p-2 text-right">預估淨利</th>
-                                </tr>
-                            </thead>
-                            <tbody class="font-bold">
-                                <tr v-for="item in products" :key="item.name" class="border-t border-[#F0EFEB]">
-                                    <td class="p-3 text-[#5E548E] font-black">{{ item.name }}</td>
-                                    <td class="p-2"><input type="number" v-model.number="item.priceDiff" class="w-full"></td>
-                                    <td class="p-2"><input type="number" v-model.number="item.trend" class="w-full"></td>
-                                    <td class="p-2"><input type="number" v-model.number="item.quantity" class="w-full"></td>
-                                    <td class="p-2 text-right text-sm">{{ formatMoney(getUnitProfit(item)) }}</td>
-                                    <td class="p-2 text-right text-sm text-[#FF9D6F]">{{ formatMoney(getTotalProfit(item)) }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div v-for="(p, i) in products" :key="i" class="bg-white p-5 rounded-3xl border-2 border-[#D7D3CC]">
+                            <div class="flex justify-between items-center mb-5">
+                                <span class="text-xl font-black text-[#5E548E]">{{ p.label }}</span>
+                                <select v-model="p.name" class="!w-32 text-sm font-black text-slate-600 bg-gray-100 px-2 py-1 rounded-lg">
+                                    <option value="">選擇品項</option>
+                                    <option v-for="opt in productOptions" :value="opt">{{ opt }}</option>
+                                </select>
+                            </div>
+                            <div class="space-y-4">
+                                <div><label class="row-label">買地售價 (成本)</label><input type="text" :value="formatWithComma(p.bPrice)" @input="p.bPrice = parseNum($event.target.value)" class="input-inline !text-xl"></div>
+                                <div><label class="row-label">可買數量</label><input type="number" v-model.number="p.stock" @input="p.stock = Math.max(0, Math.floor(p.stock || 0))" class="input-inline !text-xl"></div>
+                                <div><label class="row-label">賣地(緊缺地)售價</label><input type="text" :value="formatWithComma(p.sPrice)" @input="p.sPrice = parseNum($event.target.value)" class="input-inline !text-xl"></div>
+                                
+                                <div class="bg-slate-50 p-3 rounded-2xl border border-dashed text-sm space-y-1">
+                                    <div class="flex justify-between"><span>已耗資:</span><span>{{ formatWithComma(calcT0(p).cost) }}</span></div>
+                                    <div class="flex justify-between"><span>剩餘資金:</span><span class="text-orange-500">{{ formatWithComma(calcT0(p).remain) }}</span></div>
+                                </div>
+                                <div class="flex justify-between items-end pt-3 border-t-2">
+                                    <div class="text-center"><p class="row-label">盈虧率</p><p class="text-xl font-black" :class="colorScale(calcT0(p).rate)">{{ calcT0(p).rate }}%</p></div>
+                                    <div class="text-right"><p class="row-label">預估淨利</p><p class="text-2xl font-black" style="color: #7B1FA2">{{ formatWithComma(calcT0(p).net) }}</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center gap-6 border-t-2 pt-5">
+                        <div class="bg-orange-500 text-white px-8 py-2 rounded-full text-base font-black">🏆 毛利王：{{ getRankLabels().margin }}</div>
+                        <div class="bg-purple-600 text-white px-8 py-2 rounded-full text-base font-black">💰 淨利王：{{ getRankLabels().net }}</div>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="card-standard" :class="{'opacity-50': fund > totalCost0}">
-                        <span class="section-tag">表₁ 特產優先計算 (資金不足時)</span>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-[#D7D3CC]">
-                                <span class="text-xs font-black text-[#8E9AAF]">買空特產剩餘資金</span>
-                                <span class="font-black text-[#5E548E]">{{ formatMoney(remainFund1) }}</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-[10px] font-black ml-1">副產售價</label>
-                                    <input type="number" v-model.number="extraPrice1">
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-[10px] font-black ml-1">副產漲跌%</label>
-                                    <input type="number" v-model.number="extraTrend1">
-                                </div>
+                    <div class="card-std border-t-8 border-orange-400 relative">
+                        <div v-if="!canMultiBuy('特產')" class="locked-overlay">
+                            <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-orange-200 mx-4">
+                                <p class="text-orange-600 font-black text-xl">🔒 剩餘資金不足以投資副產</p>
+                                <p class="text-gray-400 text-sm mt-1">目前資金已全額用於特產購買</p>
                             </div>
                         </div>
+                        <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 1】特產買空方案</h3>
+                        <table class="w-full text-sm font-black">
+                            <thead class="text-[#8E9AAF] border-b-2 text-right"><tr><th class="text-left pb-3">品項</th><th>該產品在特產地售價</th><th>數量</th><th>淨利</th></tr></thead>
+                            <tbody class="text-right">
+                                <tr v-for="(p, idx) in [products[1], products[2]]" :key="idx" class="border-b border-gray-100">
+                                    <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
+                                    <td><input type="text" :value="formatWithComma(t1Inputs[idx].sPrice)" @input="t1Inputs[idx].sPrice = parseNum($event.target.value)" class="input-inline !w-24"></td>
+                                    <td>{{ calcSub(p, t1Inputs[idx].sPrice, products[0]).qty }}</td>
+                                    <td :class="colorScale(calcSub(p, t1Inputs[idx].sPrice, products[0]).net)">{{ formatWithComma(calcSub(p, t1Inputs[idx].sPrice, products[0]).net) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-4 text-right border-t pt-2 text-orange-600 font-black">方案總預估：{{ formatWithComma(getT1Total()) }}</div>
                     </div>
 
-                    <div class="card-standard" :class="{'opacity-50': fund > totalCost0}">
-                        <span class="section-tag">表₂ 高毛利副產計算</span>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-[#D7D3CC]">
-                                <span class="text-xs font-black text-[#8E9AAF]">買空高毛利剩餘資金</span>
-                                <span class="font-black text-[#5E548E]">{{ formatMoney(remainFund2) }}</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-[10px] font-black ml-1">其他售價</label>
-                                    <input type="number" v-model.number="extraPrice2">
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-[10px] font-black ml-1">其他漲跌%</label>
-                                    <input type="number" v-model.number="extraTrend2">
-                                </div>
+                    <div class="card-std border-t-8 border-purple-500 relative">
+                        <div v-if="!canMultiBuy('毛利王')" class="locked-overlay">
+                            <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-purple-200 mx-4">
+                                <p class="text-purple-600 font-black text-xl">🔒 剩餘資金不足以投資副產</p>
+                                <p class="text-gray-400 text-sm mt-1">毛利王 ({{getMarginKingObj().name || '未設品項'}}) 已佔用所有資金</p>
                             </div>
                         </div>
+                        <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 2】毛利王方案</h3>
+                        <table class="w-full text-sm font-black">
+                            <thead class="text-[#8E9AAF] border-b-2 text-right"><tr><th class="text-left pb-3">品項</th><th>該產品在毛利王地售價</th><th>數量</th><th>淨利</th></tr></thead>
+                            <tbody class="text-right">
+                                <tr v-for="(p, idx) in getT2List()" :key="idx" class="border-b border-gray-100">
+                                    <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
+                                    <td><input type="text" :value="formatWithComma(t2Inputs[idx].sPrice)" @input="t2Inputs[idx].sPrice = parseNum($event.target.value)" class="input-inline !w-24"></td>
+                                    <td>{{ calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).qty }}</td>
+                                    <td :class="colorScale(calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).net)">{{ formatWithComma(calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).net) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mt-4 text-right border-t pt-2 text-purple-600 font-black">方案總預估：{{ formatWithComma(getT2Total()) }}</div>
                     </div>
                 </div>
             </div>
 
-            <div class="xl:col-span-4 space-y-6">
-                <div class="card-standard highlight-box">
-                    <span class="section-tag" style="background-color: #FF9D6F; color: white;">🏆 最佳投資方案判斷</span>
-                    <div class="mt-4 p-6 bg-white rounded-[1.5rem] shadow-inner border border-[#FF9D6F]/20">
-                        <p class="text-[10px] font-black text-[#8E9AAF] mb-1 uppercase tracking-widest">系統建議</p>
-                        <p class="text-2xl font-black text-[#FF9D6F] leading-tight mb-4">{{ finalDecision.msg }}</p>
-                        <hr class="mb-4">
-                        <div class="space-y-2">
-                            <div class="flex justify-between">
-                                <span class="text-sm font-bold">判斷依據:</span>
-                                <span class="text-sm font-black text-[#5E548E]">{{ finalDecision.reason }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm font-bold">預估總淨利:</span>
-                                <span class="text-xl font-black text-[#FF9D6F]">{{ formatMoney(finalDecision.profit) }}</span>
-                            </div>
+            <div class="xl:col-span-4">
+                <div class="card-std bg-slate-800 text-white sticky top-4 shadow-2xl border-none">
+                    <div class="bg-orange-500 text-white px-4 py-1 rounded-lg text-xs font-black inline-block mb-6 shadow-lg">🏆 實戰投資建議</div>
+                    <div class="bg-white/10 rounded-3xl p-6 border border-white/20 mb-6">
+                        <h4 class="text-2xl font-black text-yellow-400 mb-4 leading-tight">{{ getDecision().msg }}</h4>
+                        <div class="p-4 bg-black/20 rounded-2xl text-base leading-relaxed text-slate-200 font-bold border-l-4 border-orange-400 mb-4">
+                            {{ getDecision().detail }}
+                        </div>
+                        <div class="flex justify-between items-end border-t border-white/10 pt-4">
+                            <span class="opacity-60 text-sm">預估最大淨利:</span>
+                            <span class="text-3xl font-black" style="color: #FF95CA">{{ formatWithComma(getMaxProfit()) }}</span>
                         </div>
                     </div>
-                    
-                    <div class="mt-6 space-y-3">
-                        <div class="flex justify-between text-xs font-bold border-b border-[#D7D3CC] pb-2">
-                            <span>表₀ 最高淨利方案</span>
-                            <span>{{ formatMoney(bestByNet0.profit) }}</span>
-                        </div>
-                        <div v-if="fund <= totalCost0" class="flex justify-between text-xs font-bold border-b border-[#D7D3CC] pb-2">
-                            <span>表₁ 總淨利(買空特產+)</span>
-                            <span>{{ formatMoney(totalNetProfit1) }}</span>
-                        </div>
-                        <div v-if="fund <= totalCost0" class="flex justify-between text-xs font-bold border-b border-[#D7D3CC] pb-2">
-                            <span>表₂ 總淨利(買空高毛利副產+)</span>
-                            <span>{{ formatMoney(totalNetProfit2) }}</span>
-                        </div>
+                    <div class="bg-slate-900/50 p-6 rounded-3xl space-y-3">
+                        <ul class="text-xs text-slate-300 space-y-2 font-bold">
+                            <li>● 漲幅設定已包含「幅度相減」分析。</li>
+                            <li>● 當資金不足買空大項時，推薦策略自動鎖定「單買最優」。</li>
+                            <li>● 表1/表2開啟條件：資金需大於大項庫存成本，且組合利潤須大於單買。</li>
+                        </ul>
                     </div>
-                </div>
-
-                <div class="card-standard bg-[#6D6875] text-white">
-                    <h4 class="font-black mb-4 flex items-center gap-2">
-                        <span>💡</span> 操作提示
-                    </h4>
-                    <ul class="text-xs space-y-3 font-bold opacity-90">
-                        <li>● 載重與資金足夠時，參考「表₀」結果即可。</li>
-                        <li>● 資金不足時，系統會自動比對「表₁」與「表₂」。</li>
-                        <li>● 若無特產，請將特產購買量輸入為 0。</li>
-                    </ul>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -220,84 +217,154 @@
         createApp({
             data() {
                 return {
-                    fund: 0,
-                    capacity: 0,
+                    fund: 0, profitBonus: 12, 
+                    showModal: false, modalTitle: '', modalMsg: '', modalType: 'info', modalAction: '',
+                    showTrendModal: false,
+                    productOptions: ['木材', '鹿茸', '陶瓷', '茶葉', '絲綢', '珍珠', '水稻', '燕窩', '象牙', '鳳梨', '蝦蟹', '酒', '魚肉', '鐵礦', '香料', '椰子', '水晶', '玉器', '皮革', '白銀'],
                     products: [
-                        { name: '特產', priceDiff: 0, trend: 0, quantity: 0, buyPrice: 1600 },
-                        { name: '副產 1', priceDiff: 0, trend: 0, quantity: 0, buyPrice: 1200 },
-                        { name: '副產 2', priceDiff: 0, trend: 0, quantity: 0, buyPrice: 1200 }
+                        { label: '特產', name: '', bPrice: 0, bTrend: 0, stock: 0, sPrice: 0, sTrend: 0 },
+                        { label: '副產 1', name: '', bPrice: 0, bTrend: 0, stock: 0, sPrice: 0, sTrend: 0 },
+                        { label: '副產 2', name: '', bPrice: 0, bTrend: 0, stock: 0, sPrice: 0, sTrend: 0 }
                     ],
-                    extraPrice1: 0, extraTrend1: 0,
-                    extraPrice2: 0, extraTrend2: 0
-                }
-            },
-            computed: {
-                // 原有的複雜邏輯保持不變
-                bestByNet0() {
-                    let best = { name: '無', profit: 0 };
-                    this.products.forEach(p => {
-                        let profit = this.getTotalProfit(p);
-                        if (profit > best.profit) { best = { name: p.name, profit: profit }; }
-                    });
-                    return best;
-                },
-                totalCost0() { return this.products.reduce((sum, p) => sum + (p.buyPrice * p.quantity), 0); },
-                
-                // 表1 邏輯
-                remainFund1() { 
-                    const specialty = this.products.find(p => p.name === '特產');
-                    return Math.max(0, this.fund - (specialty.buyPrice * specialty.quantity));
-                },
-                totalNetProfit1() {
-                    const specialty = this.products.find(p => p.name === '特產');
-                    const specProfit = this.getTotalProfit(specialty);
-                    const extraQty = Math.floor(this.remainFund1 / 1200);
-                    const extraProfit = extraQty * (this.extraPrice1 * (1 + this.extraTrend1/100) - 1200);
-                    return specProfit + extraProfit;
-                },
-
-                // 表2 邏輯
-                remainFund2() {
-                    const p1 = this.products.find(p => p.name === '副產 1');
-                    const p2 = this.products.find(p => p.name === '副產 2');
-                    const highGross = this.getUnitProfit(p1) > this.getUnitProfit(p2) ? p1 : p2;
-                    return Math.max(0, this.fund - (highGross.buyPrice * highGross.quantity));
-                },
-                totalNetProfit2() {
-                    const p1 = this.products.find(p => p.name === '副產 1');
-                    const p2 = this.products.find(p => p.name === '副產 2');
-                    const highGross = this.getUnitProfit(p1) > this.getUnitProfit(p2) ? p1 : p2;
-                    const highProfit = this.getTotalProfit(highGross);
-                    const extraQty = Math.floor(this.remainFund2 / 1200);
-                    const extraProfit = extraQty * (this.extraPrice2 * (1 + this.extraTrend2/100) - 1200);
-                    return highProfit + extraProfit;
-                },
-
-                finalDecision() {
-                    if (this.fund > this.totalCost0 || this.fund <= 0) {
-                        return { msg: "參考表₀：" + this.bestByNet0.name, profit: this.bestByNet0.profit, reason: "資金/載重充足" };
-                    }
-                    if (this.totalNetProfit1 >= this.totalNetProfit2 && this.totalNetProfit1 >= this.bestByNet0.profit) {
-                        return { msg: "方案一：特產買空方案", profit: this.totalNetProfit1, reason: "特產基礎利潤優勢" };
-                    } else if (this.totalNetProfit2 >= this.totalNetProfit1 && this.totalNetProfit2 >= this.bestByNet0.profit) {
-                        return { msg: "方案二：高毛利副產買空", profit: this.totalNetProfit2, reason: "副產組合收益較高" };
-                    }
-                    return { msg: "方案三：單買最優副產", profit: this.bestByNet0.profit, reason: "資金不適宜拆分購買" };
+                    t1Inputs: [{ sPrice: 0 }, { sPrice: 0 }],
+                    t2Inputs: [{ sPrice: 0 }, { sPrice: 0 }]
                 }
             },
             methods: {
-                getUnitProfit(p) { return p.priceDiff * (1 + p.trend/100); },
-                getTotalProfit(p) { return this.getUnitProfit(p) * p.quantity; },
-                formatMoney(val) {
-                    if (!val) return '0';
-                    return val.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' 貝里';
+                formatWithComma(v) { 
+                    const val = Math.floor(v || 0);
+                    return val.toLocaleString(); 
                 },
-                resetData() {
-                    this.fund = 0; this.capacity = 0;
-                    this.products.forEach(p => { p.priceDiff = 0; p.trend = 0; p.quantity = 0; });
-                    this.extraPrice1 = 0; this.extraTrend1 = 0;
-                    this.extraPrice2 = 0; this.extraTrend2 = 0;
+                parseNum(v) { 
+                    // 金額不允許輸入負數
+                    const num = Number(v.toString().replace(/,/g, '')) || 0;
+                    return Math.max(0, num);
+                },
+                updateFund(e) { this.fund = this.parseNum(e.target.value); },
+                formatWan(v) {
+                    if (v < 10000) return v.toLocaleString();
+                    return (Math.floor((v / 10000) * 1000) / 1000).toFixed(3) + ' 萬';
+                },
+                getDisplayName(p) { return p.name ? `${p.label} (${p.name})` : p.label; },
+                goToPortal() { window.location.href = 'portal.html'; },
+
+                calcT0(p) {
+                    if (!p.bPrice) return { cost: 0, remain: this.fund, net: 0, rate: 0, qty: 0 };
+                    // 數量無條件捨去
+                    const qty = Math.floor(Math.min(p.stock || 0, this.fund / p.bPrice));
+                    const cost = qty * p.bPrice;
+                    // 淨利修正：允許負數 (虧損)，不再使用 Math.max(0, ...)
+                    const net = p.sPrice ? (p.sPrice - p.bPrice) * qty * (1 + this.profitBonus/100) : 0;
+                    const rate = p.sPrice ? Math.round(((p.sPrice - p.bPrice) / p.bPrice) * 100) : 0;
+                    return { cost, remain: this.fund - cost, net, rate, qty };
+                },
+
+                calcSub(targetP, inputS, lockP) {
+                    const lockRes = this.calcT0(lockP);
+                    const remainBase = (lockP.stock > 0 && lockRes.qty >= lockP.stock) ? (this.fund - lockRes.cost) : 0;
+                    if (remainBase <= 0 || !targetP.bPrice) return { qty: 0, net: 0, remain: Math.max(0, remainBase) };
+                    // 數量無條件捨去
+                    const qty = Math.floor(remainBase / targetP.bPrice);
+                    // 淨利修正：允許負數 (虧損)
+                    const net = inputS ? (inputS - targetP.bPrice) * qty * (1 + this.profitBonus/100) : 0;
+                    return { qty, net, remain: remainBase - (qty * targetP.bPrice) };
+                },
+
+                canMultiBuy(type) {
+                    const target = type === '特產' ? this.products[0] : this.getMarginKingObj();
+                    const res = this.calcT0(target);
+                    return target.stock > 0 && res.qty >= target.stock && (this.fund - res.cost) > 0;
+                },
+
+                getMarginKingObj() {
+                    let best = this.products[0], maxR = -999999;
+                    this.products.forEach(p => {
+                        const r = p.bPrice && p.sPrice ? (p.sPrice - p.bPrice) / p.bPrice : -999999;
+                        if (r > maxR) { maxR = r; best = p; }
+                    });
+                    return best;
+                },
+
+                getRankLabels() {
+                    let m = '---', n = '---', maxR = -999999, maxN = -999999999;
+                    let bestObj = null;
+                    this.products.forEach(p => {
+                        const res = this.calcT0(p);
+                        if (p.bPrice && p.sPrice) {
+                            if (res.rate > maxR) { maxR = res.rate; m = this.getDisplayName(p); }
+                            if (res.net > maxN) { maxN = res.net; n = this.getDisplayName(p); bestObj = p; }
+                        }
+                    });
+                    return { margin: m, net: n, obj: bestObj };
+                },
+
+                getT2List() {
+                    const mk = this.getMarginKingObj();
+                    return this.products.filter(p => p.label !== mk.label);
+                },
+
+                getT1Total() {
+                    if (!this.canMultiBuy('特產')) return -999999;
+                    const p0 = this.calcT0(this.products[0]);
+                    const subNets = this.t1Inputs.map((input, i) => this.calcSub(this.products[i+1], input.sPrice, this.products[0]).net);
+                    // 取副產中最好的一項（包含負數）
+                    return p0.net + Math.max(...subNets);
+                },
+
+                getT2Total() {
+                    if (!this.canMultiBuy('毛利王')) return -999999;
+                    const mk = this.getMarginKingObj();
+                    const mkRes = this.calcT0(mk);
+                    const list = this.getT2List();
+                    const subNets = this.t2Inputs.map((input, i) => this.calcSub(list[i], input.sPrice, mk).net);
+                    return mkRes.net + Math.max(...subNets);
+                },
+
+                getMaxProfit() {
+                    const t0Max = Math.max(...this.products.map(p => this.calcT0(p).net));
+                    return Math.max(t0Max, this.getT1Total(), this.getT2Total());
+                },
+
+                getDecision() {
+                    if (this.fund <= 0 || !this.products[0].bPrice) return { msg: "等待數據...", detail: "請輸入資金與報價。" };
+                    
+                    const max = this.getMaxProfit();
+                    const t1 = this.getT1Total();
+                    const t2 = this.getT2Total();
+                    const ranks = this.getRankLabels();
+
+                    if (this.canMultiBuy('特產') && max === t1) {
+                        const bestSubIdx = this.t1Inputs[0].sPrice >= this.t1Inputs[1].sPrice ? 1 : 2;
+                        const subName = this.getDisplayName(this.products[bestSubIdx]);
+                        return { msg: "🏆 方案一：特產買空方案", detail: `建議：買空 ${this.getDisplayName(this.products[0])}，剩餘資金全部投入 ${subName}。` };
+                    }
+                    if (this.canMultiBuy('毛利王') && max === t2) {
+                        const mk = this.getMarginKingObj();
+                        const list = this.getT2List();
+                        const bestSubIdx = (this.t2Inputs[0].sPrice || 0) >= (this.t2Inputs[1].sPrice || 0) ? 0 : 1;
+                        const subName = this.getDisplayName(list[bestSubIdx]);
+                        return { msg: "🏆 方案二：毛利王方案", detail: `建議：優先買空 ${this.getDisplayName(mk)}，剩餘資金投入 ${subName}。` };
+                    }
+
+                    return { msg: `🎯 建議單買：${ranks.net}`, detail: "目前資金已由最優淨利品項全額佔用，單買此項收益最高。" };
+                },
+
+                colorScale(v) { return v > 0 ? 'text-gain' : (v < 0 ? 'text-loss' : 'text-gray-400'); },
+                triggerModal(title, msg, type, action) { 
+                    this.modalTitle = title; this.modalMsg = msg; this.modalType = type; this.modalAction = action; this.showModal = true; 
+                },
+                confirmAction() {
+                    if (this.modalAction === 'clear') { localStorage.removeItem('v19_data'); location.reload(); }
+                    this.showModal = false;
+                },
+                saveData() { 
+                    localStorage.setItem('v19_data', JSON.stringify(this.$data)); 
+                    this.triggerModal('系統訊息', '資料已成功儲存！', 'info', '');
                 }
+            },
+            mounted() {
+                const saved = localStorage.getItem('v19_data');
+                if (saved) Object.assign(this.$data, JSON.parse(saved));
             }
         }).mount('#app');
     </script>
