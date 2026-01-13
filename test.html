@@ -119,7 +119,7 @@
                             </div>
                             <div class="space-y-4">
                                 <div><label class="row-label">買地售價 (成本)</label><input type="text" :value="formatWithComma(p.bPrice)" @input="p.bPrice = parseNum($event.target.value)" class="input-inline !text-xl"></div>
-                                <div><label class="row-label">可買數量</label><input type="number" v-model.number="p.stock" class="input-inline !text-xl"></div>
+                                <div><label class="row-label">可買數量</label><input type="number" v-model.number="p.stock" @input="p.stock = Math.max(0, Math.floor(p.stock || 0))" class="input-inline !text-xl"></div>
                                 <div><label class="row-label">賣地(緊缺地)售價</label><input type="text" :value="formatWithComma(p.sPrice)" @input="p.sPrice = parseNum($event.target.value)" class="input-inline !text-xl"></div>
                                 
                                 <div class="bg-slate-50 p-3 rounded-2xl border border-dashed text-sm space-y-1">
@@ -128,7 +128,7 @@
                                 </div>
                                 <div class="flex justify-between items-end pt-3 border-t-2">
                                     <div class="text-center"><p class="row-label">盈虧率</p><p class="text-xl font-black" :class="colorScale(calcT0(p).rate)">{{ calcT0(p).rate }}%</p></div>
-                                    <div class="text-right"><p class="row-label">預估淨利</p><p class="text-2xl font-black text-[#7B1FA2]">{{ formatWithComma(calcT0(p).net) }}</p></div>
+                                    <div class="text-right"><p class="row-label">預估淨利</p><p class="text-2xl font-black" :class="colorScale(calcT0(p).net)">{{ formatWithComma(calcT0(p).net) }}</p></div>
                                 </div>
                             </div>
                         </div>
@@ -156,7 +156,7 @@
                                     <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
                                     <td><input type="text" :value="formatWithComma(t1Inputs[idx].sPrice)" @input="t1Inputs[idx].sPrice = parseNum($event.target.value)" class="input-inline !w-24"></td>
                                     <td>{{ calcSub(p, t1Inputs[idx].sPrice, products[0]).qty }}</td>
-                                    <td class="text-[#7B1FA2]">{{ formatWithComma(calcSub(p, t1Inputs[idx].sPrice, products[0]).net) }}</td>
+                                    <td :class="colorScale(calcSub(p, t1Inputs[idx].sPrice, products[0]).net)">{{ formatWithComma(calcSub(p, t1Inputs[idx].sPrice, products[0]).net) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -178,7 +178,7 @@
                                     <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
                                     <td><input type="text" :value="formatWithComma(t2Inputs[idx].sPrice)" @input="t2Inputs[idx].sPrice = parseNum($event.target.value)" class="input-inline !w-24"></td>
                                     <td>{{ calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).qty }}</td>
-                                    <td class="text-[#7B1FA2]">{{ formatWithComma(calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).net) }}</td>
+                                    <td :class="colorScale(calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).net)">{{ formatWithComma(calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).net) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -197,7 +197,7 @@
                         </div>
                         <div class="flex justify-between items-end border-t border-white/10 pt-4">
                             <span class="opacity-60 text-sm">預估最大淨利:</span>
-                            <span class="text-3xl font-black text-white">{{ formatWithComma(getMaxProfit()) }}</span>
+                            <span class="text-3xl font-black text-white" :class="colorScale(getMaxProfit())">{{ formatWithComma(getMaxProfit()) }}</span>
                         </div>
                     </div>
                     <div class="bg-slate-900/50 p-6 rounded-3xl space-y-3">
@@ -231,8 +231,15 @@
                 }
             },
             methods: {
-                formatWithComma(v) { return Math.floor(v || 0).toLocaleString(); },
-                parseNum(v) { return Number(v.toString().replace(/,/g, '')) || 0; },
+                formatWithComma(v) { 
+                    const val = Math.floor(v || 0);
+                    return val.toLocaleString(); 
+                },
+                parseNum(v) { 
+                    // 金額不允許輸入負數
+                    const num = Number(v.toString().replace(/,/g, '')) || 0;
+                    return Math.max(0, num);
+                },
                 updateFund(e) { this.fund = this.parseNum(e.target.value); },
                 formatWan(v) {
                     if (v < 10000) return v.toLocaleString();
@@ -243,46 +250,50 @@
 
                 calcT0(p) {
                     if (!p.bPrice) return { cost: 0, remain: this.fund, net: 0, rate: 0, qty: 0 };
+                    // 數量無條件捨去
                     const qty = Math.floor(Math.min(p.stock || 0, this.fund / p.bPrice));
                     const cost = qty * p.bPrice;
-                    const net = p.sPrice ? Math.max(0, (p.sPrice - p.bPrice) * qty * (1 + this.profitBonus/100)) : 0;
+                    // 淨利修正：允許負數 (虧損)，不再使用 Math.max(0, ...)
+                    const net = p.sPrice ? (p.sPrice - p.bPrice) * qty * (1 + this.profitBonus/100) : 0;
                     const rate = p.sPrice ? Math.round(((p.sPrice - p.bPrice) / p.bPrice) * 100) : 0;
                     return { cost, remain: this.fund - cost, net, rate, qty };
                 },
 
                 calcSub(targetP, inputS, lockP) {
                     const lockRes = this.calcT0(lockP);
-                    // 核心修正：如果鎖定的大項沒買空，剩餘資金強行歸零，防止割裂
                     const remainBase = (lockP.stock > 0 && lockRes.qty >= lockP.stock) ? (this.fund - lockRes.cost) : 0;
                     if (remainBase <= 0 || !targetP.bPrice) return { qty: 0, net: 0, remain: Math.max(0, remainBase) };
+                    // 數量無條件捨去
                     const qty = Math.floor(remainBase / targetP.bPrice);
-                    const net = inputS ? Math.max(0, (inputS - targetP.bPrice) * qty * (1 + this.profitBonus/100)) : 0;
+                    // 淨利修正：允許負數 (虧損)
+                    const net = inputS ? (inputS - targetP.bPrice) * qty * (1 + this.profitBonus/100) : 0;
                     return { qty, net, remain: remainBase - (qty * targetP.bPrice) };
                 },
 
                 canMultiBuy(type) {
                     const target = type === '特產' ? this.products[0] : this.getMarginKingObj();
                     const res = this.calcT0(target);
-                    // 必須資金大於買空成本，且確實有輸入庫存
                     return target.stock > 0 && res.qty >= target.stock && (this.fund - res.cost) > 0;
                 },
 
                 getMarginKingObj() {
-                    let best = this.products[0], maxR = -999;
+                    let best = this.products[0], maxR = -999999;
                     this.products.forEach(p => {
-                        const r = p.bPrice && p.sPrice ? (p.sPrice - p.bPrice) / p.bPrice : -999;
+                        const r = p.bPrice && p.sPrice ? (p.sPrice - p.bPrice) / p.bPrice : -999999;
                         if (r > maxR) { maxR = r; best = p; }
                     });
                     return best;
                 },
 
                 getRankLabels() {
-                    let m = '---', n = '---', maxR = -999, maxN = -999;
+                    let m = '---', n = '---', maxR = -999999, maxN = -999999999;
                     let bestObj = null;
                     this.products.forEach(p => {
                         const res = this.calcT0(p);
-                        if (res.rate > maxR && p.bPrice) { maxR = res.rate; m = this.getDisplayName(p); }
-                        if (res.net > maxN && p.bPrice) { maxN = res.net; n = this.getDisplayName(p); bestObj = p; }
+                        if (p.bPrice && p.sPrice) {
+                            if (res.rate > maxR) { maxR = res.rate; m = this.getDisplayName(p); }
+                            if (res.net > maxN) { maxN = res.net; n = this.getDisplayName(p); bestObj = p; }
+                        }
                     });
                     return { margin: m, net: n, obj: bestObj };
                 },
@@ -293,19 +304,20 @@
                 },
 
                 getT1Total() {
-                    if (!this.canMultiBuy('特產')) return 0;
+                    if (!this.canMultiBuy('特產')) return -999999;
                     const p0 = this.calcT0(this.products[0]);
                     const subNets = this.t1Inputs.map((input, i) => this.calcSub(this.products[i+1], input.sPrice, this.products[0]).net);
-                    return p0.net + Math.max(0, ...subNets);
+                    // 取副產中最好的一項（包含負數）
+                    return p0.net + Math.max(...subNets);
                 },
 
                 getT2Total() {
-                    if (!this.canMultiBuy('毛利王')) return 0;
+                    if (!this.canMultiBuy('毛利王')) return -999999;
                     const mk = this.getMarginKingObj();
                     const mkRes = this.calcT0(mk);
                     const list = this.getT2List();
                     const subNets = this.t2Inputs.map((input, i) => this.calcSub(list[i], input.sPrice, mk).net);
-                    return mkRes.net + Math.max(0, ...subNets);
+                    return mkRes.net + Math.max(...subNets);
                 },
 
                 getMaxProfit() {
@@ -321,21 +333,19 @@
                     const t2 = this.getT2Total();
                     const ranks = this.getRankLabels();
 
-                    // 如果方案 1 或方案 2 的獲利確實大於單買，且資金允許買空
-                    if (this.canMultiBuy('特產') && max === t1 && t1 > max * 0.9) {
+                    if (this.canMultiBuy('特產') && max === t1) {
                         const bestSubIdx = this.t1Inputs[0].sPrice >= this.t1Inputs[1].sPrice ? 1 : 2;
                         const subName = this.getDisplayName(this.products[bestSubIdx]);
                         return { msg: "🏆 方案一：特產買空方案", detail: `建議：買空 ${this.getDisplayName(this.products[0])}，剩餘資金全部投入 ${subName}。` };
                     }
-                    if (this.canMultiBuy('毛利王') && max === t2 && t2 > max * 0.9) {
+                    if (this.canMultiBuy('毛利王') && max === t2) {
                         const mk = this.getMarginKingObj();
                         const list = this.getT2List();
-                        const bestSubIdx = this.t2Inputs[0].sPrice >= this.t2Inputs[1].sPrice ? 0 : 1;
+                        const bestSubIdx = (this.t2Inputs[0].sPrice || 0) >= (this.t2Inputs[1].sPrice || 0) ? 0 : 1;
                         const subName = this.getDisplayName(list[bestSubIdx]);
                         return { msg: "🏆 方案二：毛利王方案", detail: `建議：優先買空 ${this.getDisplayName(mk)}，剩餘資金投入 ${subName}。` };
                     }
 
-                    // 邏輯歸一：若不能多買，右側強制顯示單買最優，解決割裂感
                     return { msg: `🎯 建議單買：${ranks.net}`, detail: "目前資金已由最優淨利品項全額佔用，單買此項收益最高。" };
                 },
 
