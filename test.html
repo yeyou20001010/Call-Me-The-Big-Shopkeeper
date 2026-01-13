@@ -145,7 +145,7 @@
                         <div v-if="!canMultiBuy('特產')" class="locked-overlay">
                             <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-orange-200 mx-4">
                                 <p class="text-orange-600 font-black text-xl">🔒 剩餘資金不足以投資副產</p>
-                                <p class="text-gray-400 text-sm mt-1">1.淨利王為[特產]；2.淨利王為[副產]且毛利王為[特產]。以上狀況使用此表。</p>
+                                <p class="text-gray-400 text-sm mt-1">1.淨利王為[特產];2.淨利王為[副產]且毛利王為[特產],以上狀況使用此表</p>
                             </div>
                         </div>
                         <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 1】特產買空方案</h3>
@@ -167,7 +167,7 @@
                         <div v-if="!canMultiBuy('毛利王')" class="locked-overlay">
                             <div class="text-center bg-white p-5 rounded-2xl shadow-xl border-2 border-purple-200 mx-4">
                                 <p class="text-purple-600 font-black text-xl">🔒 剩餘資金不足以投資副產</p>
-                                <p class="text-gray-400 text-sm mt-1">毛利王 ({{getMarginKingObj().name || '未設品項'}}) 與淨利王為不同副產，使用此表。</p>
+                                <p class="text-gray-400 text-sm mt-1">毛利王({{getMarginKingObj().name || '未設品項'}})與淨利王為不同副產,使用此表</p>
                             </div>
                         </div>
                         <h3 class="font-black text-lg text-[#5E548E] mb-5">【表 2】毛利王方案</h3>
