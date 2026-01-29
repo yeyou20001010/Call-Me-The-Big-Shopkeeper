@@ -44,7 +44,6 @@
         @keyframes blinker { 50% { opacity: 0.3; } }
         .animate-guide { animation: blinker 2s linear infinite; }
         
-        /* 編輯按鈕樣式 */
         .fat-pencil-btn { 
             display: inline-flex;
             align-items: center;
@@ -65,7 +64,6 @@
             color: #FF9D6F;
         }
 
-        /* 拖曳狀態視覺反饋 */
         .member-item.dragging {
             opacity: 0.2;
             transform: scale(0.95);
@@ -73,7 +71,6 @@
             background-color: #FFF5F0;
         }
 
-        /* Switch 樣式 */
         .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #D7D3CC; transition: .4s; border-radius: 34px; }
@@ -195,7 +192,6 @@
     </div>
 
     <script>
-        // --- 核心變數設定 ---
         const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbxna2VNkReOpEGTZsYq1LhgAd6zr0YfMRk_ADDn-js-2l9029KV8hWBhj2oZjfmaXxxsA/exec";
 
         let activities = [];
@@ -218,7 +214,7 @@
             });
             select.onchange = () => {
                 const act = activities[select.value];
-                // 修正：將死板的 / 1 體 改為根據數據 act.regain 顯示
+                // 修正：現在 act.regain 已經正確由 index.html 傳入
                 document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / ${act.regain || 1} 體`;
                 document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
             };
@@ -229,7 +225,6 @@
             setInterval(renderMonitoring, 1000);
         };
 
-        // --- 通知邏輯 ---
         function saveNotifySettings() {
             notifySettings.line = document.getElementById('lineNotifyToggle').checked;
             notifySettings.userId = document.getElementById('userIdInput').value.trim();
@@ -243,7 +238,6 @@
         }
         function triggerFullNotification(charName, actName) { sendLineMsg(`⚡ 體力回滿：\n角色：${charName}\n活動：${actName}`); }
 
-        // --- 主監控介面渲染 ---
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
             if(monitors.length === 0) { grid.innerHTML = ""; document.getElementById('emptyDisplay').classList.remove('hidden'); return; }
@@ -252,14 +246,16 @@
             let list = monitors.map((m) => {
                 const act = activities[m.actIdx];
                 const mins = (now - m.startTime) / 60000;
-                const rFactor = act.regain || 1; // 修正：加入回體倍率
+                
+                // 修正：補上回復數量參與運算
+                const rFactor = Number(act.regain) || 1; 
 
-                // 修正公式：體力增加量 = 經過週期次數 * 每次回復點數 (rFactor)
+                // 核心修正：體力增加量 = 回體次數 * 每次回復點數 (rFactor)
                 let current = Math.min(act.maxStamina, Math.max(0, m.initStamina + Math.floor(mins / act.minPerStamina) * rFactor));
                 
                 const isFull = current >= act.maxStamina;
                 
-                // 修正公式：剩餘秒數 = (ceil(剩餘點數 / 每回點數) * 週期 - 當前週期剩餘分鐘) * 60
+                // 核心修正：剩餘秒數 = (ceil(剩餘點數 / 每次回復點數) * 週期 - 當前週期剩餘分鐘) * 60
                 let remSec = isFull ? 0 : (Math.ceil((act.maxStamina - current) / rFactor) * act.minPerStamina - (mins % act.minPerStamina)) * 60;
                 
                 const mKey = `${m.charId}-${m.actIdx}`;
@@ -301,7 +297,6 @@
             }).join('');
         }
 
-        // --- 修正後的精準拖拽邏輯 ---
         let dragInfo = null;
         function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); }
         function handleDragEnd(e) { e.target.classList.remove('dragging'); }
@@ -326,7 +321,6 @@
                     } else {
                         const targetName = dropResult.element.querySelector('span').innerText;
                         const targetIdx = tGroup.members.findIndex(m => m.name === targetName);
-                        // 如果滑鼠在目標元素的「右側或下方」，則插入在該元素之後
                         const finalIdx = dropResult.after ? targetIdx + 1 : targetIdx;
                         tGroup.members.splice(finalIdx, 0, movingItem);
                     }
@@ -338,16 +332,12 @@
         function getInsertPosition(container, x, y) {
             const items = [...container.querySelectorAll('.member-item:not(.dragging)')];
             let closest = { distance: Number.POSITIVE_INFINITY, element: null, after: false };
-
             items.forEach(child => {
                 const box = child.getBoundingClientRect();
                 const centerX = box.left + box.width / 2;
                 const centerY = box.top + box.height / 2;
-                // 計算滑鼠與元素中心點的距離（歐幾里得距離）
                 const distance = Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2);
-
                 if (distance < closest.distance) {
-                    // 判斷邏輯：如果滑鼠位置超過中心點（X 或 Y 較大），視為「之後」
                     const isAfter = (y > centerY + 5) || (y > box.top && x > centerX + 10);
                     closest = { distance, element: child, after: isAfter };
                 }
@@ -355,7 +345,6 @@
             return closest;
         }
 
-        // --- 管理介面渲染與操作 ---
         function renderManageUI() {
             const area = document.getElementById('groupListArea');
             area.innerHTML = db.groups.map((g, gi) => `
@@ -386,7 +375,6 @@
             setupDragAndDrop();
         }
 
-        // --- 完整的管理功能函數 ---
         function saveDB() { localStorage.setItem('stamina_v15_db', JSON.stringify(db)); }
         function saveActive() { localStorage.setItem('stamina_v15_active', JSON.stringify(monitors)); }
         function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
@@ -395,27 +383,15 @@
         
         function addGroup() { 
             const n = document.getElementById('newGroupName').value; 
-            if(n){ 
-                db.groups.push({id:'g'+Date.now(), name:n, members:[]}); 
-                document.getElementById('newGroupName').value=""; 
-                saveDB(); renderManageUI(); 
-            }
+            if(n){ db.groups.push({id:'g'+Date.now(), name:n, members:[]}); document.getElementById('newGroupName').value=""; saveDB(); renderManageUI(); }
         }
         
         function addMemberInLine(btn, gid) { 
             const inp = btn.previousElementSibling; 
-            if(inp.value){ 
-                db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); 
-                inp.value=""; 
-                saveDB(); renderManageUI(); 
-            }
+            if(inp.value){ db.groups.find(g=>g.id===gid).members.push({name:inp.value, id:'c'+Date.now()}); inp.value=""; saveDB(); renderManageUI(); }
         }
 
-        function removeMember(gid, mi) { 
-            const g = db.groups.find(g=>g.id===gid); 
-            g.members.splice(mi,1); 
-            saveDB(); renderManageUI(); 
-        }
+        function removeMember(gid, mi) { const g = db.groups.find(g=>g.id===gid); g.members.splice(mi,1); saveDB(); renderManageUI(); }
 
         function editGroupName(gid) { 
             const g = db.groups.find(g => g.id === gid); 
@@ -424,41 +400,18 @@
             }); 
         }
 
-        function getGroupNameByCharId(id) { 
-            for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } 
-            return "未分類"; 
-        }
+        function getGroupNameByCharId(id) { for (let g of db.groups) { if (g.members.some(m => m.id === id)) return g.name; } return "未分類"; }
 
-        function changeSort(dir) { 
-            sortMode = (sortMode + dir + 4) % 4; 
-            document.getElementById('sortModeText').innerText = sortTexts[sortMode]; 
-            renderMonitoring(); 
-        }
+        function changeSort(dir) { sortMode = (sortMode + dir + 4) % 4; document.getElementById('sortModeText').innerText = sortTexts[sortMode]; renderMonitoring(); }
 
-        function askClearAll() { 
-            openCustomPrompt("確定清空？", "這將移除主介面上所有正在監測的項目。", "", true, () => { 
-                monitors = []; saveActive(); renderMonitoring(); 
-            }); 
-        }
+        function askClearAll() { openCustomPrompt("確定清空？", "這將移除主介面上所有正在監測的項目。", "", true, () => { monitors = []; saveActive(); renderMonitoring(); }); }
 
-        function askClearGroup(gid) { 
-            openCustomPrompt("清空成員？", "將移除此群組內的所有人物。", "", true, () => { 
-                db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); 
-            }); 
-        }
+        function askClearGroup(gid) { openCustomPrompt("清空成員？", "將移除此群組內的所有人物。", "", true, () => { db.groups.find(g=>g.id===gid).members = []; saveDB(); renderManageUI(); }); }
 
-        function askRemoveGroup(gi) { 
-            openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", true, () => { 
-                db.groups.splice(gi,1); saveDB(); renderManageUI(); 
-            }); 
-        }
+        function askRemoveGroup(gi) { openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", true, () => { db.groups.splice(gi,1); saveDB(); renderManageUI(); }); }
 
-        function removeMonitor(charId, actIdx) { 
-            monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); 
-            saveActive(); renderMonitoring(); 
-        }
+        function removeMonitor(charId, actIdx) { monitors = monitors.filter(m => !(m.charId === charId && m.actIdx == actIdx)); saveActive(); renderMonitoring(); }
 
-        // --- 批量加入功能 ---
         function openBatchModal() {
             const actIdx = document.getElementById('activitySelect').value;
             const act = activities[actIdx];
@@ -503,7 +456,6 @@
             saveActive(); closeModal('batchModal'); renderMonitoring();
         }
 
-        // --- 快速更新體力與對話框 ---
         function quickUpdateStamina(charId, actIdx, max) { 
             openCustomPrompt("快速刷新體力", `輸入目前的體力 (上限：${max})`, "0", false, (v) => { 
                 const n = parseInt(v); 
@@ -525,9 +477,7 @@
             inp.style.display=c?'none':'block'; 
             inp.value=d||"";
             document.getElementById('customPromptModal').classList.replace('hidden','flex');
-            document.getElementById('promptConfirmBtn').onclick=()=>{
-                f(inp.value); closeModal('customPromptModal');
-            };
+            document.getElementById('promptConfirmBtn').onclick=()=>{f(inp.value); closeModal('customPromptModal');};
         }
     </script>
 </body>
