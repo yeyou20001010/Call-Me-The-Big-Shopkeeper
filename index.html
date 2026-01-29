@@ -21,119 +21,115 @@
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-6 transition-all">
-    <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 border border-slate-200">
-        <div class="text-center mb-10">
-            <div class="inline-block p-4 bg-indigo-50 rounded-3xl mb-4">
-                <span class="text-4xl">🛠️</span>
-            </div>
-            <h1 class="text-3xl font-black text-slate-800">大掌櫃工具箱</h1>
-            <p class="text-slate-400 font-bold mt-2 uppercase tracking-widest text-xs">Management Toolbox</p>
+    <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 border border-slate-200 text-center">
+        <div class="mb-8">
+            <div class="inline-block p-4 bg-indigo-600 rounded-2xl shadow-lg mb-4 text-3xl text-white">Ծ‸Ծ</div>
+            <h1 class="text-2xl font-black text-slate-800">大掌櫃工具箱</h1>
+            <p class="text-slate-400 text-sm font-bold tracking-widest uppercase">Login System</p>
         </div>
 
-        <div class="space-y-6">
+        <div class="space-y-4 text-left">
             <div>
-                <label class="block text-xs font-black text-slate-500 mb-2 ml-1">USER ID (LINE ID)</label>
-                <input id="userId" type="text" placeholder="請輸入您的 LINE ID..." 
-                    class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-bold text-slate-700">
+                <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-2 uppercase tracking-widest">User ID</label>
+                <input id="userId" type="text" placeholder="輸入掌櫃 ID" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500 transition-all">
             </div>
-
+            
             <div>
-                <label class="block text-xs font-black text-slate-500 mb-2 ml-1">PASSWORD</label>
+                <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-2 uppercase tracking-widest">Password</label>
                 <div class="pwd-container">
-                    <input id="password" type="password" placeholder="請輸入登入密碼..." 
-                        class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-bold text-slate-700">
-                    <span id="togglePwd" class="eye-icon" onclick="togglePassword()">👁️</span>
+                    <input id="password" type="password" placeholder="輸入密碼" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500 transition-all">
+                    <span class="eye-icon" onclick="togglePwd('password', this)">ʕ￫ᴥ￩ʔ</span>
                 </div>
             </div>
 
-            <button id="loginBtn" onclick="handleLogin()" 
-                class="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-3xl font-black text-lg shadow-lg shadow-indigo-200 transition-all active:scale-95">
+            <button id="loginBtn" onclick="login()" class="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-indigo-700 hover:-translate-y-1 transition-all mt-2">
                 登入系統
             </button>
 
-            <div class="flex justify-between items-center px-2 pt-4">
-                <button onclick="openModal('resetModal')" class="text-xs font-black text-slate-400 hover:text-indigo-600 transition-colors">忘記密碼或 ID？</button>
-                <span class="text-[10px] font-bold text-slate-300">v2.1.0 Build</span>
+            <div class="text-center">
+                <button onclick="openModal('resetModal')" class="text-slate-400 text-sm font-bold hover:text-indigo-500 transition-colors">忘記密碼？使用救援碼</button>
             </div>
         </div>
     </div>
 
-    <div id="msgModal" class="fixed inset-0 hidden items-center justify-center p-6 z-50 modal-backdrop">
-        <div class="bg-white w-full max-w-xs rounded-[2rem] p-8 text-center shadow-2xl">
-            <div id="msgIcon" class="text-5xl mb-4"></div>
-            <h3 id="msgTitle" class="text-xl font-black text-slate-800 mb-2"></h3>
-            <p id="msgContent" class="text-slate-500 font-bold text-sm mb-6 leading-relaxed"></p>
-            <button onclick="closeModal('msgModal')" class="w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl font-black transition-all">確認</button>
+    <div id="msgModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center p-6 z-[100]">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center border border-slate-100">
+            <div id="msgIcon" class="text-4xl mb-4">✅</div>
+            <h3 id="msgTitle" class="text-xl font-black mb-2 text-slate-800">提示</h3>
+            <p id="msgText" class="text-slate-500 font-bold mb-6 text-sm"></p>
+            <button onclick="closeModal('msgModal')" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black hover:bg-slate-700 transition-all">確定</button>
         </div>
     </div>
 
-    <div id="resetModal" class="fixed inset-0 hidden items-center justify-center p-6 z-50 modal-backdrop">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl relative">
-            <button onclick="closeModal('resetModal')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-500 text-xl">✕</button>
-            <h3 class="text-2xl font-black text-slate-800 mb-2">系統救援</h3>
-            <p class="text-xs font-bold text-slate-400 mb-8">請輸入您的原始 ID 與救援碼</p>
-            
-            <div class="space-y-4">
-                <input id="res_uid" type="text" placeholder="您的 LINE ID" class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold">
-                <input id="res_code" type="text" placeholder="救援代碼 (Recovery Code)" class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold">
-                <button id="resetSubmitBtn" onclick="submitReset()" class="w-full py-5 bg-slate-800 text-white rounded-2xl font-black mt-4 hover:bg-slate-900 shadow-xl transition-all">啟動救援重置</button>
+    <div id="resetModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center p-6 z-50">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+            <h3 class="text-xl font-black mb-2 text-slate-800 text-center">重置密碼</h3>
+            <p class="text-slate-400 text-xs mb-6 font-bold text-center italic">※ Test 身分帳號禁止使用此功能</p>
+            <div class="space-y-4 mb-6">
+                <input id="res_uid" type="text" placeholder="掌櫃 ID" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-amber-500">
+                <input id="res_code" type="text" placeholder="救援碼" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-amber-500">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeModal('resetModal')" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">取消</button>
+                <button id="resetSubmitBtn" onclick="submitReset()" class="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black shadow-md hover:bg-amber-600 transition-all">確認重置</button>
             </div>
         </div>
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxna2VNkReOpEGTZsYq1LhgAd6zr0YfMRk_ADDn-js-2l9029KV8hWBhj2oZjfmaXxxsA/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec"; 
 
-        function togglePassword() {
-            const pwd = document.getElementById('password');
-            const icon = document.getElementById('togglePwd');
-            if(pwd.type === 'password') {
-                pwd.type = 'text'; icon.innerText = '🔒';
+        // --- 介面控制 ---
+        function openModal(id) { document.getElementById(id).classList.replace('hidden', 'flex'); }
+        function closeModal(id) { document.getElementById(id).classList.replace('flex', 'hidden'); }
+        
+        function togglePwd(id, iconEl) {
+            const el = document.getElementById(id);
+            if (el.type === 'password') {
+                el.type = 'text';
+                iconEl.innerText = 'ʕ•ᴥ•ʔ'; //目前為開眼
             } else {
-                pwd.type = 'password'; icon.innerText = '👁️';
+                el.type = 'password';
+                iconEl.innerText = 'ʕ￫ᴥ￩ʔ'; //目前為閉眼
             }
         }
 
-        function openModal(id) {
-            document.getElementById(id).classList.replace('hidden', 'flex');
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.replace('flex', 'hidden');
-        }
-
-        function showMsg(title, content, success = true) {
-            document.getElementById('msgIcon').innerText = success ? '✅' : '❌';
+        function showMsg(title, text, isSuccess = true) {
+            document.getElementById('msgIcon').innerText = isSuccess ? "✅" : "❌";
             document.getElementById('msgTitle').innerText = title;
-            document.getElementById('msgContent').innerText = content;
+            document.getElementById('msgText').innerText = text;
             openModal('msgModal');
         }
 
-        async function handleLogin() {
+        // --- 登入邏輯 ---
+        async function login() {
             const uid = document.getElementById('userId').value.trim();
             const pwd = document.getElementById('password').value.trim();
-            if(!uid || !pwd) return showMsg("提示", "請輸入完整的 ID 與密碼", false);
+            if(!uid || !pwd) return showMsg("提示", "欄位不可為空", false);
 
             const btn = document.getElementById('loginBtn');
             btn.innerText = "驗證中..."; btn.disabled = true;
 
             try {
-                const res = await fetch(`${SCRIPT_URL}?action=login&userId=${uid}&password=${pwd}`);
+                // 發送請求進行驗證
+                const res = await fetch(`${SCRIPT_URL}?userId=${uid}&password=${encodeURIComponent(pwd)}`);
                 const data = await res.json();
                 
                 if(data.success) {
-                    // 修正：依照 Sheet 欄位重新分配數據來源
-                    // B(1)名稱, D(3)時間, E(4)數量, F(5)上限
-                    const gameData = {
-                        activities: data.activities.map(row => ({
-                            name: row[1],
-                            minPerStamina: row[3],
-                            regain: row[4],    // 新增 E 欄 回體數量
-                            maxStamina: row[5]  // 修正為 F 欄 滿體數量
-                        })),
-                        characters: data.characters
-                    };
-                    sessionStorage.setItem('gameData', JSON.stringify(gameData));
+                    // 【核心帳號特殊處理】
+                    // 如果是用 SUPER_ID 登入，前端強制鎖定為最高權限角色
+                    if(uid === "dapus") {
+                        if(pwd !== "spspadad") {
+                            showMsg("驗證錯誤", "核心校驗不一致", false);
+                            btn.innerText = "登入系統"; btn.disabled = false;
+                            return;
+                        }
+                        data.user.level = 99;
+                        data.user.role = "SuperAdmin";
+                    }
+
+                    // 儲存數據並導向主選單
+                    sessionStorage.setItem('gameData', JSON.stringify(data));
                     location.href = "portal.html";
                 } else {
                     showMsg("登入失敗", data.msg, false);
@@ -145,6 +141,7 @@
             }
         }
 
+        // --- 救援邏輯 ---
         async function submitReset() {
             const uid = document.getElementById('res_uid').value.trim();
             const code = document.getElementById('res_code').value.trim();
@@ -160,15 +157,19 @@
                 showMsg(data.success ? "重置成功" : "失敗", data.msg, data.success);
                 if(data.success) {
                     closeModal('resetModal');
+                    // 重置成功後清空輸入框
                     document.getElementById('res_uid').value = "";
                     document.getElementById('res_code').value = "";
                 }
             } catch(e) { 
                 showMsg("錯誤", "網路通訊異常", false); 
             } finally { 
-                btn.innerText = "啟動救援重置"; btn.disabled = false;
+                btn.innerText = "確認重置"; btn.disabled = false; 
             }
         }
     </script>
 </body>
 </html>
+
+
+
