@@ -224,9 +224,9 @@
 
             select.onchange = () => {
                 const act = activities[select.value];
-                // 修正：顯示恢復速率時，考慮 regain 數值
-                const rVal = act.regain || 1;
-                document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / ${rVal} 體`;
+                // 顯示恢復速率文字細節
+                const regainVal = act.regain || 1;
+                document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / ${regainVal} 體`;
                 document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
             };
             select.dispatchEvent(new Event('change'));
@@ -238,7 +238,6 @@
             setInterval(renderMonitoring, 1000);
         };
 
-        // --- 核心計算邏輯修正區 ---
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
             if(monitors.length === 0) {
@@ -252,16 +251,15 @@
             let list = monitors.map((m) => {
                 const act = activities[m.actIdx];
                 const mins = (now - m.startTime) / 60000;
-                const rFactor = Number(act.regain) || 1; // 修正點：抓取回體數量
+                
+                // 核心邏輯：計算回體數量
+                const rFactor = Number(act.regain) || 1; 
 
-                // 計算目前體力：初始值 + (經過的恢復次數 * 回體數量)
+                // 目前體力：初始值 + (經過的完整恢復週期數 * 每次恢復體力)
                 let current = Math.min(act.maxStamina, Math.max(0, m.initStamina + Math.floor(mins / act.minPerStamina) * rFactor));
                 const isFull = current >= act.maxStamina;
                 
-                // 計算剩餘秒數：
-                // 1. 還差多少體力回滿
-                // 2. 需要多少「次」恢復
-                // 3. 乘上「次」的間隔，減去「本次週期」已過時間
+                // 剩餘秒數計算
                 let remSec = 0;
                 if (!isFull) {
                     const needed = act.maxStamina - current;
@@ -280,7 +278,6 @@
                 return { ...m, current, isFull, remSec, actMax: act.maxStamina, actName: act.name, groupName: getGroupNameByCharId(m.charId) };
             });
 
-            // 排序邏輯 (完全保留)
             if(sortMode === 0) list.sort((a,b) => a.actName.localeCompare(b.actName));
             else if(sortMode === 1) list.sort((a,b) => a.remSec - b.remSec);
             else if(sortMode === 2) list.sort((a,b) => a.groupName.localeCompare(b.groupName));
@@ -294,9 +291,10 @@
                 let countdownText = m.isFull ? "體力已回滿" : 
                     `${Math.floor(m.remSec/3600)}時 ${Math.floor((m.remSec%3600)/60)}分 ${Math.floor(m.remSec%60)}秒`;
                 
+                // 恢復 YYYY/M/D 完整格式
                 let targetDate = new Date(now + m.remSec * 1000);
                 let fullTimeLabel = m.isFull ? "狀態：體力已充滿" : 
-                    `預計回滿時間：${targetDate.getHours().toString().padStart(2,'0')}:${targetDate.getMinutes().toString().padStart(2,'0')}`;
+                    `預計回滿時間：${targetDate.getFullYear()}/${targetDate.getMonth()+1}/${targetDate.getDate()} ${targetDate.getHours().toString().padStart(2,'0')}:${targetDate.getMinutes().toString().padStart(2,'0')}`;
 
                 return `
                 <div class="${m.isFull?'card-full-highlight':'card-standard'} p-8 rounded-[2.5rem] flex flex-col relative transition-all duration-500 shadow-sm">
@@ -328,7 +326,6 @@
             }).join('');
         }
 
-        // --- 手動刷新邏輯 (確保重置時間點) ---
         function quickUpdateStamina(charId, actIdx, max) { 
             openCustomPrompt("快速刷新體力", `輸入目前的體力 (上限：${max})`, "0", false, (v) => { 
                 const n = parseInt(v); 
@@ -336,14 +333,13 @@
                     const i = monitors.findIndex(m=>m.charId===charId&&m.actIdx==actIdx); 
                     if(i>-1){ 
                         monitors[i].initStamina = Math.min(n, max); 
-                        monitors[i].startTime = Date.now(); // 修正點：從輸入這一刻開始重計恢復週期
+                        monitors[i].startTime = Date.now(); // 修正點：從輸入體力這一刻起重計恢復週期
                         saveActive(); renderMonitoring(); 
                     }
                 }
             }); 
         }
 
-        // 其餘輔助功能 (save, openModal, drag & drop 等) 皆完全保留不變...
         function saveNotifySettings() {
             notifySettings.line = document.getElementById('lineNotifyToggle').checked;
             notifySettings.userId = document.getElementById('userIdInput').value.trim();
