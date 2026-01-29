@@ -251,7 +251,7 @@
             let list = monitors.map((m) => {
                 const act = activities[m.actIdx];
                 const mins = (now - m.startTime) / 60000;
-                let current = Math.min(act.maxStamina, Math.max(0, m.initStamina + Math.floor(mins / act.minPerStamina)));
+                let current = Math.min(act.maxStamina, Math.max(0, m.initStamina + Math.floor(mins / act.minPerStamina) * act.regain));
                 const isFull = current >= act.maxStamina;
                 let remSec = isFull ? 0 : ((act.maxStamina - current) * act.minPerStamina - (mins % act.minPerStamina)) * 60;
                 const mKey = `${m.charId}-${m.actIdx}`;
@@ -522,3 +522,4 @@
     </script>
 </body>
 </html>
+
