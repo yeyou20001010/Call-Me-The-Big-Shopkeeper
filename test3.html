@@ -1,155 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>Stamina Test3</title>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#1e1e1e;
+  color:#fff;
+  margin:0;
+  padding:20px;
+}
+
+.container{
+  display:flex;
+  gap:40px;
+}
+
+.left-panel{
+  width:300px;
+  background:#2b2b2b;
+  padding:20px;
+  border-radius:10px;
+}
+
+.right-panel{
+  flex:1;
+  background:#2b2b2b;
+  padding:20px;
+  border-radius:10px;
+}
+
+label{
+  display:block;
+  margin-top:15px;
+  font-size:14px;
+  color:#aaa;
+}
+
+select, button{
+  width:100%;
+  padding:8px;
+  margin-top:5px;
+  border-radius:6px;
+  border:none;
+  font-size:14px;
+}
+
+button{
+  margin-top:20px;
+  background:#4CAF50;
+  color:white;
+  cursor:pointer;
+}
+
+button:disabled{
+  background:#666;
+  cursor:not-allowed;
+}
+
+.info-block{
+  margin-top:15px;
+  font-size:14px;
+  line-height:1.8em;
+  color:#ddd;
+}
+
+.gray{
+  opacity:0.5;
+  pointer-events:none;
+}
+</style>
+</head>
+
+<body>
+
+<h2>體力工具 - 測試版</h2>
+
+<div class="container">
+
+  <div class="left-panel">
+
+    <label>選擇活動</label>
+    <select id="activitySelect"></select>
+
+    <div class="info-block">
+      <div>恢復速率：<span id="recoveryRate">-</span></div>
+      <div>體力上限：<span id="maxStamina">-</span></div>
+      <div>回滿時長：<span id="fullTime">-</span></div>
+    </div>
+
+    <button id="startBtn">開始排程</button>
+
+  </div>
+
+  <div class="right-panel">
+    <div id="statusText">狀態：待機中</div>
+  </div>
+
+</div>
+
 <script>
-const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec";
 
-let activities = [];
-let db = JSON.parse(localStorage.getItem('stamina_v15_db')) || { groups: [{ id: 'default', name: '未分類人物', members: [] }] };
-let monitors = JSON.parse(localStorage.getItem('stamina_v15_active')) || [];
-let sortMode = 0;
-const sortTexts = ["按活動 (預設)", "按回滿時長", "按群組名稱", "按人物名稱"];
-let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || { line: false, userId: "" };
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec";
 
-window.onload = function() {
-    const gameData = JSON.parse(sessionStorage.getItem('gameData'));
-    if(!gameData) return location.href = "index.html";
+let gameData = null;
 
-    activities = gameData.activities;
-    const select = document.getElementById('activitySelect');
+window.onload = function(){
 
-    activities.forEach((act, idx) => {
-        const opt = document.createElement('option');
-        opt.value = idx;
-        opt.textContent = act.name;
-        select.appendChild(opt);
-    });
+  const raw = sessionStorage.getItem("gameData");
+  if(!raw){
+    alert("沒有登入資料");
+    return;
+  }
 
-    select.onchange = updateActivityInfo;
-    select.dispatchEvent(new Event('change'));
+  gameData = JSON.parse(raw);
 
-    document.getElementById('lineNotifyToggle').checked = notifySettings.line;
-    document.getElementById('userIdInput').value = notifySettings.userId || "";
-
-    renderMonitoring();
-    setInterval(renderMonitoring, 1000);
+  initActivitySelect();
+  bindEvents();
 };
 
+function initActivitySelect(){
+
+  const select = document.getElementById("activitySelect");
+
+  if(!gameData.activities || gameData.activities.length===0){
+    select.innerHTML = "<option>沒有活動資料</option>";
+    return;
+  }
+
+  gameData.activities.forEach(act=>{
+    const opt = document.createElement("option");
+    opt.value = act.name;
+    opt.textContent = act.name;
+    opt.dataset.recovery = act.recovery;
+    opt.dataset.max = act.max;
+    opt.dataset.full = act.fullTime;
+    select.appendChild(opt);
+  });
+
+  updateActivityInfo();
+}
+
+function bindEvents(){
+
+  document.getElementById("activitySelect")
+    .addEventListener("change", updateActivityInfo);
+
+  document.getElementById("startBtn")
+    .addEventListener("click", startQueue);
+}
+
 function updateActivityInfo(){
-    const act = activities[activitySelect.value];
-    const regain = act.regain || 1;
 
-    document.getElementById('rateDetail').innerText =
-        `${act.minPerStamina} 分鐘 / ${regain} 體`;
+  const select = document.getElementById("activitySelect");
+  const opt = select.options[select.selectedIndex];
 
-    document.getElementById('maxDetail').innerText =
-        `${act.maxStamina} 體`;
+  if(!opt) return;
 
-    const fullMinutes = (act.maxStamina / regain) * act.minPerStamina;
-    const h = Math.floor(fullMinutes / 60);
-    const m = Math.floor(fullMinutes % 60);
+  document.getElementById("recoveryRate").textContent =
+    opt.dataset.recovery + " 分 / " + "回體";
 
-    let fullLabel = document.getElementById('fullTimeDetail');
-    if(!fullLabel){
-        const box = document.querySelector('#rateDetail').parentElement.parentElement;
-        fullLabel = document.createElement('div');
-        fullLabel.className="flex justify-between";
-        fullLabel.innerHTML=`<span class="text-[#A5A5A5]">回滿時長</span><span id="fullTimeDetail" class="text-[#6D6875]"></span>`;
-        box.appendChild(fullLabel);
-        fullLabel = document.getElementById('fullTimeDetail');
-    }
-    fullLabel.innerText = `${h} 小時 ${m} 分`;
+  document.getElementById("maxStamina").textContent =
+    opt.dataset.max;
+
+  document.getElementById("fullTime").textContent =
+    opt.dataset.full || "-";
 }
 
-function renderMonitoring(){
-    const grid = document.getElementById('monitorGrid');
-    if(monitors.length === 0){
-        grid.innerHTML="";
-        document.getElementById('emptyDisplay').classList.remove('hidden');
-        return;
-    }
-    document.getElementById('emptyDisplay').classList.add('hidden');
+function startQueue(){
 
-    const now = Date.now();
-    let list = monitors.map(m=>{
-        const act = activities[m.actIdx];
-        const mins = (now - m.startTime)/60000;
-        const rFactor = act.regain || 1;
+  const btn = document.getElementById("startBtn");
+  const panel = document.querySelector(".left-panel");
+  const status = document.getElementById("statusText");
 
-        let current = Math.min(act.maxStamina,
-            m.initStamina + Math.floor(mins/act.minPerStamina)*rFactor);
+  const activity = document.getElementById("activitySelect").value;
 
-        const needed = act.maxStamina - current;
-        const remSec = needed<=0?0:
-            Math.ceil(needed/rFactor)*act.minPerStamina*60;
+  btn.disabled = true;
+  panel.classList.add("gray");
+  status.textContent = "狀態：送出中...";
 
-        return {...m,current,remSec,actName:act.name,actMax:act.maxStamina};
-    });
-
-    if(sortMode===0) list.sort((a,b)=>a.actName.localeCompare(b.actName));
-    if(sortMode===1) list.sort((a,b)=>a.remSec-b.remSec);
-
-    grid.innerHTML = list.map(m=>{
-        const percent = (m.current/m.actMax)*100;
-        const isFull = m.current>=m.actMax;
-        const ringColor = isFull?'#02C874':'#FF9D6F';
-        const targetTime = new Date(Date.now()+m.remSec*1000);
-
-        return `
-        <div class="card-standard p-8 rounded-[2.5rem] relative">
-            <button onclick="removeMonitor('${m.charId}',${m.actIdx})" class="absolute top-6 right-8 text-2xl">✕</button>
-            <h4 class="text-2xl font-black">${m.charName}</h4>
-            <p>${m.current}/${m.actMax}</p>
-            <p>${isFull?"體力已回滿":
-                targetTime.getFullYear()+"/"+
-                (targetTime.getMonth()+1)+"/"+
-                targetTime.getDate()+" "+
-                targetTime.getHours().toString().padStart(2,'0')+":"+
-                targetTime.getMinutes().toString().padStart(2,'0')}
-            </p>
-        </div>`;
-    }).join('');
+  fetch(GAS_URL,{
+    method:"POST",
+    body: JSON.stringify({
+      action:"addQueue",
+      userId: gameData.userId,
+      charId: gameData.charId,
+      charName: gameData.charName,
+      activity: activity
+    })
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    status.textContent = "狀態：" + res.message;
+  })
+  .catch(err=>{
+    status.textContent = "狀態：錯誤";
+    console.error(err);
+  })
+  .finally(()=>{
+    btn.disabled = false;
+    panel.classList.remove("gray");
+  });
 }
 
-async function queueAdd(charId,charName,actIdx,initStamina){
-    if(!notifySettings.line || !notifySettings.userId) return;
-
-    const act = activities[actIdx];
-    const regain = act.regain||1;
-    const remain = act.maxStamina-initStamina;
-    if(remain<=0) return;
-
-    const fullMinutes=(remain/regain)*act.minPerStamina;
-    const targetTime=Date.now()+fullMinutes*60000;
-
-    await fetch(MY_GAS_URL,{
-        method:'POST',
-        body:JSON.stringify({
-            action:"queueAdd",
-            userId:notifySettings.userId,
-            charId,
-            charName,
-            actName:act.name,
-            targetTime
-        })
-    });
-}
-
-function submitBatch(){
-    const actIdx=activitySelect.value;
-    document.querySelectorAll('.char-cb:checked').forEach(cb=>{
-        const row=cb.closest('.flex');
-        const val=parseInt(row.querySelector('.stamina-input').value)||0;
-        const charId=cb.dataset.id;
-        const data={charId,charName:cb.dataset.name,actIdx,initStamina:val,startTime:Date.now()};
-        const idx=monitors.findIndex(m=>m.charId===charId&&m.actIdx==actIdx);
-        if(idx>-1) monitors[idx]=data; else monitors.push(data);
-        queueAdd(charId,cb.dataset.name,actIdx,val);
-    });
-    localStorage.setItem('stamina_v15_active',JSON.stringify(monitors));
-    renderMonitoring();
-}
-
-function removeMonitor(charId,actIdx){
-    monitors=monitors.filter(m=>!(m.charId===charId&&m.actIdx==actIdx));
-    localStorage.setItem('stamina_v15_active',JSON.stringify(monitors));
-    renderMonitoring();
-}
 </script>
+
+</body>
+</html>
