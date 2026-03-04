@@ -394,26 +394,34 @@ function renderMonitoring() {
             sendLineMsg(`⚡ 體力回滿：\n角色：${charName}\n活動：${actName}`);
         }
 
-        async function queueAddToSheet(data) {
-            try {
-                await fetch(MY_GAS_URL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded"
-                    },
-                    body: new URLSearchParams({
-                        action: "queueAdd",
-                        userId: notifySettings.userId,
-                        charId: data.charId,
-                        charName: data.charName,
-                        actName: data.actName,
-                        targetTime: data.targetTime
-                    })
-                });
-            } catch (err) {
-                console.error("Queue Add Failed", err);
-            }
-        }
+       async function queueAddToSheet(data) {
+
+    if(!notifySettings.userId) return;
+
+    try {
+
+        await fetch(MY_GAS_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+                "Content-Type": "text/plain"
+            },
+            body: JSON.stringify({
+                action: "queueAdd",
+                userId: notifySettings.userId,
+                charId: data.charId,
+                charName: data.charName,
+                actName: data.actName,
+                targetTime: data.targetTime
+            })
+        });
+
+    } catch (err) {
+
+        console.error("Queue Add Failed", err);
+
+    }
+}
 
         let dragInfo = null;
         function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); }
