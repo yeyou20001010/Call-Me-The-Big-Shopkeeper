@@ -353,26 +353,31 @@ function renderMonitoring() {
             }); 
         }
 
-    async function saveNotifySettings() {
-
-    notifySettings.line = document.getElementById('lineNotifyToggle').checked;
-    notifySettings.userId = document.getElementById('userIdInput').value.trim();
-
-    localStorage.setItem('stamina_notify_cfg', JSON.stringify(notifySettings));
-
-    // ⭐ 新增：同步寫入 Users Sheet
-    await fetch(MY_GAS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            action: "updateNotify",
-            userId: notifySettings.userId,
-            enabled: notifySettings.line
-        })
-    });
-
-    closeModal('notifyModal');
-}
+        async function saveNotifySettings() {
+        
+            notifySettings.line = document.getElementById('lineNotifyToggle').checked;
+            notifySettings.userId = document.getElementById('userIdInput').value.trim();
+        
+            localStorage.setItem('stamina_notify_cfg', JSON.stringify(notifySettings));
+        
+            try {
+                await fetch(MY_GAS_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams({
+                        action: "updateNotify",
+                        userId: notifySettings.userId,
+                        enabled: notifySettings.line
+                    })
+                });
+            } catch (err) {
+                console.error("Notify Update Failed", err);
+            }
+        
+            closeModal('notifyModal');
+        }
 
         async function sendLineMsg(msg) {
             if(!notifySettings.line || !notifySettings.userId || !MY_GAS_URL) return;
