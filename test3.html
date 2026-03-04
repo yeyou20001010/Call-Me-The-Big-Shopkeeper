@@ -267,12 +267,27 @@ function renderMonitoring() {
                 }
 
                 const mKey = `${m.charId}-${m.actIdx}`;
-                if(isFull && !notifiedSet.has(mKey)) {
-                    triggerFullNotification(m.charName, act.name);
-                    notifiedSet.add(mKey);
-                } else if(!isFull) {
-                    notifiedSet.delete(mKey);
-                }
+                if(!isFull && notifySettings.line && notifySettings.userId) {
+
+    const targetTime = now + (remSec * 1000);
+
+    const mKey = `${m.charId}-${m.actIdx}`;
+
+    if (!notifiedSet.has(mKey)) {
+
+        queueAddToSheet({
+            charId: m.charId,
+            charName: m.charName,
+            actName: act.name,
+            targetTime: targetTime
+        });
+
+        notifiedSet.add(mKey);
+    }
+
+} else if (isFull) {
+    notifiedSet.delete(`${m.charId}-${m.actIdx}`);
+}
 
                 return { ...m, current, isFull, remSec, actMax: act.maxStamina, actName: act.name, groupName: getGroupNameByCharId(m.charId) };
             });
@@ -339,13 +354,26 @@ function renderMonitoring() {
             }); 
         }
 
-        function saveNotifySettings() {
-            notifySettings.line = document.getElementById('lineNotifyToggle').checked;
-            notifySettings.userId = document.getElementById('userIdInput').value.trim();
-            localStorage.setItem('stamina_notify_cfg', JSON.stringify(notifySettings));
-            closeModal('notifyModal');
-            if (notifySettings.line && notifySettings.userId) sendLineMsg("⚡ 監控系統連線成功！");
-        }
+    async function saveNotifySettings() {
+
+    notifySettings.line = document.getElementById('lineNotifyToggle').checked;
+    notifySettings.userId = document.getElementById('userIdInput').value.trim();
+
+    localStorage.setItem('stamina_notify_cfg', JSON.stringify(notifySettings));
+
+    // ⭐ 新增：同步寫入 Users Sheet
+    await fetch(MY_GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "updateNotify",
+            userId: notifySettings.userId,
+            enabled: notifySettings.line
+        })
+    });
+
+    closeModal('notifyModal');
+}
 
         async function sendLineMsg(msg) {
             if(!notifySettings.line || !notifySettings.userId || !MY_GAS_URL) return;
@@ -361,6 +389,25 @@ function renderMonitoring() {
         function triggerFullNotification(charName, actName) {
             sendLineMsg(`⚡ 體力回滿：\n角色：${charName}\n活動：${actName}`);
         }
+
+    async function queueAddToSheet(data) {
+    try {
+        await fetch(MY_GAS_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                action: "queueAdd",
+                userId: notifySettings.userId,
+                charId: data.charId,
+                charName: data.charName,
+                actName: data.actName,
+                targetTime: data.targetTime
+            })
+        });
+    } catch (err) {
+        console.error("Queue Add Failed", err);
+    }
+}
 
         let dragInfo = null;
         function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); }
