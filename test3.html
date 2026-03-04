@@ -8,8 +8,8 @@ let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || {
 
 window.onload = function() {
     const gameData = JSON.parse(sessionStorage.getItem('gameData'));
-    if(!gameData) return location.href = "index.html"; 
-    
+    if(!gameData) return location.href = "index.html";
+
     activities = gameData.activities;
     const select = document.getElementById('activitySelect');
 
@@ -20,22 +20,30 @@ window.onload = function() {
         select.appendChild(opt);
     });
 
-    select.onchange = () => {
-        const act = activities[select.value];
-        const regainVal = act.regain || 1;
-        document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / ${regainVal} 體`;
-        document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
-
-        const fullMinutes = act.maxStamina * act.minPerStamina / regainVal;
-        document.getElementById('fullTimeDetail').innerText =
-            (fullMinutes / 60).toFixed(2) + " 小時";
-    };
-
+    select.onchange = updateActivityInfo;
     select.dispatchEvent(new Event('change'));
 
     renderMonitoring();
     setInterval(renderMonitoring, 1000);
 };
+
+function updateActivityInfo(){
+    const act = activities[activitySelect.value];
+    const regain = act.regain || 1;
+
+    document.getElementById('rateDetail').innerText =
+        `${act.minPerStamina} 分鐘 / ${regain} 體`;
+
+    document.getElementById('maxDetail').innerText =
+        `${act.maxStamina} 體`;
+
+    const fullMinutes = (act.maxStamina / regain) * act.minPerStamina;
+    const hours = Math.floor(fullMinutes / 60);
+    const mins = Math.floor(fullMinutes % 60);
+
+    document.getElementById('fullTimeDetail').innerText =
+        `${hours} 小時 ${mins} 分`;
+}
 
 function renderMonitoring() {
     const grid = document.getElementById('monitorGrid');
@@ -44,11 +52,11 @@ function renderMonitoring() {
     grid.innerHTML = monitors.map(m => {
         const act = activities[m.actIdx];
         const mins = (now - m.startTime) / 60000;
-        const rFactor = Number(act.regain) || 1;
+        const regain = act.regain || 1;
 
         let current = Math.min(
             act.maxStamina,
-            m.initStamina + Math.floor(mins / act.minPerStamina) * rFactor
+            m.initStamina + Math.floor(mins / act.minPerStamina) * regain
         );
 
         return `
@@ -59,7 +67,8 @@ function renderMonitoring() {
     }).join('');
 }
 
-async function scheduleToServer(charId, charName, actIdx, initStamina) {
+async function queueAdd(charId, charName, actIdx, initStamina) {
+
     if(!notifySettings.line || !notifySettings.userId) return;
 
     const act = activities[actIdx];
@@ -84,38 +93,27 @@ async function scheduleToServer(charId, charName, actIdx, initStamina) {
     });
 }
 
-async function cancelToServer(charId, actName) {
-    await fetch(MY_GAS_URL, {
-        method: "POST",
-        body: JSON.stringify({
-            action: "queueCancel",
-            userId: notifySettings.userId,
-            charId,
-            actName
-        })
-    });
-}
-
 function submitBatch() {
-    const actIdx = document.getElementById('activitySelect').value;
+    const actIdx = activitySelect.value;
 
     document.querySelectorAll('.char-cb:checked').forEach(cb => {
         const row = cb.closest('.flex');
         const val = parseInt(row.querySelector('.stamina-input').value) || 0;
         const charId = cb.dataset.id;
 
-        const data = { 
-            charId, 
-            charName: cb.dataset.name, 
-            actIdx, 
-            initStamina: val, 
-            startTime: Date.now() 
+        const data = {
+            charId,
+            charName: cb.dataset.name,
+            actIdx,
+            initStamina: val,
+            startTime: Date.now()
         };
 
         const idx = monitors.findIndex(m => m.charId === charId && m.actIdx == actIdx);
-        if(idx > -1) monitors[idx] = data; else monitors.push(data);
+        if(idx > -1) monitors[idx] = data;
+        else monitors.push(data);
 
-        scheduleToServer(charId, cb.dataset.name, actIdx, val);
+        queueAdd(charId, cb.dataset.name, actIdx, val);
     });
 
     localStorage.setItem('stamina_v15_active', JSON.stringify(monitors));
