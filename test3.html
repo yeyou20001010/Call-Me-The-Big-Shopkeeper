@@ -266,7 +266,6 @@ function renderMonitoring() {
                     remSec = (neededTimes * act.minPerStamina * 60) - ((mins % act.minPerStamina) * 60);
                 }
 
-                const mKey = `${m.charId}-${m.actIdx}`;
                 if(!isFull && notifySettings.line && notifySettings.userId) {
 
     const targetTime = now + (remSec * 1000);
