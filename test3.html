@@ -352,119 +352,135 @@ function renderMonitoring() {
                 }
             }); 
         }
-       async function saveNotifySettings(){
-
-    notifySettings.line = document.getElementById("lineNotifyToggle").checked;
-    notifySettings.userId = document.getElementById("userIdInput").value.trim();
-
-    localStorage.setItem('stamina_notify_cfg', JSON.stringify(notifySettings));
-
-    try{
-
-        await fetch(MY_GAS_URL,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/x-www-form-urlencoded"
-            },
-            body:new URLSearchParams({
-                action:"updateNotify",
-                userId:notifySettings.userId,
-                enabled:notifySettings.line
-            })
-        });
-
-    }catch(err){
-        console.error("Notify Update Failed",err);
-    }
-}
-
-        async function sendLineMsg(msg) {
-            if(!notifySettings.line || !notifySettings.userId || !MY_GAS_URL) return;
-            try {
-                await fetch(MY_GAS_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({ userId: notifySettings.userId, message: msg })
+    
+               function saveNotifySettings(){
+        
+            notifySettings.line =
+                document.getElementById("lineNotifyToggle").checked;
+        
+            notifySettings.userId =
+                document.getElementById("userIdInput").value.trim();
+        
+            localStorage.setItem(
+                "stamina_notify_cfg",
+                JSON.stringify(notifySettings)
+            );
+        
+            // 更新通知開關
+            fetch(MY_GAS_URL,{
+                method:"POST",
+                mode:"no-cors",
+                headers:{
+                    "Content-Type":"application/x-www-form-urlencoded"
+                },
+                body:new URLSearchParams({
+                    action:"updateNotify",
+                    userId:notifySettings.userId,
+                    enabled:notifySettings.line
+                })
+            });
+        
+            // 🔥 如果是開啟通知 → 送測試訊息
+            if(notifySettings.line){
+        
+                fetch(MY_GAS_URL,{
+                    method:"POST",
+                    mode:"no-cors",
+                    headers:{
+                        "Content-Type":"application/x-www-form-urlencoded"
+                    },
+                    body:new URLSearchParams({
+                        action:"testLine",
+                        userId:notifySettings.userId
+                    })
                 });
-            } catch (e) { console.error("LINE Notify Failed", e); }
+        
+                alert("已送出測試訊息，請查看 LINE");
+            }
+        
+            closeModal("notifyModal");
         }
+            async function sendLineMsg(msg) {
+                if(!notifySettings.line || !notifySettings.userId || !MY_GAS_URL) return;
+                try {
+                    await fetch(MY_GAS_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify({ userId: notifySettings.userId, message: msg })
+                    });
+                } catch (e) { console.error("LINE Notify Failed", e); }
+            }
+    
+            function triggerFullNotification(charName, actName) {
+                sendLineMsg(`⚡ 體力回滿：\n角色：${charName}\n活動：${actName}`);
+            }
 
-        function triggerFullNotification(charName, actName) {
-            sendLineMsg(`⚡ 體力回滿：\n角色：${charName}\n活動：${actName}`);
-        }
-
-async function queueAddToSheet(data){
-
-    if(!notifySettings.userId) return;
-
-    try{
-
-        await fetch(MY_GAS_URL,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/x-www-form-urlencoded"
-            },
-            body:new URLSearchParams({
-                action:"queueAdd",
-                userId:notifySettings.userId,
-                charId:data.charId,
-                charName:data.charName,
-                actName:data.actName,
-                targetTime:data.targetTime
-            })
-        });
-
-    }catch(err){
-        console.error("Queue Add Failed",err);
-    }
-}
-
-        let dragInfo = null;
-        function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); }
-        function handleDragEnd(e) { e.target.classList.remove('dragging'); }
-
-        function setupDragAndDrop() {
-            const zones = document.querySelectorAll('.drop-zone');
-            zones.forEach(zone => {
-                zone.ondragover = e => e.preventDefault();
-                zone.ondrop = e => {
-                    e.preventDefault();
-                    if (!dragInfo) return;
-                    const targetGid = zone.dataset.gid;
-                    const sGroup = db.groups.find(g => g.id === dragInfo.gid);
-                    const tGroup = db.groups.find(g => g.id === targetGid);
-                    const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
-                    
-                    const container = zone.querySelector('.member-list');
-                    const dropResult = getInsertPosition(container, e.clientX, e.clientY);
-                    
-                    if (!dropResult.element) { tGroup.members.push(movingItem); }
-                    else {
-                        const targetName = dropResult.element.querySelector('span').innerText;
-                        const targetIdx = tGroup.members.findIndex(m => m.name === targetName);
-                        const finalIdx = dropResult.after ? targetIdx + 1 : targetIdx;
-                        tGroup.members.splice(finalIdx, 0, movingItem);
-                    }
-                    saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null;
-                };
+        function queueAddToSheet(data){
+        
+            if(!notifySettings.userId) return;
+        
+            fetch(MY_GAS_URL,{
+                method:"POST",
+                mode:"no-cors",
+                headers:{
+                    "Content-Type":"application/x-www-form-urlencoded"
+                },
+                body:new URLSearchParams({
+                    action:"queueAdd",
+                    userId:notifySettings.userId,
+                    charId:data.charId,
+                    charName:data.charName,
+                    actName:data.actName,
+                    targetTime:data.targetTime
+                })
             });
         }
-
-        function getInsertPosition(container, x, y) {
-            const items = [...container.querySelectorAll('.member-item:not(.dragging)')];
-            let closest = { distance: Number.POSITIVE_INFINITY, element: null, after: false };
-            items.forEach(child => {
-                const box = child.getBoundingClientRect();
-                const centerX = box.left + box.width / 2;
-                const centerY = box.top + box.height / 2;
-                const distance = Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2);
-                if (distance < closest.distance) {
-                    const isAfter = (y > centerY + 5) || (y > box.top && x > centerX + 10);
-                    closest = { distance, element: child, after: isAfter };
+                let dragInfo = null;
+                function handleDragStart(e, gid, mi) { dragInfo = { gid, mi }; e.target.classList.add('dragging'); }
+                function handleDragEnd(e) { e.target.classList.remove('dragging'); }
+        
+                function setupDragAndDrop() {
+                    const zones = document.querySelectorAll('.drop-zone');
+                    zones.forEach(zone => {
+                        zone.ondragover = e => e.preventDefault();
+                        zone.ondrop = e => {
+                            e.preventDefault();
+                            if (!dragInfo) return;
+                            const targetGid = zone.dataset.gid;
+                            const sGroup = db.groups.find(g => g.id === dragInfo.gid);
+                            const tGroup = db.groups.find(g => g.id === targetGid);
+                            const [movingItem] = sGroup.members.splice(dragInfo.mi, 1);
+                            
+                            const container = zone.querySelector('.member-list');
+                            const dropResult = getInsertPosition(container, e.clientX, e.clientY);
+                            
+                            if (!dropResult.element) { tGroup.members.push(movingItem); }
+                            else {
+                                const targetName = dropResult.element.querySelector('span').innerText;
+                                const targetIdx = tGroup.members.findIndex(m => m.name === targetName);
+                                const finalIdx = dropResult.after ? targetIdx + 1 : targetIdx;
+                                tGroup.members.splice(finalIdx, 0, movingItem);
+                            }
+                            saveDB(); renderManageUI(); renderMonitoring(); dragInfo = null;
+                        };
+                    });
                 }
-            });
-            return closest;
-        }
+
+            function getInsertPosition(container, x, y) {
+                const items = [...container.querySelectorAll('.member-item:not(.dragging)')];
+                let closest = { distance: Number.POSITIVE_INFINITY, element: null, after: false };
+                items.forEach(child => {
+                    const box = child.getBoundingClientRect();
+                    const centerX = box.left + box.width / 2;
+                    const centerY = box.top + box.height / 2;
+                    const distance = Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2);
+                    if (distance < closest.distance) {
+                        const isAfter = (y > centerY + 5) || (y > box.top && x > centerX + 10);
+                        closest = { distance, element: child, after: isAfter };
+                    }
+                });
+                return closest;
+            }
 
         function renderManageUI() {
             const area = document.getElementById('groupListArea');
