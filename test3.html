@@ -395,7 +395,13 @@ function renderMonitoring() {
                     })
                 });
         
-                alert("已送出測試訊息，請查看 LINE");
+                openCustomPrompt(
+                      "通知測試",
+                      "已送出測試訊息，請查看 LINE。",
+                      "",
+                      true,
+                      ()=>{}
+                    );
             }
         
             closeModal("notifyModal");
