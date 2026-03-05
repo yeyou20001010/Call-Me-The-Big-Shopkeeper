@@ -268,7 +268,7 @@ function renderMonitoring() {
 
                 if(!isFull && notifySettings.line && notifySettings.userId) {
 
-   const targetTime = Math.floor((now + remSec * 1000) / 1000); //原本是const targetTime = now + (remSec * 1000);
+   const targetTime = now + (remSec * 1000);
 
     const mKey = `${m.charId}-${m.actIdx}`;
 
