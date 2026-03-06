@@ -252,15 +252,20 @@
             line: false,
             lineId: ""
         };
+        // 注意：userId 不存 localStorage，每次從 sessionStorage 取得
 
         let notifiedSet = new Set();
         let dragInfo = null;
+        let currentUserId = null; // 儲存當前登入的使用者ID
 
         window.onload = function() {
             const gameData = JSON.parse(sessionStorage.getItem('gameData'));
 
             if (!gameData) return location.href = "index.html";
 
+            // 儲存使用者ID
+            currentUserId = gameData.user.userId;
+            
             activities = gameData.activities;
             const select = document.getElementById('activitySelect');
 
@@ -416,57 +421,79 @@
         }
 
         function saveNotifySettings() {
+            // 檢查 LINE ID 格式
+            const lineId = document.getElementById("userIdInput").value.trim();
+            if (lineId && !lineId.startsWith("U")) {
+                alert("LINE ID 必須是 U 開頭");
+                return;
+            }
+
             notifySettings.line = document.getElementById("lineNotifyToggle").checked;
-            notifySettings.lineId = document.getElementById("userIdInput").value.trim();
+            notifySettings.lineId = lineId;
 
             localStorage.setItem("stamina_notify_cfg", JSON.stringify(notifySettings));
 
-            /* 更新GAS通知狀態 */
+            /* 更新GAS通知狀態 - 使用標準 cors 模式 */
             fetch(MY_GAS_URL, {
                 method: "POST",
-                mode: "no-cors",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: new URLSearchParams({
                     action: "updateNotify",
-                    userId: notifySettings.userId,     // 遊戲ID (從登入資訊取得)
-                    lineId: notifySettings.lineId,      // LINE ID
+                    userId: currentUserId,     // 從變數取得遊戲ID
+                    lineId: notifySettings.lineId,
                     enabled: notifySettings.line
                 })
-            });
-
-            /* 測試訊息 */
-            if (notifySettings.line) {
-                fetch(MY_GAS_URL, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: new URLSearchParams({
-                        action: "testLine",
-                        lineId: notifySettings.lineId
-                    })
-                });
-
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("更新通知設定結果:", data);
+                
+                /* 測試訊息 */
+                if (notifySettings.line && notifySettings.lineId) {
+                    return fetch(MY_GAS_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: new URLSearchParams({
+                            action: "testLine",
+                            lineId: notifySettings.lineId
+                        })
+                    });
+                }
+            })
+            .then(response => response?.json())
+            .then(data => {
+                if (data) console.log("測試通知結果:", data);
                 openCustomPrompt("通知測試", "已送出測試訊息，請查看 LINE。", "", true, () => {});
-            }
+            })
+            .catch(error => {
+                console.error("通知設定失敗:", error);
+                alert("通知設定失敗，請稍後再試");
+            });
 
             closeModal("notifyModal");
         }
 
         function queueAddToSheet(data) {
-            if (!notifySettings.lineId) return;
+            if (!notifySettings.line || !notifySettings.lineId || !currentUserId) return;
 
             fetch(MY_GAS_URL, {
                 method: "POST",
-                mode: "no-cors",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: new URLSearchParams({
                     action: "queueAdd",
-                    userId: notifySettings.userId,       // 遊戲ID
+                    userId: currentUserId,       // 從變數取得遊戲ID
                     charId: data.charId,
                     charName: data.charName,
                     actName: data.actName,
                     targetTime: data.targetTime
                 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("加入佇列結果:", data);
+            })
+            .catch(error => {
+                console.error("加入佇列失敗:", error);
             });
         }
 
@@ -680,10 +707,18 @@
             }); 
         }
 
+        function askRemoveGroup(gi) { 
+            openCustomPrompt("刪除群組", "確定要刪除此群組？", "", true, () => { 
+                db.groups.splice(gi, 1); 
+                saveDB(); 
+                renderManageUI(); 
+            }); 
+        }
+
         function toggleAllBatch(flag){
-    document.querySelectorAll(".char-cb").forEach(cb => {
-        cb.checked = flag;
-    });
+            document.querySelectorAll(".char-cb").forEach(cb => {
+                cb.checked = flag;
+            });
         }
         
         function toggleGroupBatch(gid, flag){
@@ -691,15 +726,7 @@
                 cb.checked = flag;
             });
         }
-        
-        function askRemoveGroup(idx){
-            openCustomPrompt("刪除群組", "確定要刪除此群組？", "", true, () => {
-                db.groups.splice(idx, 1);
-                saveDB();
-                renderManageUI();
-            });
-        }
-        
+
         function openBatchModal(){
             const actIdx = document.getElementById("activitySelect").value;
             const act = activities[actIdx];
@@ -707,42 +734,6 @@
             document.getElementById("batchActName").innerText = `正在為「${act.name}」分配人物`;
         
             document.getElementById("batchInputList").innerHTML = db.groups.map(g => `
-                <div class="bg-[#F4F2EE] p-5 rounded-[2rem] border border-[#D7D3CC]">
-                    <div class="flex justify-between mb-4">
-                        <span class="font-black">${g.name}</span>
-                        <div class="flex gap-2">
-                            <button onclick="toggleGroupBatch('${g.id}',true)" class="text-xs">全選</button>
-                            <button onclick="toggleGroupBatch('${g.id}',false)" class="text-xs">取消</button>
-                        </div>
-                    </div>
-                    <div data-batch-gid="${g.id}" class="space-y-2">
-                        ${g.members.map(m => `
-                            <div class="flex gap-3 items-center">
-                                <input type="checkbox" class="char-cb" data-name="${m.name}" data-id="${m.id}">
-                                <span class="flex-1">${m.name}</span>
-                                <input type="number" class="stamina-input w-16 border rounded" value="0">
-                            </div>
-                        `).join("")}
-                    </div>
-                </div>
-            `).join("");
-        
-            document.getElementById("batchModal").classList.replace("hidden", "flex");
-        }
-
-        function askRemoveGroup(gi) { 
-            openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", true, () => { 
-                db.groups.splice(gi,1); 
-                saveDB(); 
-                renderManageUI(); 
-            }); 
-        }
-
-        function openBatchModal() {
-            const actIdx = document.getElementById('activitySelect').value;
-            const act = activities[actIdx];
-            document.getElementById('batchActName').innerText = `正在為「${act.name}」分配人物`;
-            document.getElementById('batchInputList').innerHTML = db.groups.map(g => `
                 <div class="bg-[#F4F2EE] p-5 rounded-[2rem] border border-[#D7D3CC]">
                     <div class="flex justify-between items-center mb-4 border-b border-[#D7D3CC] pb-2">
                         <span class="font-black text-[#6D6875]">${g.name}</span>
@@ -763,15 +754,8 @@
                             </div>`).join('')}
                     </div>
                 </div>`).join('');
-            document.getElementById('batchModal').classList.replace('hidden', 'flex');
-        }
-
-        function toggleAllBatch(c) { 
-            document.querySelectorAll('.char-cb').forEach(cb => cb.checked = c); 
-        }
         
-        function toggleGroupBatch(gid, c) { 
-            document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => cb.checked = c); 
+            document.getElementById("batchModal").classList.replace("hidden", "flex");
         }
 
         function submitBatch() {
