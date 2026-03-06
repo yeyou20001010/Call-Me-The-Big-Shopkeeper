@@ -679,6 +679,56 @@
             }); 
         }
 
+        function toggleAllBatch(flag){
+    document.querySelectorAll(".char-cb").forEach(cb => {
+        cb.checked = flag;
+    });
+        }
+        
+        function toggleGroupBatch(gid, flag){
+            document.querySelectorAll(`[data-batch-gid="${gid}"] .char-cb`).forEach(cb => {
+                cb.checked = flag;
+            });
+        }
+        
+        function askRemoveGroup(idx){
+            openCustomPrompt("刪除群組", "確定要刪除此群組？", "", true, () => {
+                db.groups.splice(idx, 1);
+                saveDB();
+                renderManageUI();
+            });
+        }
+        
+        function openBatchModal(){
+            const actIdx = document.getElementById("activitySelect").value;
+            const act = activities[actIdx];
+        
+            document.getElementById("batchActName").innerText = `正在為「${act.name}」分配人物`;
+        
+            document.getElementById("batchInputList").innerHTML = db.groups.map(g => `
+                <div class="bg-[#F4F2EE] p-5 rounded-[2rem] border border-[#D7D3CC]">
+                    <div class="flex justify-between mb-4">
+                        <span class="font-black">${g.name}</span>
+                        <div class="flex gap-2">
+                            <button onclick="toggleGroupBatch('${g.id}',true)" class="text-xs">全選</button>
+                            <button onclick="toggleGroupBatch('${g.id}',false)" class="text-xs">取消</button>
+                        </div>
+                    </div>
+                    <div data-batch-gid="${g.id}" class="space-y-2">
+                        ${g.members.map(m => `
+                            <div class="flex gap-3 items-center">
+                                <input type="checkbox" class="char-cb" data-name="${m.name}" data-id="${m.id}">
+                                <span class="flex-1">${m.name}</span>
+                                <input type="number" class="stamina-input w-16 border rounded" value="0">
+                            </div>
+                        `).join("")}
+                    </div>
+                </div>
+            `).join("");
+        
+            document.getElementById("batchModal").classList.replace("hidden", "flex");
+        }
+
         function askRemoveGroup(gi) { 
             openCustomPrompt("刪除群組？", "這將永久刪除此群組及其成員。", "", true, () => { 
                 db.groups.splice(gi,1); 
