@@ -265,6 +265,10 @@
 
             // 儲存使用者ID
             currentUserId = gameData.user.userId;
+
+            // ⭐ 新增這行來檢查
+            console.log("currentUserId:", currentUserId);
+            console.log("gameData.user:", gameData.user);
             
             activities = gameData.activities;
             const select = document.getElementById('activitySelect');
@@ -421,6 +425,10 @@
         }
 
         function saveNotifySettings() {
+
+             // ⭐ 先檢查 currentUserId
+            console.log("saveNotifySettings - currentUserId:", currentUserId);
+            
             // 檢查 LINE ID 格式
             const lineId = document.getElementById("userIdInput").value.trim();
             if (lineId && !lineId.startsWith("U")) {
@@ -432,6 +440,14 @@
             notifySettings.lineId = lineId;
 
             localStorage.setItem("stamina_notify_cfg", JSON.stringify(notifySettings));
+
+             // 確認要送出的資料
+             console.log("準備送出:", {
+                 userId: currentUserId,
+                 lineId: lineId,
+                 enabled: notifySettings.line
+            });
+            
 
             /* 更新GAS通知狀態 - 使用標準 cors 模式 */
             fetch(MY_GAS_URL, {
