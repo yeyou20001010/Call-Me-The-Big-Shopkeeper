@@ -449,9 +449,10 @@
             });
             
 
-            /* 更新GAS通知狀態 - 使用標準 cors 模式 */
+            /* 更新GAS通知狀態 - 使用 no-cors 模式 */
             fetch(MY_GAS_URL, {
                 method: "POST",
+                mode: "no-cors",  // 改為 no-cors
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: new URLSearchParams({
                     action: "updateNotify",
@@ -460,14 +461,14 @@
                     enabled: notifySettings.line
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-                console.log("更新通知設定結果:", data);
+            .then(() => {
+                console.log("更新通知設定請求已送出 (no-cors 模式無法取得回應)");
                 
                 /* 測試訊息 */
                 if (notifySettings.line && notifySettings.lineId) {
                     return fetch(MY_GAS_URL, {
                         method: "POST",
+                        mode: "no-cors",  // 改為 no-cors
                         headers: { "Content-Type": "application/x-www-form-urlencoded" },
                         body: new URLSearchParams({
                             action: "testLine",
@@ -476,9 +477,8 @@
                     });
                 }
             })
-            .then(response => response?.json())
-            .then(data => {
-                if (data) console.log("測試通知結果:", data);
+            .then(() => {
+                console.log("測試通知請求已送出");
                 openCustomPrompt("通知測試", "已送出測試訊息，請查看 LINE。", "", true, () => {});
             })
             .catch(error => {
@@ -494,6 +494,7 @@
 
             fetch(MY_GAS_URL, {
                 method: "POST",
+                mode: "no-cors",  // 改為 no-cors
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: new URLSearchParams({
                     action: "queueAdd",
@@ -504,9 +505,8 @@
                     targetTime: data.targetTime
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-                console.log("加入佇列結果:", data);
+            .then(() => {
+                console.log("加入佇列請求已送出 (no-cors 模式無法取得回應)");
             })
             .catch(error => {
                 console.error("加入佇列失敗:", error);
