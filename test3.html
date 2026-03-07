@@ -447,7 +447,13 @@
                  lineId: lineId,
                  enabled: notifySettings.line
             });
-            
+
+             // ⭐ 新增詳細的 userId 檢查
+             console.log("要送出的 userId 原始值:", currentUserId);
+             console.log("要送出的 userId 類型:", typeof currentUserId);
+             console.log("要送出的 userId 長度:", currentUserId ? currentUserId.length : "undefined");
+             console.log("要送出的 userId 字串:", JSON.stringify(currentUserId));
+
 
             /* 更新GAS通知狀態 - 使用 no-cors 模式 */
             fetch(MY_GAS_URL, {
