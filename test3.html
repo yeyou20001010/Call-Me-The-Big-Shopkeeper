@@ -229,13 +229,27 @@
     </div>
 
     <script>
+        // ==================== 全新 GAS 呼叫架構 ====================
         const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec";
+
+        /* 統一 GAS 呼叫 */
+        async function callGAS(data){
+            try{
+                const res = await fetch(MY_GAS_URL,{
+                    method:"POST",
+                    headers:{ "Content-Type":"application/x-www-form-urlencoded"},
+                    body:new URLSearchParams(data)
+                });
+                return await res.json();
+            }catch(e){
+                console.error("GAS錯誤",e);
+                return {success:false};
+            }
+        }
 
         let activities = [];
         let db = JSON.parse(localStorage.getItem('stamina_v15_db')) || {
-            groups: [
-                { id: 'default', name: '未分類人物', members: [] }
-            ]
+            groups: [{ id:'default', name:'未分類人物', members:[] }]
         };
         let monitors = JSON.parse(localStorage.getItem('stamina_v15_active')) || [];
         let sortMode = 0;
@@ -247,29 +261,27 @@
             "按人物名稱"
         ];
 
-        /* ⭐ 通知設定 - 使用 lineId (新版) */
+        /* 通知設定 */
         let notifySettings = JSON.parse(localStorage.getItem('stamina_notify_cfg')) || {
-            line: false,
-            lineId: ""
+            line:false,
+            lineId:""
         };
-        // 注意：userId 不存 localStorage，每次從 sessionStorage 取得
 
         let notifiedSet = new Set();
         let dragInfo = null;
-        let currentUserId = null; // 儲存當前登入的使用者ID
+        let currentUserId = null;
 
-        window.onload = function() {
+        /* =========================
+           初始化 (完全保留原樣，僅加上 currentUserId 取得)
+        ========================= */
+
+        window.onload = function(){
             const gameData = JSON.parse(sessionStorage.getItem('gameData'));
+            if(!gameData) return location.href = "index.html";
 
-            if (!gameData) return location.href = "index.html";
-
-            // 儲存使用者ID
             currentUserId = gameData.user.userId;
-
-            // ⭐ 新增這行來檢查
             console.log("currentUserId:", currentUserId);
-            console.log("gameData.user:", gameData.user);
-            
+
             activities = gameData.activities;
             const select = document.getElementById('activitySelect');
 
@@ -306,7 +318,7 @@
 
             select.dispatchEvent(new Event('change'));
 
-            /* ⭐ 初始化通知UI */
+            /* 初始化通知UI */
             document.getElementById('lineNotifyToggle').checked = notifySettings.line;
             document.getElementById('userIdInput').value = notifySettings.lineId || "";
 
@@ -314,6 +326,7 @@
             setInterval(renderMonitoring, 1000);
         };
 
+        // ==================== renderMonitoring (完全保留原始邏輯，僅 queueAddToSheet 內部改為 callGAS) ====================
         function renderMonitoring() {
             const grid = document.getElementById('monitorGrid');
 
@@ -345,7 +358,7 @@
                     remSec = (neededTimes * act.minPerStamina * 60) - ((mins % act.minPerStamina) * 60);
                 }
 
-                /* ⭐ LINE排程 */
+                /* LINE排程 - 使用 callGAS (非同步但無需等待) */
                 if (!isFull && notifySettings.line && notifySettings.lineId) {
                     const targetTime = now + (remSec * 1000);
                     const mKey = `${m.charId}-${m.actIdx}`;
@@ -424,14 +437,11 @@
             }).join('');
         }
 
-        function saveNotifySettings() {
-
-             // ⭐ 先檢查 currentUserId
-            console.log("saveNotifySettings - currentUserId:", currentUserId);
-            
-            // 檢查 LINE ID 格式
+        // ==================== LINE 通知設定 (使用 callGAS) ====================
+        async function saveNotifySettings(){
             const lineId = document.getElementById("userIdInput").value.trim();
-            if (lineId && !lineId.startsWith("U")) {
+
+            if(lineId && !lineId.startsWith("U")){
                 alert("LINE ID 必須是 U 開頭");
                 return;
             }
@@ -441,83 +451,42 @@
 
             localStorage.setItem("stamina_notify_cfg", JSON.stringify(notifySettings));
 
-             // 確認要送出的資料
-             console.log("準備送出:", {
-                 userId: currentUserId,
-                 lineId: lineId,
-                 enabled: notifySettings.line
+            await callGAS({
+                action: "updateNotify",
+                userId: currentUserId,
+                lineId: notifySettings.lineId,
+                enabled: notifySettings.line
             });
 
-             // ⭐ 新增詳細的 userId 檢查
-             console.log("要送出的 userId 原始值:", currentUserId);
-             console.log("要送出的 userId 類型:", typeof currentUserId);
-             console.log("要送出的 userId 長度:", currentUserId ? currentUserId.length : "undefined");
-             console.log("要送出的 userId 字串:", JSON.stringify(currentUserId));
+            if(notifySettings.line && notifySettings.lineId){
+                await callGAS({
+                    action: "testLine",
+                    lineId: notifySettings.lineId
+                });
+            }
 
-
-            /* 更新GAS通知狀態 - 使用 no-cors 模式 */
-            fetch(MY_GAS_URL, {
-                method: "POST",
-                mode: "no-cors",  // 改為 no-cors
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({
-                    action: "updateNotify",
-                    userId: currentUserId,     // 從變數取得遊戲ID
-                    lineId: notifySettings.lineId,
-                    enabled: notifySettings.line
-                })
-            })
-            .then(() => {
-                console.log("更新通知設定請求已送出 (no-cors 模式無法取得回應)");
-                
-                /* 測試訊息 */
-                if (notifySettings.line && notifySettings.lineId) {
-                    return fetch(MY_GAS_URL, {
-                        method: "POST",
-                        mode: "no-cors",  // 改為 no-cors
-                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                        body: new URLSearchParams({
-                            action: "testLine",
-                            lineId: notifySettings.lineId
-                        })
-                    });
-                }
-            })
-            .then(() => {
-                console.log("測試通知請求已送出");
-                openCustomPrompt("通知測試", "已送出測試訊息，請查看 LINE。", "", true, () => {});
-            })
-            .catch(error => {
-                console.error("通知設定失敗:", error);
-                alert("通知設定失敗，請稍後再試");
-            });
-
+            openCustomPrompt("通知測試","已送出測試訊息，請查看 LINE。","",true,()=>{});
             closeModal("notifyModal");
         }
 
-        function queueAddToSheet(data) {
-            if (!notifySettings.line || !notifySettings.lineId || !currentUserId) return;
+        // ==================== 加入排程佇列 (使用 callGAS) ====================
+        function queueAddToSheet(data){
 
-            fetch(MY_GAS_URL, {
-                method: "POST",
-                mode: "no-cors",  // 改為 no-cors
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({
-                    action: "queueAdd",
-                    userId: currentUserId,       // 從變數取得遊戲ID
-                    charId: data.charId,
-                    charName: data.charName,
-                    actName: data.actName,
-                    targetTime: data.targetTime
-                })
-            })
-            .then(() => {
-                console.log("加入佇列請求已送出 (no-cors 模式無法取得回應)");
-            })
-            .catch(error => {
-                console.error("加入佇列失敗:", error);
+            if(!notifySettings.line || !notifySettings.lineId || !currentUserId) return;
+
+            callGAS({
+                action:"queueAdd",
+                userId:currentUserId,
+                charId:data.charId,
+                charName:data.charName,
+                actName:data.actName,
+                targetTime:data.targetTime
+            }).catch(err=>{
+                console.error("queueAdd失敗",err);
             });
         }
+
+        // ==================== 以下全部是原始功能：拖曳 / 管理 / 批量 / 排序 / 監測 (完全沒動) ====================
 
         /* 拖曳功能 */
         function handleDragStart(e, gid, mi) { 
