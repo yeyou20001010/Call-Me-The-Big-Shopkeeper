@@ -440,32 +440,43 @@
         // ==================== LINE 通知設定 (使用 callGAS) ====================
         async function saveNotifySettings(){
             const lineId = document.getElementById("userIdInput").value.trim();
-
+        
             if(lineId && !lineId.startsWith("U")){
                 alert("LINE ID 必須是 U 開頭");
                 return;
             }
-
+        
             notifySettings.line = document.getElementById("lineNotifyToggle").checked;
             notifySettings.lineId = lineId;
-
+        
             localStorage.setItem("stamina_notify_cfg", JSON.stringify(notifySettings));
-
-            await callGAS({
+        
+            // 確保 currentUserId 存在
+            if (!currentUserId) {
+                console.error("currentUserId 不存在");
+                alert("請重新登入");
+                return;
+            }
+        
+            const result = await callGAS({
                 action: "updateNotify",
                 userId: currentUserId,
                 lineId: notifySettings.lineId,
-                enabled: notifySettings.line
+                enabled: notifySettings.line ? "true" : "false"  // 轉為字串
             });
-
-            if(notifySettings.line && notifySettings.lineId){
-                await callGAS({
-                    action: "testLine",
-                    lineId: notifySettings.lineId
-                });
+        
+            if (result && result.success) {
+                if(notifySettings.line && notifySettings.lineId){
+                    await callGAS({
+                        action: "testLine",
+                        lineId: notifySettings.lineId
+                    });
+                }
+                openCustomPrompt("通知測試","已送出測試訊息，請查看 LINE。","",true,()=>{});
+            } else {
+                alert("通知設定失敗: " + (result ? result.msg : "未知錯誤"));
             }
-
-            openCustomPrompt("通知測試","已送出測試訊息，請查看 LINE。","",true,()=>{});
+        
             closeModal("notifyModal");
         }
 
