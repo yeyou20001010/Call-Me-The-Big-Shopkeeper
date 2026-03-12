@@ -228,6 +228,24 @@
                 const regainVal = act.regain || 1;
                 document.getElementById('rateDetail').innerText = `${act.minPerStamina} 分鐘 / ${regainVal} 體`;
                 document.getElementById('maxDetail').innerText = `${act.maxStamina} 體`;
+              // === 新增：回滿時長顯示 ===
+                let fullDetailEl = document.getElementById('fullDetail');
+                if (!fullDetailEl) {
+                    const box = document.createElement('div');
+                    box.className = "flex justify-between";
+                    box.innerHTML = `
+                        <span class="text-[#A5A5A5]">回滿時長</span>
+                        <span id="fullDetail" class="text-[#6D6875]"></span>
+                    `;
+                    // 加到 rateDetail 和 maxDetail 的容器後面
+                    document.getElementById('maxDetail').parentElement.parentElement.appendChild(box);
+                    fullDetailEl = document.getElementById('fullDetail');
+                }
+                
+                const fullHours = (act.maxStamina / regainVal * act.minPerStamina) / 60;
+                fullDetailEl.innerText = `${fullHours.toFixed(1)} 小時(理論)`;
+                // ======================
+            
             };
             select.dispatchEvent(new Event('change'));
 
@@ -533,3 +551,4 @@
     </script>
 </body>
 </html>
+
