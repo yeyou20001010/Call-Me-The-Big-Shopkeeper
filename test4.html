@@ -1,0 +1,163 @@
+<!-- battle.html - 對戰計算器 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>大掌櫃工具箱 - 對戰分析</title>
+    <style>
+        .transition-all { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .theme-dark { background-color: #0f172a !important; color: #f8fafc !important; }
+        .theme-dark .battle-card { background-color: #1e293b !important; border-color: #334155 !important; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all" id="mainBody">
+    <div class="max-w-7xl mx-auto">
+        <!-- 返回按鈕 -->
+        <div class="mb-6">
+            <button onclick="goBack()" class="flex items-center gap-2 text-slate-400 hover:text-indigo-500 transition-colors">
+                <span>←</span> 返回主選單
+            </button>
+        </div>
+
+        <!-- 頁面標題 -->
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-sm mb-8 border border-slate-100 modal-content">
+            <h1 class="text-3xl font-black text-slate-800">⚔️ 對戰分析儀表板</h1>
+            <p class="text-slate-400 text-sm mt-2">即時計算加成效果，模擬對戰組合</p>
+        </div>
+
+        <!-- 商會選擇區域 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- 敵方商會選擇 -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <label class="block text-xs font-bold text-slate-400 mb-2">選擇敵方商會</label>
+                <select id="enemyGuild" class="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-indigo-500 outline-none">
+                    <option value="">請選擇商會...</option>
+                </select>
+            </div>
+            
+            <!-- 我方商會選擇 -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <label class="block text-xs font-bold text-slate-400 mb-2">選擇我方商會</label>
+                <select id="myGuild" class="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-indigo-500 outline-none">
+                    <option value="">請選擇商會...</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 對戰表格 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- 敵方商會表格 -->
+            <div class="battle-card bg-white rounded-[2.5rem] shadow-lg overflow-hidden border border-slate-100">
+                <div class="bg-red-50 p-6 border-b border-red-100">
+                    <h2 class="text-xl font-black text-red-600">⚔️ 敵方商會</h2>
+                </div>
+                <div class="p-6">
+                    <table class="w-full">
+                        <tbody id="enemyTable" class="text-sm">
+                            <!-- 動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 我方商會表格 -->
+            <div class="battle-card bg-white rounded-[2.5rem] shadow-lg overflow-hidden border border-slate-100">
+                <div class="bg-blue-50 p-6 border-b border-blue-100">
+                    <h2 class="text-xl font-black text-blue-600">🛡️ 我方商會</h2>
+                </div>
+                <div class="p-6">
+                    <table class="w-full">
+                        <tbody id="myTable" class="text-sm">
+                            <!-- 動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 排列組合模擬器 -->
+        <div class="mt-8 bg-white p-8 rounded-[2.5rem] shadow-lg border border-slate-100">
+            <h3 class="text-lg font-black mb-4">🔄 對戰組合模擬器</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-2">選擇敵方門客</label>
+                    <select id="simEnemy" class="w-full p-3 border-2 border-slate-100 rounded-xl">
+                        <option>門客A</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-2">選擇我方門客</label>
+                    <select id="simMy" class="w-full p-3 border-2 border-slate-100 rounded-xl">
+                        <option>門客B</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-2">模擬次數</label>
+                    <input type="number" value="1000" class="w-full p-3 border-2 border-slate-100 rounded-xl">
+                </div>
+            </div>
+            <button class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700">
+                開始模擬對戰
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const BATTLE_DATA_URL = "你的對戰資料Sheet網址"; // 可選：如果要用獨立的 Google Sheet
+        
+        window.onload = function() {
+            // 繼承主選單的主題設定
+            const data = JSON.parse(sessionStorage.getItem('gameData'));
+            if(data?.config?.CurrentTheme) {
+                applyTheme(data.config.CurrentTheme);
+            }
+            loadGuilds();
+        };
+
+        function loadGuilds() {
+            // 這裡可以從獨立的 Sheet 載入商會資料
+            // 或使用本地預設資料
+            const guilds = [
+                { id: 1, name: '天下商會' },
+                { id: 2, name: '龍騰商會' },
+                // ...更多資料
+            ];
+            
+            // 填充下拉選單
+        }
+
+        function calculatePower(basePower, hasBiSheng, biShengLevel, position, buffs = {}) {
+            let power = basePower;
+            
+            // 畢昇加成
+            if(hasBiSheng) {
+                power *= (1 + biShengLevel * 0.05); // 假設每級+5%
+            }
+            
+            // 職務加成
+            const positionBonus = {
+                '會長': 0.2,
+                '副會長': 0.15,
+                '長老': 0.1,
+                '成員': 0
+            };
+            power *= (1 + (positionBonus[position] || 0));
+            
+            // 募資+10%
+            if(buffs.fundraising) power *= 1.1;
+            
+            // 錦囊加成
+            if(buffs.talisman300) power *= 4; // +300% = 4倍
+            if(buffs.talisman50) power *= 1.5; // +50% = 1.5倍
+            
+            return Math.round(power);
+        }
+
+        function goBack() {
+            location.href = 'portal.html';
+        }
+    </script>
+</body>
+</html>
