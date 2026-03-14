@@ -1,0 +1,122 @@
+<!-- test4.html - 對戰分析 (測試版框架) -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>對戰分析 - 測試版</title>
+    <style>
+        .transition-all { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .theme-dark { background-color: #0f172a !important; color: #f8fafc !important; }
+        .theme-dark .test-card { background-color: #1e293b !important; border-color: #334155 !important; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all" id="mainBody">
+    <div class="max-w-4xl mx-auto">
+        <!-- 返回按鈕 - 直接連回主選單 -->
+        <div class="mb-6">
+            <button onclick="goBack()" class="flex items-center gap-2 text-slate-400 hover:text-indigo-500 transition-colors group">
+                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+                <span class="font-bold">返回主選單</span>
+            </button>
+        </div>
+
+        <!-- 測試標籤 -->
+        <div class="mb-6">
+            <span class="bg-amber-100 text-amber-600 text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wider">🧪 測試實驗室 - 對戰分析模組</span>
+        </div>
+
+        <!-- 主要內容 - 待更新框架 -->
+        <div class="bg-white rounded-[2.5rem] shadow-lg border-2 border-dashed border-slate-200 p-12 text-center test-card">
+            <!-- 裝飾圖示 -->
+            <div class="text-7xl mb-6 animate-pulse">⚔️</div>
+            
+            <!-- 標題 -->
+            <h1 class="text-4xl font-black text-slate-300 mb-4">對戰分析</h1>
+            
+            <!-- 狀態標示 -->
+            <div class="inline-block bg-amber-50 px-6 py-3 rounded-2xl mb-8">
+                <span class="text-amber-500 font-black text-sm tracking-widest">🚧 建置中 / UNDER CONSTRUCTION</span>
+            </div>
+            
+            <!-- 預計更新內容說明 -->
+            <div class="max-w-md mx-auto space-y-4 text-slate-400">
+                <p class="text-sm">預計更新功能：</p>
+                <ul class="text-xs space-y-2">
+                    <li class="flex items-center justify-center gap-2">
+                        <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                        敵我雙方商會戰力對比
+                    </li>
+                    <li class="flex items-center justify-center gap-2">
+                        <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                        畢昇、職務加成計算
+                    </li>
+                    <li class="flex items-center justify-center gap-2">
+                        <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                        募資、錦囊效果模擬
+                    </li>
+                    <li class="flex items-center justify-center gap-2">
+                        <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                        對戰組合排列分析
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 裝飾線 -->
+            <div class="my-8 border-t border-dashed border-slate-200"></div>
+
+            <!-- 提示訊息 -->
+            <p class="text-slate-300 text-sm italic">
+                此功能目前正在開發中，敬請期待正式版本！
+            </p>
+        </div>
+
+        <!-- 底部測試區提示 -->
+        <div class="mt-6 text-center">
+            <p class="text-[10px] text-slate-300 uppercase tracking-widest">
+                Test Version 0.1.0 | 此頁面僅供測試
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // 套用主題 (從 sessionStorage 繼承主選單的主題)
+        window.onload = function() {
+            try {
+                const data = JSON.parse(sessionStorage.getItem('gameData'));
+                if (data?.config?.CurrentTheme) {
+                    applyTheme(data.config.CurrentTheme);
+                }
+            } catch (e) {
+                console.log('無法讀取主題設定，使用預設主題');
+            }
+        };
+
+        // 主題套用函數
+        function applyTheme(theme) {
+            const body = document.getElementById('mainBody');
+            body.classList.remove('theme-dark');
+            body.style.backgroundColor = "";
+
+            if (theme === 'dark') {
+                body.classList.add('theme-dark');
+            } else if (theme === 'christmas') {
+                body.style.backgroundColor = "#fff1f2";
+            } else {
+                body.style.backgroundColor = "#f8fafc";
+            }
+        }
+
+        // 返回主選單
+        function goBack() {
+            location.href = 'portal.html';
+        }
+
+        // 如果使用者直接輸入網址但未登入，導回登入頁
+        if (!sessionStorage.getItem('gameData')) {
+            location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
