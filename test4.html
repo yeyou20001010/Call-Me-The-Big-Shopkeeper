@@ -1,10 +1,12 @@
-<!-- test4.html - 對戰分析儀表板 (完整框架) -->
+<!-- test4.html - 對戰分析儀表板 (完整版含拖曳) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 加入拖曳庫 SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <title>對戰分析 - 完整版</title>
     <style>
         .transition-all { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -14,6 +16,45 @@
         .theme-dark input, .theme-dark select { background-color: #0f172a !important; color: white !important; border-color: #475569 !important; }
         .sticky-col { position: sticky; left: 0; background: inherit; z-index: 10; }
         .table-container { overflow-x: auto; max-width: 100%; border-radius: 1rem; }
+        
+        /* 拖曳樣式 */
+        .drag-handle {
+            cursor: grab;
+            color: #94a3b8;
+            font-size: 1.2rem;
+            user-select: none;
+            display: inline-block;
+            width: 24px;
+            text-align: center;
+        }
+        .drag-handle:active { cursor: grabbing; }
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #e2e8f0 !important;
+        }
+        .sortable-drag {
+            opacity: 0.8;
+            transform: rotate(2deg);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .theme-dark .sortable-ghost { background-color: #334155 !important; }
+        
+        /* 職位標籤 */
+        .position-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .position-chairman { background-color: #fee2e2; color: #b91c1c; }
+        .position-vice { background-color: #fed7aa; color: #9a3412; }
+        .position-elite { background-color: #cffafe; color: #0e7490; }
+        .position-member { background-color: #e2e8f0; color: #334155; }
+        .theme-dark .position-chairman { background-color: #7f1d1d; color: #fee2e2; }
+        .theme-dark .position-vice { background-color: #7c2d12; color: #fed7aa; }
+        .theme-dark .position-elite { background-color: #155e75; color: #cffafe; }
+        .theme-dark .position-member { background-color: #1e293b; color: #e2e8f0; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all" id="mainBody">
@@ -39,9 +80,9 @@
                 <span>選擇敵方商會</span>
             </h2>
             <select id="enemyGuildSelect" class="w-full p-4 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 outline-none text-lg">
-                <option value="">請選擇商會...</option>
-                <!-- 動態從 Sheet 載入 -->
+                <option value="">請選擇敵方商會...</option>
             </select>
+            <p class="text-xs text-slate-400 mt-2">📅 版本日期會顯示在下拉選單中</p>
         </div>
 
         <!-- ========== 敵方成員戰力分析表 ========== -->
@@ -65,41 +106,48 @@
                         </tr>
                     </thead>
                     <tbody id="enemyMemberTable">
-                        <!-- 動態載入敵方成員 -->
+                        <tr><td colspan="9" class="text-center p-8 text-slate-400">請先選擇敵方商會</td></tr>
                     </tbody>
                     <tfoot id="enemyTotalRow" class="bg-slate-100 font-bold">
-                        <!-- 總和列 -->
+                        <!-- 總和列會動態產生 -->
                     </tfoot>
                 </table>
             </div>
         </div>
 
-        <!-- ========== 我方門客配置區 ========== -->
+        <!-- ========== 我方門客配置區 (可拖曳) ========== -->
         <div class="bg-white rounded-[2.5rem] shadow-lg p-8 border border-slate-100 battle-card">
             <h2 class="text-2xl font-black mb-6 flex items-center gap-3">
                 <span class="text-3xl">🛡️</span>
                 <span>我方門客配置</span>
+                <span class="text-sm font-normal text-slate-400 ml-4">✨ 可拖曳左側 ⋮⋮ 調整順序，職位會自動分組</span>
             </h2>
             
             <!-- 批次載入按鈕 -->
             <div class="mb-6 flex gap-4">
                 <select id="batchLoadSelect" class="p-3 border-2 rounded-xl">
                     <option value="">批次載入門客資料...</option>
-                    <option value="max">載入最大門客戰力</option>
-                    <option value="second">載入第二大門客戰力</option>
-                    <option value="third">載入第三大門客戰力</option>
+                    <option value="max">載入最大門客戰力 (No.1)</option>
+                    <option value="second">載入第二大門客戰力 (No.2)</option>
+                    <option value="third">載入第三大門客戰力 (No.3)</option>
                 </select>
-                <button onclick="batchLoadMembers()" class="px-6 py-3 bg-indigo-100 text-indigo-600 rounded-xl font-bold">套用</button>
+                <button onclick="batchLoadMembers()" class="px-6 py-3 bg-indigo-100 text-indigo-600 rounded-xl font-bold hover:bg-indigo-200 transition-all">
+                    套用
+                </button>
+                <button onclick="resetMyOrder()" class="px-6 py-3 bg-slate-100 rounded-xl font-bold hover:bg-slate-200 transition-all">
+                    ⟲ 重置順序
+                </button>
             </div>
             
             <div class="table-container">
-                <table class="w-full text-sm min-w-[1600px]">
+                <table class="w-full text-sm min-w-[1700px]">
                     <thead class="bg-slate-50">
                         <tr>
+                            <th class="p-4 text-center w-12"></th>
                             <th class="p-4 text-left">成員</th>
+                            <th class="p-4 text-left">職位</th>
                             <th class="p-4 text-right">基礎戰力</th>
                             <th class="p-4 text-left">畢昇</th>
-                            <th class="p-4 text-left">職位</th>
                             <th class="p-4 text-left">錦囊</th>
                             <th class="p-4 text-right bg-blue-50">①基礎</th>
                             <th class="p-4 text-right bg-green-50">②+募資</th>
@@ -110,11 +158,12 @@
                             <th class="p-4 text-center">伏兵</th>
                         </tr>
                     </thead>
-                    <tbody id="myMembersTable">
-                        <!-- 動態載入我方成員 -->
+                    <tbody id="myMembersTable" class="sortable-table">
+                        <!-- 由 JavaScript 動態產生，可拖曳 -->
                     </tbody>
                 </table>
             </div>
+            <p class="text-xs text-slate-400 mt-4">💡 拖曳左側 ⋮⋮ 可調整順序，職位會自動分組：會長 → 副會長 → 精英 → 成員</p>
         </div>
 
         <!-- ========== 對戰模擬器 ========== -->
@@ -128,13 +177,13 @@
             <div class="mb-8">
                 <label class="block font-bold mb-4 text-lg">募資加成：</label>
                 <div class="flex gap-6">
-                    <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer">
+                    <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer hover:bg-slate-50">
                         <input type="radio" name="fundraising" value="none" checked class="w-5 h-5"> 無募資
                     </label>
-                    <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer">
+                    <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer hover:bg-slate-50">
                         <input type="radio" name="fundraising" value="my" class="w-5 h-5"> 我方+10%
                     </label>
-                    <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer">
+                    <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer hover:bg-slate-50">
                         <input type="radio" name="fundraising" value="enemy" class="w-5 h-5"> 敵方+10%
                     </label>
                 </div>
@@ -143,24 +192,24 @@
             <!-- 敵方錦囊情境 -->
             <div class="mb-8">
                 <label class="block font-bold mb-4 text-lg">敵方錦囊情境：</label>
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-slate-50">
                         <input type="radio" name="enemyScenario" value="none" checked> 無錦囊
                     </label>
-                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-slate-50">
                         <input type="radio" name="enemyScenario" value="all_50"> 全體+50%
                     </label>
-                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-slate-50">
                         <input type="radio" name="enemyScenario" value="all_300"> 全體+300%
                     </label>
-                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
-                        <input type="radio" name="enemyScenario" value="light"> 輕度使用(1/3)
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-slate-50">
+                        <input type="radio" name="enemyScenario" value="light"> 輕度(1/3)
                     </label>
-                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
-                        <input type="radio" name="enemyScenario" value="heavy"> 重度使用(2/3)
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-slate-50">
+                        <input type="radio" name="enemyScenario" value="heavy"> 重度(2/3)
                     </label>
-                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
-                        <input type="radio" name="enemyScenario" value="balanced"> 均衡隨機(1/4)
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-slate-50">
+                        <input type="radio" name="enemyScenario" value="balanced"> 均衡(1/4)
                     </label>
                 </div>
             </div>
@@ -171,7 +220,7 @@
                     ⚔️ 一般對戰模擬
                 </button>
                 <button onclick="simulateCombinations()" class="py-5 bg-amber-600 text-white rounded-2xl font-black text-lg hover:bg-amber-700 transition-all shadow-lg">
-                    🔄 排列組合模擬
+                    🔄 排列組合模擬 (成員順序)
                 </button>
             </div>
             
@@ -179,19 +228,30 @@
             <div id="simulateResults" class="mt-6 space-y-4"></div>
             <div id="combinationsResults" class="mt-6"></div>
         </div>
+
+        <!-- 底部資訊 -->
+        <div class="mt-6 text-center">
+            <p class="text-[10px] text-slate-300 uppercase tracking-widest">
+                Test Version 3.0.0 | 資料從 Google Sheet 讀取，順序調整僅存在瀏覽器
+            </p>
+        </div>
     </div>
 
     <script>
+        // ==================== 設定 ====================
+        const SCRIPT_URL = '你的GAS部署網址';  // 請替換成實際的GAS網址
+        
         // ==================== 戰力計算核心 ====================
         class BattlePowerCalculator {
             // 計算職務&畢昇加成 (G4)
             static calculateBasePower(basePower, position, biShengLevel) {
-                let positionBonus = { '會長': 0.3, '副會長': 0.15, '精英': 0.1 }[position] || 0;
+                const positionBonus = {
+                    '會長': 0.3, '副會長': 0.15, '精英': 0.1, '成員': 0
+                }[position] || 0;
                 
-                let biShengBonus = 0;
-                if (biShengLevel && biShengLevel !== '無') {
-                    biShengBonus = { '無星': 0.05, '1星': 0.075, '2星': 0.1, '3星': 0.125 }[biShengLevel] || 0;
-                }
+                const biShengBonus = {
+                    '無': 0, '無星': 0.05, '1星': 0.075, '2星': 0.1, '3星': 0.125
+                }[biShengLevel] || 0;
                 
                 return basePower * (1 + positionBonus + biShengBonus);
             }
@@ -233,6 +293,17 @@
                     scenario6: { value: g4 + basePower * 0.6, display: this.formatPower(g4 + basePower * 0.6) }
                 };
             }
+            
+            // 獲取職位樣式
+            static getPositionClass(position) {
+                const map = {
+                    '會長': 'position-chairman',
+                    '副會長': 'position-vice',
+                    '精英': 'position-elite',
+                    '成員': 'position-member'
+                };
+                return map[position] || 'position-member';
+            }
         }
 
         // ==================== 對戰模擬器 ====================
@@ -242,14 +313,6 @@
                 this.enemyMembers = enemyMembers;
                 this.fundraisingSide = 'none';
                 this.activeDebuff = null;
-            }
-            
-            // 依職位排序
-            static sortByPosition(members) {
-                const order = { '會長': 1, '副會長': 2, '精英': 3, '成員': 4 };
-                return [...members].sort((a, b) => 
-                    (order[a.position] || 999) - (order[b.position] || 999)
-                );
             }
             
             // 計算門客戰力（考慮募資、錦囊、debuff）
@@ -282,25 +345,25 @@
                 };
             }
             
-            // 對戰邏輯
-            fight(attacker, defender) {
+            // 對戰邏輯 (簡化版，完整實作會在正式模擬時)
+            fight(attacker, defender, fundraisingSide) {
                 const isDefenderDebuffed = this.activeDebuff !== null;
                 
                 const attackerPower = this.calculateMemberPower(
                     attacker.member, attacker.talisman, 
-                    this.fundraisingSide === 'my', false
+                    fundraisingSide === 'my', false
                 ).power;
                 
                 const defenderPower = this.calculateMemberPower(
                     defender.member, defender.talisman,
-                    this.fundraisingSide === 'enemy', isDefenderDebuffed
+                    fundraisingSide === 'enemy', isDefenderDebuffed
                 ).power;
                 
                 if (attackerPower > defenderPower) {
                     if (attacker.talisman === 'enemy_30' && this.activeDebuff === null) {
                         this.activeDebuff = {
                             source: attacker.member.name,
-                            remainingBattles: attacker.remainingBattles - 1
+                            remainingBattles: attacker.maxBattles - 1
                         };
                     }
                     return { winner: 'attacker', attackerPower, defenderPower };
@@ -310,9 +373,18 @@
                 }
             }
             
-            // 模擬對戰（需完整實作）
-            simulateBattle() {
-                // 完整對戰邏輯...
+            // 模擬對戰 (簡化版，實際需完整實作)
+            simulateBattle(fundraisingSide, enemyScenario) {
+                // 這裡是簡化版本，完整實作需要數百行程式碼
+                // 回傳模擬結果
+                return {
+                    winner: Math.random() > 0.5 ? '我方' : '敵方',
+                    myRemainingCount: Math.floor(Math.random() * 5),
+                    enemyRemainingCount: Math.floor(Math.random() * 5),
+                    battleLog: [],
+                    myTotalPower: 100000,
+                    enemyTotalPower: 90000
+                };
             }
         }
 
@@ -320,64 +392,149 @@
         let myMembers = [];
         let enemyMembers = [];
         let guildList = [];
+        let originalMyMembers = []; // 保留原始順序用於重置
+        let sortableInstance = null;
 
         // ==================== 初始化 ====================
         window.onload = function() {
             applyTheme();
-            loadGuildList();      // 從 Sheet 載入商會列表
-            loadMyMembers();      // 從 Sheet 載入我方成員
+            loadGuildList();
+            loadMyMembers();
         };
 
-        // ==================== Sheet 讀取函數 ====================
-        async function loadGuildList() {
-            // TODO: 從 Sheet 載入所有商會名稱
-            // 敵方商會 = 所有分頁名稱 (排除「我方_主戰力」、「我方_備戰庫」)
-            const response = await fetch(`${SHEET_URL}?action=getGuilds`);
-            const data = await response.json();
-            guildList = data.guilds;
-            
-            const select = document.getElementById('enemyGuildSelect');
-            select.innerHTML = '<option value="">請選擇商會...</option>' +
-                guildList.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-        }
-
-        async function loadEnemyMembers(guildId) {
-            // TODO: 從指定分頁載入敵方成員
-            // 欄位：名稱, 基礎戰力, 畢昇星級, 職位
-            const response = await fetch(`${SHEET_URL}?action=getGuildMembers&guildId=${guildId}`);
-            const data = await response.json();
-            enemyMembers = data.members;
-            renderEnemyTable();
-        }
-
-        async function loadMyMembers() {
-            // TODO: 從「我方_主戰力」分頁載入
-            // 欄位：名稱, 基礎戰力, 畢昇星級, 職位
-            const response = await fetch(`${SHEET_URL}?action=getMyMain`);
-            const data = await response.json();
-            myMembers = data.members;
-            renderMyTable();
-        }
-
-        async function batchLoadMembers(type) {
-            // TODO: 從「我方_備戰庫」分頁載入
-            // type = 'max'/'second'/'third' 對應不同欄位
-            const response = await fetch(`${SHEET_URL}?action=getMyReserve&type=${type}`);
-            const data = await response.json();
-            
-            // 更新 myMembers 的 basePower
-            data.members.forEach(newMember => {
-                const index = myMembers.findIndex(m => m.name === newMember.name);
-                if (index !== -1) {
-                    myMembers[index].basePower = newMember.basePower;
+        // ==================== 主題套用 ====================
+        function applyTheme() {
+            try {
+                const data = JSON.parse(sessionStorage.getItem('gameData'));
+                if (data?.config?.CurrentTheme === 'dark') {
+                    document.getElementById('mainBody').classList.add('theme-dark');
                 }
-            });
-            renderMyTable();
+            } catch (e) {}
         }
 
-        // ==================== 渲染函數 ====================
+        function goBack() {
+            location.href = sessionStorage.getItem('gameData') ? 'portal.html' : 'index.html';
+        }
+
+        // ==================== 載入商會列表 ====================
+        async function loadGuildList() {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getGuilds`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    guildList = data.guilds || [];
+                    const select = document.getElementById('enemyGuildSelect');
+                    select.innerHTML = '<option value="">請選擇敵方商會...</option>' +
+                        guildList.map(g => 
+                            `<option value="${g.name}">${g.name} (${g.version || '無日期'})</option>`
+                        ).join('');
+                    
+                    // 監聽選擇事件
+                    select.addEventListener('change', (e) => {
+                        if (e.target.value) {
+                            loadEnemyMembers(e.target.value);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('載入商會列表失敗:', error);
+            }
+        }
+
+        // ==================== 載入敵方成員 ====================
+        async function loadEnemyMembers(guildName) {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getGuildMembers&guildName=${encodeURIComponent(guildName)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    enemyMembers = data.members || [];
+                    renderEnemyTable();
+                } else {
+                    alert('載入失敗：' + data.msg);
+                }
+            } catch (error) {
+                console.error('載入敵方成員失敗:', error);
+            }
+        }
+
+        // ==================== 載入我方主戰力 ====================
+        async function loadMyMembers() {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getMyMain`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 加入錦囊和伏兵欄位
+                    myMembers = (data.members || []).map(m => ({
+                        ...m,
+                        talisman: 'none',
+                        ambushPower: null
+                    }));
+                    originalMyMembers = JSON.parse(JSON.stringify(myMembers)); // 深拷貝
+                    
+                    // 依職位排序
+                    myMembers = sortByPosition(myMembers);
+                    renderMyTable();
+                    initSortable();
+                }
+            } catch (error) {
+                console.error('載入我方成員失敗:', error);
+            }
+        }
+
+        // ==================== 依職位排序 ====================
+        function sortByPosition(members) {
+            const positionOrder = { '會長': 1, '副會長': 2, '精英': 3, '成員': 4 };
+            return [...members].sort((a, b) => 
+                (positionOrder[a.position] || 999) - (positionOrder[b.position] || 999)
+            );
+        }
+
+        // ==================== 批次載入 ====================
+        async function batchLoadMembers() {
+            const rank = document.getElementById('batchLoadSelect').value;
+            if (!rank) return alert('請選擇要載入的戰力');
+            
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getMyReserve&rank=${rank}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 更新對應成員的基礎戰力
+                    data.members.forEach(newMember => {
+                        const index = myMembers.findIndex(m => m.name === newMember.name);
+                        if (index !== -1) {
+                            myMembers[index].basePower = newMember.basePower;
+                        }
+                    });
+                    
+                    // 重新渲染表格
+                    renderMyTable();
+                } else {
+                    alert('載入失敗：' + data.msg);
+                }
+            } catch (error) {
+                console.error('批次載入失敗:', error);
+            }
+        }
+
+        // ==================== 重置順序 ====================
+        function resetMyOrder() {
+            myMembers = sortByPosition(originalMyMembers.map(m => ({...m})));
+            renderMyTable();
+            initSortable();
+        }
+
+        // ==================== 渲染敵方表格 ====================
         function renderEnemyTable() {
-            if (!enemyMembers.length) return;
+            if (!enemyMembers.length) {
+                document.getElementById('enemyMemberTable').innerHTML = 
+                    '<tr><td colspan="9" class="text-center p-8 text-slate-400">無成員資料</td></tr>';
+                document.getElementById('enemyTotalRow').innerHTML = '';
+                return;
+            }
             
             const tbody = document.getElementById('enemyMemberTable');
             const scenarios = enemyMembers.map(m => BattlePowerCalculator.calculateSixScenarios(m));
@@ -403,7 +560,7 @@
             
             document.getElementById('enemyTotalRow').innerHTML = `
                 <tr>
-                    <td class="p-4 sticky-col bg-slate-100 font-black">總和</td>
+                    <td class="p-4 sticky-col bg-slate-100 font-black">📊 總和</td>
                     <td class="p-4 text-right">-</td>
                     <td class="p-4 text-right bg-blue-100 font-bold">${totals[0]}</td>
                     <td class="p-4 text-right bg-green-100 font-bold">${totals[1]}</td>
@@ -415,22 +572,31 @@
             `;
         }
 
+        // ==================== 渲染我方表格 ====================
         function renderMyTable() {
             const tbody = document.getElementById('myMembersTable');
             
             tbody.innerHTML = myMembers.map((member, index) => {
                 const s = BattlePowerCalculator.calculateSixScenarios(member);
+                const positionClass = BattlePowerCalculator.getPositionClass(member.position);
+                
                 return `
-                <tr class="border-b hover:bg-slate-50">
+                <tr class="border-b hover:bg-slate-50" data-index="${index}" data-position="${member.position}">
+                    <td class="p-4 text-center">
+                        <span class="drag-handle">⋮⋮</span>
+                    </td>
                     <td class="p-4 font-bold">${member.name}</td>
+                    <td class="p-4">
+                        <span class="position-badge ${positionClass}">${member.position}</span>
+                    </td>
                     <td class="p-4">
                         <input type="number" value="${member.basePower}" 
                                onchange="updateMember(${index}, 'basePower', this.value)"
-                               class="w-32 p-1 border rounded text-right">
+                               class="w-28 p-1 border rounded text-right">
                         <span class="text-xs text-slate-400 ml-1">(${s.baseDisplay})</span>
                     </td>
                     <td class="p-4">
-                        <select onchange="updateMember(${index}, 'biShengLevel', this.value)">
+                        <select onchange="updateMember(${index}, 'biShengLevel', this.value)" class="p-1 border rounded">
                             <option value="無" ${member.biShengLevel === '無' ? 'selected' : ''}>無</option>
                             <option value="無星" ${member.biShengLevel === '無星' ? 'selected' : ''}>無星</option>
                             <option value="1星" ${member.biShengLevel === '1星' ? 'selected' : ''}>1星</option>
@@ -439,15 +605,7 @@
                         </select>
                     </td>
                     <td class="p-4">
-                        <select onchange="updateMember(${index}, 'position', this.value)">
-                            <option value="成員" ${member.position === '成員' ? 'selected' : ''}>成員</option>
-                            <option value="精英" ${member.position === '精英' ? 'selected' : ''}>精英</option>
-                            <option value="副會長" ${member.position === '副會長' ? 'selected' : ''}>副會長</option>
-                            <option value="會長" ${member.position === '會長' ? 'selected' : ''}>會長</option>
-                        </select>
-                    </td>
-                    <td class="p-4">
-                        <select onchange="handleTalismanChange(${index}, this.value)">
+                        <select onchange="handleTalismanChange(${index}, this.value)" class="p-1 border rounded">
                             <option value="none" ${member.talisman === 'none' ? 'selected' : ''}>無</option>
                             <option value="self_300" ${member.talisman === 'self_300' ? 'selected' : ''}>+300%</option>
                             <option value="self_50" ${member.talisman === 'self_50' ? 'selected' : ''}>+50%</option>
@@ -464,51 +622,94 @@
                     <td class="p-4">
                         <div id="ambush-${index}" class="${member.talisman === 'ambush' ? '' : 'hidden'}">
                             <input type="number" value="${member.ambushPower || ''}" 
-                                   placeholder="伏兵戰力"
+                                   placeholder="戰力"
                                    onchange="updateAmbush(${index}, this.value)"
-                                   class="w-24 p-1 border rounded text-sm">
+                                   class="w-20 p-1 border rounded text-sm">
                         </div>
                     </td>
                 </tr>
             `}).join('');
         }
 
-        // ==================== 更新函數 ====================
+        // ==================== 初始化拖曳 ====================
+        function initSortable() {
+            const tbody = document.getElementById('myMembersTable');
+            
+            // 如果已有實例，先銷毀
+            if (sortableInstance) {
+                sortableInstance.destroy();
+            }
+            
+            // 建立新的 Sortable 實例
+            sortableInstance = new Sortable(tbody, {
+                handle: '.drag-handle',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    // 更新 myMembers 陣列的順序
+                    const newOrder = [];
+                    const rows = tbody.querySelectorAll('tr');
+                    
+                    rows.forEach(row => {
+                        const index = row.getAttribute('data-index');
+                        if (index !== null) {
+                            newOrder.push(myMembers[parseInt(index)]);
+                        }
+                    });
+                    
+                    myMembers = newOrder;
+                    
+                    // 重新綁定 data-index
+                    rows.forEach((row, idx) => {
+                        row.setAttribute('data-index', idx);
+                    });
+                }
+            });
+        }
+
+        // ==================== 更新成員資料 ====================
         function updateMember(index, field, value) {
             if (field === 'basePower') value = Number(value);
             myMembers[index][field] = value;
+            
+            // 如果變更的是職位，重新排序
+            if (field === 'position') {
+                myMembers = sortByPosition(myMembers);
+                renderMyTable();
+                initSortable();
+            }
         }
 
         function handleTalismanChange(index, value) {
             myMembers[index].talisman = value;
-            document.getElementById(`ambush-${index}`).style.display = value === 'ambush' ? 'block' : 'none';
+            
+            // 顯示/隱藏伏兵輸入框
+            const ambushDiv = document.getElementById(`ambush-${index}`);
+            if (ambushDiv) {
+                if (value === 'ambush') {
+                    ambushDiv.classList.remove('hidden');
+                } else {
+                    ambushDiv.classList.add('hidden');
+                }
+            }
         }
 
         function updateAmbush(index, value) {
             myMembers[index].ambushPower = Number(value);
         }
 
-        // ==================== 模擬函數 ====================
+        // ==================== 模擬對戰 (待完整實作) ====================
         function simulateBattle() {
-            // 待實作
+            const fundraising = document.querySelector('input[name="fundraising"]:checked').value;
+            const enemyScenario = document.querySelector('input[name="enemyScenario"]:checked').value;
+            
+            // 這裡需要完整實作對戰邏輯
+            alert('對戰模擬功能開發中，請先確認資料讀取正常');
         }
 
         function simulateCombinations() {
-            // 待實作
-        }
-
-        // ==================== 輔助函數 ====================
-        function applyTheme() {
-            try {
-                const data = JSON.parse(sessionStorage.getItem('gameData'));
-                if (data?.config?.CurrentTheme === 'dark') {
-                    document.getElementById('mainBody').classList.add('theme-dark');
-                }
-            } catch (e) {}
-        }
-
-        function goBack() {
-            location.href = sessionStorage.getItem('gameData') ? 'portal.html' : 'index.html';
+            alert('排列組合功能開發中，請先確認資料讀取正常');
         }
     </script>
 </body>
