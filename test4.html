@@ -1,4 +1,4 @@
-<!-- test4.html - 對戰分析儀表板 (修正版) -->
+<!-- test4.html - 對戰分析儀表板 (完整框架) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -13,7 +13,7 @@
         .theme-dark table { color: #e2e8f0; }
         .theme-dark input, .theme-dark select { background-color: #0f172a !important; color: white !important; border-color: #475569 !important; }
         .sticky-col { position: sticky; left: 0; background: inherit; z-index: 10; }
-        .table-container { overflow-x: auto; max-width: 100%; }
+        .table-container { overflow-x: auto; max-width: 100%; border-radius: 1rem; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all" id="mainBody">
@@ -29,10 +29,10 @@
 
         <!-- 測試標籤 -->
         <div class="mb-6">
-            <span class="bg-amber-100 text-amber-600 text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wider">🧪 測試實驗室 - 對戰分析 v2.0</span>
+            <span class="bg-amber-100 text-amber-600 text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wider">🧪 測試實驗室 - 對戰分析 v3.0</span>
         </div>
 
-        <!-- 1. 敵方商會選擇區 -->
+        <!-- ========== 敵方商會選擇 ========== -->
         <div class="bg-white rounded-[2.5rem] shadow-lg p-8 border border-slate-100 battle-card">
             <h2 class="text-2xl font-black mb-6 flex items-center gap-3">
                 <span class="text-3xl">🏰</span> 
@@ -40,20 +40,18 @@
             </h2>
             <select id="enemyGuildSelect" class="w-full p-4 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 outline-none text-lg">
                 <option value="">請選擇商會...</option>
-                <option value="guild1" selected>天下商會 (範例資料 - 34人)</option>
-                <option value="guild2">龍騰商會 (範例資料)</option>
+                <!-- 動態從 Sheet 載入 -->
             </select>
-            <p class="text-xs text-slate-400 mt-2">※ 敵方資料由管理者維護，從 Google Sheet 讀取</p>
         </div>
 
-        <!-- 2. 敵方成員戰力分析表 (六種情況) -->
+        <!-- ========== 敵方成員戰力分析表 ========== -->
         <div class="bg-white rounded-[2.5rem] shadow-lg p-8 border border-slate-100 battle-card">
             <h2 class="text-2xl font-black mb-6 flex items-center gap-3">
                 <span class="text-3xl">📊</span>
                 <span>敵方成員戰力分析</span>
             </h2>
-            <div class="table-container rounded-2xl border border-slate-100">
-                <table class="w-full text-sm min-w-[1200px]">
+            <div class="table-container">
+                <table class="w-full text-sm min-w-[1400px]">
                     <thead class="bg-slate-50 sticky top-0">
                         <tr>
                             <th class="p-4 text-left sticky-col bg-slate-50">成員</th>
@@ -67,156 +65,172 @@
                         </tr>
                     </thead>
                     <tbody id="enemyMemberTable">
-                        <!-- 由 JavaScript 動態生成 34人資料 -->
+                        <!-- 動態載入敵方成員 -->
                     </tbody>
+                    <tfoot id="enemyTotalRow" class="bg-slate-100 font-bold">
+                        <!-- 總和列 -->
+                    </tfoot>
                 </table>
             </div>
         </div>
 
-        <!-- 3. 我方門客配置區 (從 Sheet 載入基礎資料) -->
+        <!-- ========== 我方門客配置區 ========== -->
         <div class="bg-white rounded-[2.5rem] shadow-lg p-8 border border-slate-100 battle-card">
             <h2 class="text-2xl font-black mb-6 flex items-center gap-3">
                 <span class="text-3xl">🛡️</span>
                 <span>我方門客配置</span>
             </h2>
             
-            <!-- 載入提示 -->
-            <div class="mb-6 p-4 bg-blue-50 rounded-2xl text-sm">
-                <p>📌 基礎資料已從 Sheet 載入，可手動調整職位進行模擬</p>
+            <!-- 批次載入按鈕 -->
+            <div class="mb-6 flex gap-4">
+                <select id="batchLoadSelect" class="p-3 border-2 rounded-xl">
+                    <option value="">批次載入門客資料...</option>
+                    <option value="max">載入最大門客戰力</option>
+                    <option value="second">載入第二大門客戰力</option>
+                    <option value="third">載入第三大門客戰力</option>
+                </select>
+                <button onclick="batchLoadMembers()" class="px-6 py-3 bg-indigo-100 text-indigo-600 rounded-xl font-bold">套用</button>
             </div>
             
-            <!-- 門客表格 -->
-            <div class="table-container rounded-2xl border border-slate-100 mb-6">
-                <table class="w-full text-sm min-w-[1000px]">
+            <div class="table-container">
+                <table class="w-full text-sm min-w-[1600px]">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="p-4 text-left">成員</th>
                             <th class="p-4 text-right">基礎戰力</th>
                             <th class="p-4 text-left">畢昇</th>
                             <th class="p-4 text-left">職位</th>
-                            <th class="p-4 text-center">錦囊選擇</th>
-                            <th class="p-4 text-center">操作</th>
+                            <th class="p-4 text-left">錦囊</th>
+                            <th class="p-4 text-right bg-blue-50">①基礎</th>
+                            <th class="p-4 text-right bg-green-50">②+募資</th>
+                            <th class="p-4 text-right bg-amber-50">③+300%</th>
+                            <th class="p-4 text-right bg-orange-50">④+300%+募資</th>
+                            <th class="p-4 text-right bg-purple-50">⑤+50%</th>
+                            <th class="p-4 text-right bg-pink-50">⑥+50%+募資</th>
+                            <th class="p-4 text-center">伏兵</th>
                         </tr>
                     </thead>
                     <tbody id="myMembersTable">
-                        <!-- 由 JavaScript 動態生成 -->
+                        <!-- 動態載入我方成員 -->
                     </tbody>
                 </table>
             </div>
-            
-            <div class="flex gap-4">
-                <button onclick="saveMyConfig()" class="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all">
-                    💾 儲存職位調整
-                </button>
-                <button onclick="loadMyFromSheet()" class="px-8 py-4 bg-slate-100 rounded-2xl font-bold hover:bg-slate-200 transition-all">
-                    🔄 重新載入 Sheet 資料
-                </button>
-            </div>
         </div>
 
-        <!-- 4. 對戰模擬器 -->
+        <!-- ========== 對戰模擬器 ========== -->
         <div class="bg-white rounded-[2.5rem] shadow-lg p-8 border border-slate-100 battle-card">
             <h2 class="text-2xl font-black mb-6 flex items-center gap-3">
                 <span class="text-3xl">⚔️</span>
                 <span>對戰模擬器</span>
             </h2>
             
-            <!-- 募資選擇 (全域) -->
+            <!-- 募資選擇 -->
             <div class="mb-8">
-                <label class="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl cursor-pointer">
-                    <input type="checkbox" id="globalFundraising" class="w-5 h-5"> 
-                    <span class="font-bold text-lg">全域使用募資 (+10%戰力)</span>
-                </label>
+                <label class="block font-bold mb-4 text-lg">募資加成：</label>
+                <div class="flex gap-6">
+                    <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer">
+                        <input type="radio" name="fundraising" value="none" checked class="w-5 h-5"> 無募資
+                    </label>
+                    <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer">
+                        <input type="radio" name="fundraising" value="my" class="w-5 h-5"> 我方+10%
+                    </label>
+                    <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer">
+                        <input type="radio" name="fundraising" value="enemy" class="w-5 h-5"> 敵方+10%
+                    </label>
+                </div>
             </div>
             
-            <!-- 模擬按鈕區 -->
+            <!-- 敵方錦囊情境 -->
+            <div class="mb-8">
+                <label class="block font-bold mb-4 text-lg">敵方錦囊情境：</label>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
+                        <input type="radio" name="enemyScenario" value="none" checked> 無錦囊
+                    </label>
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
+                        <input type="radio" name="enemyScenario" value="all_50"> 全體+50%
+                    </label>
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
+                        <input type="radio" name="enemyScenario" value="all_300"> 全體+300%
+                    </label>
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
+                        <input type="radio" name="enemyScenario" value="light"> 輕度使用(1/3)
+                    </label>
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
+                        <input type="radio" name="enemyScenario" value="heavy"> 重度使用(2/3)
+                    </label>
+                    <label class="flex items-center gap-2 p-3 border rounded-xl cursor-pointer">
+                        <input type="radio" name="enemyScenario" value="balanced"> 均衡隨機(1/4)
+                    </label>
+                </div>
+            </div>
+            
+            <!-- 模擬按鈕 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 <button onclick="simulateBattle()" class="py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all shadow-lg">
                     ⚔️ 一般對戰模擬
                 </button>
                 <button onclick="simulateCombinations()" class="py-5 bg-amber-600 text-white rounded-2xl font-black text-lg hover:bg-amber-700 transition-all shadow-lg">
-                    🔄 排列組合模擬 (成員順序)
+                    🔄 排列組合模擬
                 </button>
             </div>
             
             <!-- 模擬結果 -->
-            <div id="simulateResults" class="mt-6 space-y-4">
-                <!-- 動態顯示結果 -->
-            </div>
-            
-            <!-- 排列組合結果 -->
-            <div id="combinationsResults" class="mt-6">
-                <!-- 動態顯示排列組合結果 -->
-            </div>
-        </div>
-
-        <!-- 底部測試區提示 -->
-        <div class="mt-6 text-center">
-            <p class="text-[10px] text-slate-300 uppercase tracking-widest">
-                Test Version 2.0.0 | 我方基礎資料從 Sheet 讀取，職位調整儲存在瀏覽器
-            </p>
+            <div id="simulateResults" class="mt-6 space-y-4"></div>
+            <div id="combinationsResults" class="mt-6"></div>
         </div>
     </div>
 
     <script>
         // ==================== 戰力計算核心 ====================
         class BattlePowerCalculator {
-            
-            // 計算職務&畢昇加成後的基礎戰力 (G4)
+            // 計算職務&畢昇加成 (G4)
             static calculateBasePower(basePower, position, biShengLevel) {
-                let positionBonus = 0;
-                switch(position) {
-                    case '會長': positionBonus = 0.3; break;
-                    case '副會長': positionBonus = 0.15; break;
-                    case '精英': positionBonus = 0.1; break;
-                    default: positionBonus = 0;
-                }
+                let positionBonus = { '會長': 0.3, '副會長': 0.15, '精英': 0.1 }[position] || 0;
                 
                 let biShengBonus = 0;
                 if (biShengLevel && biShengLevel !== '無') {
-                    switch(biShengLevel) {
-                        case '無星': biShengBonus = 0.05; break;
-                        case '1星': biShengBonus = 0.075; break;
-                        case '2星': biShengBonus = 0.1; break;
-                        case '3星': biShengBonus = 0.125; break;
-                    }
+                    biShengBonus = { '無星': 0.05, '1星': 0.075, '2星': 0.1, '3星': 0.125 }[biShengLevel] || 0;
                 }
                 
                 return basePower * (1 + positionBonus + biShengBonus);
             }
             
-            // 單位轉換顯示
+            // 個別戰力轉換顯示
             static formatPower(power) {
                 if (power >= 1000000000) {
-                    const value = Math.floor(power / 100000000 * 100) / 100;
-                    return value.toFixed(2) + 'e';
+                    return Math.floor(power / 100000000 * 100) / 100 + 'e';
                 } else if (power >= 100000000) {
-                    const value = Math.floor(power / 100000000 * 1000) / 1000;
-                    return value.toFixed(3) + 'e';
+                    return Math.floor(power / 100000000 * 1000) / 1000 + 'e';
                 } else {
-                    const value = Math.floor(power / 10000 * 10) / 10;
-                    return value.toFixed(1) + '萬';
+                    return Math.floor(power / 10000 * 10) / 10 + '萬';
+                }
+            }
+            
+            // 總和戰力轉換顯示
+            static formatTotalPower(power) {
+                if (power >= 100000000) {
+                    return Math.floor(power / 100000000) + 'e';
+                } else {
+                    return Math.floor(power / 10000) + '萬';
                 }
             }
             
             // 計算門客六種戰力
             static calculateSixScenarios(member) {
                 const basePower = Number(member.basePower);
-                const position = member.position;
-                const biShengLevel = member.biShengLevel || '無';
-                
-                const g4 = this.calculateBasePower(basePower, position, biShengLevel);
+                const g4 = this.calculateBasePower(basePower, member.position, member.biShengLevel);
                 
                 return {
                     name: member.name,
                     basePower: basePower,
                     baseDisplay: this.formatPower(basePower),
                     scenario1: { value: g4, display: this.formatPower(g4) },
-                    scenario2: { value: g4 + (basePower * 0.1), display: this.formatPower(g4 + (basePower * 0.1)) },
-                    scenario3: { value: g4 + (basePower * 3), display: this.formatPower(g4 + (basePower * 3)) },
-                    scenario4: { value: g4 + (basePower * 3.1), display: this.formatPower(g4 + (basePower * 3.1)) },
-                    scenario5: { value: g4 + (basePower * 0.5), display: this.formatPower(g4 + (basePower * 0.5)) },
-                    scenario6: { value: g4 + (basePower * 0.6), display: this.formatPower(g4 + (basePower * 0.6)) }
+                    scenario2: { value: g4 + basePower * 0.1, display: this.formatPower(g4 + basePower * 0.1) },
+                    scenario3: { value: g4 + basePower * 3, display: this.formatPower(g4 + basePower * 3) },
+                    scenario4: { value: g4 + basePower * 3.1, display: this.formatPower(g4 + basePower * 3.1) },
+                    scenario5: { value: g4 + basePower * 0.5, display: this.formatPower(g4 + basePower * 0.5) },
+                    scenario6: { value: g4 + basePower * 0.6, display: this.formatPower(g4 + basePower * 0.6) }
                 };
             }
         }
@@ -226,60 +240,38 @@
             constructor(myMembers, enemyMembers) {
                 this.myMembers = myMembers;
                 this.enemyMembers = enemyMembers;
+                this.fundraisingSide = 'none';
+                this.activeDebuff = null;
             }
             
-            // 依職務排序門客
+            // 依職位排序
             static sortByPosition(members) {
-                const positionOrder = { '會長': 1, '副會長': 2, '精英': 3, '成員': 4 };
+                const order = { '會長': 1, '副會長': 2, '精英': 3, '成員': 4 };
                 return [...members].sort((a, b) => 
-                    (positionOrder[a.position] || 999) - (positionOrder[b.position] || 999)
+                    (order[a.position] || 999) - (order[b.position] || 999)
                 );
             }
             
-            // 計算門客戰力 (依個人錦囊)
-            calculateMemberPower(member, globalFundraising) {
+            // 計算門客戰力（考慮募資、錦囊、debuff）
+            calculateMemberPower(member, talisman = 'none', fundraising = false, isDebuffed = false) {
                 const basePower = Number(member.basePower);
-                const position = member.position;
-                const biShengLevel = member.biShengLevel || '無';
-                const talisman = member.talisman || 'none';
+                const g4 = BattlePowerCalculator.calculateBasePower(basePower, member.position, member.biShengLevel);
                 
-                let positionBonus = 0;
-                switch(position) {
-                    case '會長': positionBonus = 0.3; break;
-                    case '副會長': positionBonus = 0.15; break;
-                    case '精英': positionBonus = 0.1; break;
-                }
-                
-                let biShengBonus = 0;
-                if (biShengLevel !== '無') {
-                    switch(biShengLevel) {
-                        case '無星': biShengBonus = 0.05; break;
-                        case '1星': biShengBonus = 0.075; break;
-                        case '2星': biShengBonus = 0.1; break;
-                        case '3星': biShengBonus = 0.125; break;
-                    }
-                }
-                
-                let g4 = basePower * (1 + positionBonus + biShengBonus);
                 let finalPower = g4;
                 
-                // 個人錦囊
-                if (talisman === 'self_300') {
-                    finalPower = g4 + (basePower * 3);
-                } else if (talisman === 'self_50') {
-                    finalPower = g4 + (basePower * 0.5);
+                // 自身錦囊
+                if (talisman === 'self_300') finalPower = g4 + basePower * 3;
+                else if (talisman === 'self_50') finalPower = g4 + basePower * 0.5;
+                
+                // 募資
+                if (fundraising) {
+                    if (talisman === 'self_300') finalPower = g4 + basePower * 3.1;
+                    else if (talisman === 'self_50') finalPower = g4 + basePower * 0.6;
+                    else finalPower = g4 + basePower * 0.1;
                 }
                 
-                // 全域募資
-                if (globalFundraising) {
-                    if (talisman === 'self_300') {
-                        finalPower = g4 + (basePower * 3.1);
-                    } else if (talisman === 'self_50') {
-                        finalPower = g4 + (basePower * 0.6);
-                    } else {
-                        finalPower = g4 + (basePower * 0.1);
-                    }
-                }
+                // debuff
+                if (isDebuffed) finalPower *= 0.7;
                 
                 return {
                     power: Math.round(finalPower),
@@ -290,290 +282,155 @@
                 };
             }
             
-            // 對戰
-            static fight(attacker, defender) {
-                if (attacker.power > defender.power) {
-                    return {
-                        winner: 'attacker',
-                        attackerRemainingBattles: attacker.maxBattles - 1,
-                        defenderRemainingBattles: 0
-                    };
+            // 對戰邏輯
+            fight(attacker, defender) {
+                const isDefenderDebuffed = this.activeDebuff !== null;
+                
+                const attackerPower = this.calculateMemberPower(
+                    attacker.member, attacker.talisman, 
+                    this.fundraisingSide === 'my', false
+                ).power;
+                
+                const defenderPower = this.calculateMemberPower(
+                    defender.member, defender.talisman,
+                    this.fundraisingSide === 'enemy', isDefenderDebuffed
+                ).power;
+                
+                if (attackerPower > defenderPower) {
+                    if (attacker.talisman === 'enemy_30' && this.activeDebuff === null) {
+                        this.activeDebuff = {
+                            source: attacker.member.name,
+                            remainingBattles: attacker.remainingBattles - 1
+                        };
+                    }
+                    return { winner: 'attacker', attackerPower, defenderPower };
                 } else {
-                    return {
-                        winner: 'defender',
-                        attackerRemainingBattles: 0,
-                        defenderRemainingBattles: defender.maxBattles - 1
-                    };
+                    if (attacker.talisman === 'enemy_30') this.activeDebuff = null;
+                    return { winner: 'defender', attackerPower, defenderPower };
                 }
             }
             
-            // 模擬對戰
-            simulateBattle(globalFundraising) {
-                let mySorted = BattleSimulator.sortByPosition(this.myMembers);
-                let enemySorted = BattleSimulator.sortByPosition(this.enemyMembers);
-                
-                let myFighters = mySorted.map(m => 
-                    this.calculateMemberPower(m, globalFundraising)
-                );
-                
-                let enemyFighters = enemySorted.map(m => 
-                    this.calculateMemberPower({...m, talisman: 'none'}, false)
-                );
-                
-                // 處理敵方-30%錦囊
-                myFighters.forEach(f => {
-                    if (f.talisman === 'enemy_30') {
-                        enemyFighters = enemyFighters.map(ef => ({
-                            ...ef,
-                            power: Math.round(ef.power * 0.7),
-                            display: BattlePowerCalculator.formatPower(ef.power * 0.7)
-                        }));
-                    }
-                });
-                
-                myFighters.forEach(f => f.remainingBattles = f.maxBattles);
-                enemyFighters.forEach(f => f.remainingBattles = f.maxBattles);
-                
-                const battleLog = [];
-                let myIndex = 0, enemyIndex = 0;
-                let round = 1;
-                
-                while (myIndex < myFighters.length && enemyIndex < enemyFighters.length) {
-                    const currentMy = myFighters[myIndex];
-                    const currentEnemy = enemyFighters[enemyIndex];
-                    
-                    if (currentMy.remainingBattles === 0) { myIndex++; continue; }
-                    if (currentEnemy.remainingBattles === 0) { enemyIndex++; continue; }
-                    
-                    const result = BattleSimulator.fight(currentMy, currentEnemy);
-                    
-                    battleLog.push({
-                        round: round++,
-                        myFighter: { name: currentMy.member.name, power: currentMy.power, position: currentMy.member.position },
-                        enemyFighter: { name: currentEnemy.member.name, power: currentEnemy.power, position: currentEnemy.member.position },
-                        winner: result.winner
-                    });
-                    
-                    if (result.winner === 'attacker') {
-                        currentMy.remainingBattles = result.attackerRemainingBattles;
-                        currentEnemy.remainingBattles = 0;
-                        enemyIndex++;
-                    } else {
-                        currentEnemy.remainingBattles = result.defenderRemainingBattles;
-                        currentMy.remainingBattles = 0;
-                        myIndex++;
-                    }
-                }
-                
-                const myRemaining = myFighters.slice(myIndex).filter(f => f.remainingBattles > 0).length;
-                const enemyRemaining = enemyFighters.slice(enemyIndex).filter(f => f.remainingBattles > 0).length;
-                
-                return {
-                    winner: myRemaining > enemyRemaining ? '我方' : '敵方',
-                    myRemainingCount: myRemaining,
-                    enemyRemainingCount: enemyRemaining,
-                    battleLog: battleLog,
-                    myTotalPower: myFighters.reduce((sum, f) => sum + f.power, 0),
-                    enemyTotalPower: enemyFighters.reduce((sum, f) => sum + f.power, 0)
-                };
-            }
-            
-            // 排列組合模擬 (成員順序)
-            simulateCombinations(globalFundraising) {
-                const myPositioned = this.myMembers.filter(m => 
-                    m.position === '會長' || m.position === '副會長' || m.position === '精英'
-                );
-                const myNormal = this.myMembers.filter(m => m.position === '成員');
-                
-                const permutations = this.generatePermutations(myNormal, Math.min(6, myNormal.length));
-                
-                const results = permutations.map(perm => {
-                    const testOrder = [...myPositioned, ...perm];
-                    const originalMembers = this.myMembers;
-                    this.myMembers = testOrder;
-                    const result = this.simulateBattle(globalFundraising);
-                    this.myMembers = originalMembers;
-                    
-                    return {
-                        order: testOrder.map(m => `${m.name}`).join(' → '),
-                        result: result
-                    };
-                });
-                
-                const bestResult = results.reduce((best, current) => {
-                    if (current.result.winner === '我方' && best.result.winner !== '我方') return current;
-                    if (current.result.winner === '我方' && best.result.winner === '我方') {
-                        return current.result.myRemainingCount > best.result.myRemainingCount ? current : best;
-                    }
-                    return best;
-                }, results[0]);
-                
-                return { allResults: results, bestResult: bestResult };
-            }
-            
-            generatePermutations(array, limit) {
-                if (array.length <= 1) return [array];
-                const result = [];
-                const used = new Array(array.length).fill(false);
-                
-                function backtrack(current) {
-                    if (current.length === array.length) {
-                        result.push([...current]);
-                        return;
-                    }
-                    for (let i = 0; i < array.length; i++) {
-                        if (used[i]) continue;
-                        used[i] = true;
-                        current.push(array[i]);
-                        backtrack(current);
-                        current.pop();
-                        used[i] = false;
-                        if (result.length >= limit) return;
-                    }
-                }
-                
-                backtrack([]);
-                return result;
+            // 模擬對戰（需完整實作）
+            simulateBattle() {
+                // 完整對戰邏輯...
             }
         }
 
         // ==================== 全域變數 ====================
         let myMembers = [];
         let enemyMembers = [];
+        let guildList = [];
 
         // ==================== 初始化 ====================
         window.onload = function() {
-            // 檢查登入狀態
-            try {
-                const data = JSON.parse(sessionStorage.getItem('gameData'));
-                if (data?.config?.CurrentTheme) {
-                    applyTheme(data.config.CurrentTheme);
-                }
-            } catch (e) {
-                console.log('無法讀取主題設定');
-            }
-            
-            // 載入範例敵方資料 (34人)
-            loadExampleEnemy();
-            
-            // 從 Sheet 載入我方資料 (模擬)
-            loadMyFromSheet();
+            applyTheme();
+            loadGuildList();      // 從 Sheet 載入商會列表
+            loadMyMembers();      // 從 Sheet 載入我方成員
         };
 
-        // ==================== 主題套用 ====================
-        function applyTheme(theme) {
-            const body = document.getElementById('mainBody');
-            body.classList.remove('theme-dark');
-            body.style.backgroundColor = "";
-            if (theme === 'dark') {
-                body.classList.add('theme-dark');
-            } else if (theme === 'christmas') {
-                body.style.backgroundColor = "#fff1f2";
-            } else {
-                body.style.backgroundColor = "#f8fafc";
-            }
-        }
-
-        // ==================== 返回主選單 ====================
-        function goBack() {
-            if (!sessionStorage.getItem('gameData')) {
-                location.href = 'index.html';
-            } else {
-                location.href = 'portal.html';
-            }
-        }
-
-        // ==================== 敵方資料 (34人範例) ====================
-        function loadExampleEnemy() {
-            enemyMembers = [];
-            // 生成34個敵方成員
-            for (let i = 1; i <= 34; i++) {
-                let position = '成員';
-                if (i === 1) position = '會長';
-                else if (i <= 3) position = '副會長';
-                else if (i <= 8) position = '精英';
-                
-                let biSheng = '無';
-                if (i % 5 === 0) biSheng = '3星';
-                else if (i % 4 === 0) biSheng = '2星';
-                else if (i % 3 === 0) biSheng = '1星';
-                else if (i % 2 === 0) biSheng = '無星';
-                
-                enemyMembers.push({
-                    name: `敵方成員${i}`,
-                    basePower: 8000 + Math.floor(Math.random() * 7000),
-                    biShengLevel: biSheng,
-                    position: position
-                });
-            }
+        // ==================== Sheet 讀取函數 ====================
+        async function loadGuildList() {
+            // TODO: 從 Sheet 載入所有商會名稱
+            // 敵方商會 = 所有分頁名稱 (排除「我方_主戰力」、「我方_備戰庫」)
+            const response = await fetch(`${SHEET_URL}?action=getGuilds`);
+            const data = await response.json();
+            guildList = data.guilds;
             
+            const select = document.getElementById('enemyGuildSelect');
+            select.innerHTML = '<option value="">請選擇商會...</option>' +
+                guildList.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+        }
+
+        async function loadEnemyMembers(guildId) {
+            // TODO: 從指定分頁載入敵方成員
+            // 欄位：名稱, 基礎戰力, 畢昇星級, 職位
+            const response = await fetch(`${SHEET_URL}?action=getGuildMembers&guildId=${guildId}`);
+            const data = await response.json();
+            enemyMembers = data.members;
             renderEnemyTable();
         }
 
-        function renderEnemyTable() {
-            const tbody = document.getElementById('enemyMemberTable');
-            
-            tbody.innerHTML = enemyMembers.map(member => {
-                const scenarios = BattlePowerCalculator.calculateSixScenarios(member);
-                
-                return `
-                    <tr class="border-b border-slate-100 hover:bg-slate-50">
-                        <td class="p-4 sticky-col bg-white font-bold">${member.name}</td>
-                        <td class="p-4 text-right">${scenarios.baseDisplay}</td>
-                        <td class="p-4 text-right bg-blue-50">${scenarios.scenario1.display}</td>
-                        <td class="p-4 text-right bg-green-50">${scenarios.scenario2.display}</td>
-                        <td class="p-4 text-right bg-amber-50">${scenarios.scenario3.display}</td>
-                        <td class="p-4 text-right bg-orange-50">${scenarios.scenario4.display}</td>
-                        <td class="p-4 text-right bg-purple-50">${scenarios.scenario5.display}</td>
-                        <td class="p-4 text-right bg-pink-50">${scenarios.scenario6.display}</td>
-                    </tr>
-                `;
-            }).join('');
+        async function loadMyMembers() {
+            // TODO: 從「我方_主戰力」分頁載入
+            // 欄位：名稱, 基礎戰力, 畢昇星級, 職位
+            const response = await fetch(`${SHEET_URL}?action=getMyMain`);
+            const data = await response.json();
+            myMembers = data.members;
+            renderMyTable();
         }
 
-        // ==================== 我方資料 (從 Sheet 載入) ====================
-        function loadMyFromSheet() {
-            // 模擬從 Sheet 讀取的資料
-            myMembers = [];
+        async function batchLoadMembers(type) {
+            // TODO: 從「我方_備戰庫」分頁載入
+            // type = 'max'/'second'/'third' 對應不同欄位
+            const response = await fetch(`${SHEET_URL}?action=getMyReserve&type=${type}`);
+            const data = await response.json();
             
-            // 實際應用時，這裡會改為 fetch 從你的對戰 Sheet 讀取
-            // const response = await fetch(`${BATTLE_SHEET_URL}?action=getMyGuild`);
-            // const data = await response.json();
-            
-            // 範例資料
-            const memberNames = ['張飛', '關羽', '趙雲', '馬超', '黃忠', '劉備', '諸葛亮', '龐統', '魏延', '周瑜'];
-            for (let i = 1; i <= 10; i++) {
-                let position = '成員';
-                if (i === 1) position = '會長';
-                else if (i <= 3) position = '副會長';
-                else if (i <= 6) position = '精英';
-                
-                let biSheng = '無';
-                if (i % 4 === 0) biSheng = '3星';
-                else if (i % 3 === 0) biSheng = '2星';
-                else if (i % 2 === 0) biSheng = '1星';
-                
-                myMembers.push({
-                    name: memberNames[i-1] || `我方成員${i}`,
-                    basePower: 9000 + Math.floor(Math.random() * 8000),
-                    biShengLevel: biSheng,
-                    position: position,
-                    talisman: 'none'  // 預設不使用錦囊
-                });
-            }
-            
+            // 更新 myMembers 的 basePower
+            data.members.forEach(newMember => {
+                const index = myMembers.findIndex(m => m.name === newMember.name);
+                if (index !== -1) {
+                    myMembers[index].basePower = newMember.basePower;
+                }
+            });
             renderMyTable();
+        }
+
+        // ==================== 渲染函數 ====================
+        function renderEnemyTable() {
+            if (!enemyMembers.length) return;
+            
+            const tbody = document.getElementById('enemyMemberTable');
+            const scenarios = enemyMembers.map(m => BattlePowerCalculator.calculateSixScenarios(m));
+            
+            tbody.innerHTML = scenarios.map(s => `
+                <tr class="border-b hover:bg-slate-50">
+                    <td class="p-4 sticky-col bg-white font-bold">${s.name}</td>
+                    <td class="p-4 text-right">${s.baseDisplay}</td>
+                    <td class="p-4 text-right bg-blue-50">${s.scenario1.display}</td>
+                    <td class="p-4 text-right bg-green-50">${s.scenario2.display}</td>
+                    <td class="p-4 text-right bg-amber-50">${s.scenario3.display}</td>
+                    <td class="p-4 text-right bg-orange-50">${s.scenario4.display}</td>
+                    <td class="p-4 text-right bg-purple-50">${s.scenario5.display}</td>
+                    <td class="p-4 text-right bg-pink-50">${s.scenario6.display}</td>
+                </tr>
+            `).join('');
+            
+            // 計算總和
+            const totals = [1,2,3,4,5,6].map(i => {
+                const sum = scenarios.reduce((acc, s) => acc + s[`scenario${i}`].value, 0);
+                return BattlePowerCalculator.formatTotalPower(sum);
+            });
+            
+            document.getElementById('enemyTotalRow').innerHTML = `
+                <tr>
+                    <td class="p-4 sticky-col bg-slate-100 font-black">總和</td>
+                    <td class="p-4 text-right">-</td>
+                    <td class="p-4 text-right bg-blue-100 font-bold">${totals[0]}</td>
+                    <td class="p-4 text-right bg-green-100 font-bold">${totals[1]}</td>
+                    <td class="p-4 text-right bg-amber-100 font-bold">${totals[2]}</td>
+                    <td class="p-4 text-right bg-orange-100 font-bold">${totals[3]}</td>
+                    <td class="p-4 text-right bg-purple-100 font-bold">${totals[4]}</td>
+                    <td class="p-4 text-right bg-pink-100 font-bold">${totals[5]}</td>
+                </tr>
+            `;
         }
 
         function renderMyTable() {
             const tbody = document.getElementById('myMembersTable');
             
-            tbody.innerHTML = myMembers.map((member, index) => `
-                <tr class="border-b border-slate-100 hover:bg-slate-50">
+            tbody.innerHTML = myMembers.map((member, index) => {
+                const s = BattlePowerCalculator.calculateSixScenarios(member);
+                return `
+                <tr class="border-b hover:bg-slate-50">
                     <td class="p-4 font-bold">${member.name}</td>
-                    <td class="p-4 text-right">${member.basePower.toLocaleString()}</td>
                     <td class="p-4">
-                        <select class="p-2 border rounded-xl text-sm" onchange="updateMember(${index}, 'biSheng', this.value)">
+                        <input type="number" value="${member.basePower}" 
+                               onchange="updateMember(${index}, 'basePower', this.value)"
+                               class="w-32 p-1 border rounded text-right">
+                        <span class="text-xs text-slate-400 ml-1">(${s.baseDisplay})</span>
+                    </td>
+                    <td class="p-4">
+                        <select onchange="updateMember(${index}, 'biShengLevel', this.value)">
                             <option value="無" ${member.biShengLevel === '無' ? 'selected' : ''}>無</option>
                             <option value="無星" ${member.biShengLevel === '無星' ? 'selected' : ''}>無星</option>
                             <option value="1星" ${member.biShengLevel === '1星' ? 'selected' : ''}>1星</option>
@@ -582,7 +439,7 @@
                         </select>
                     </td>
                     <td class="p-4">
-                        <select class="p-2 border rounded-xl text-sm" onchange="updateMember(${index}, 'position', this.value)">
+                        <select onchange="updateMember(${index}, 'position', this.value)">
                             <option value="成員" ${member.position === '成員' ? 'selected' : ''}>成員</option>
                             <option value="精英" ${member.position === '精英' ? 'selected' : ''}>精英</option>
                             <option value="副會長" ${member.position === '副會長' ? 'selected' : ''}>副會長</option>
@@ -590,157 +447,68 @@
                         </select>
                     </td>
                     <td class="p-4">
-                        <select class="p-2 border rounded-xl text-sm" onchange="updateMember(${index}, 'talisman', this.value)">
-                            <option value="none" ${member.talisman === 'none' ? 'selected' : ''}>不使用</option>
-                            <option value="self_300" ${member.talisman === 'self_300' ? 'selected' : ''}>自身+300%</option>
-                            <option value="self_50" ${member.talisman === 'self_50' ? 'selected' : ''}>自身+50%</option>
-                            <option value="enemy_30" ${member.talisman === 'enemy_30' ? 'selected' : ''}>敵方-30%</option>
+                        <select onchange="handleTalismanChange(${index}, this.value)">
+                            <option value="none" ${member.talisman === 'none' ? 'selected' : ''}>無</option>
+                            <option value="self_300" ${member.talisman === 'self_300' ? 'selected' : ''}>+300%</option>
+                            <option value="self_50" ${member.talisman === 'self_50' ? 'selected' : ''}>+50%</option>
+                            <option value="enemy_30" ${member.talisman === 'enemy_30' ? 'selected' : ''}>-30%</option>
+                            <option value="ambush" ${member.talisman === 'ambush' ? 'selected' : ''}>伏兵</option>
                         </select>
                     </td>
-                    <td class="p-4 text-center">
-                        <button onclick="calculateMemberPreview(${index})" class="text-xs text-indigo-600 hover:text-indigo-800">預覽戰力</button>
+                    <td class="p-4 text-right bg-blue-50">${s.scenario1.display}</td>
+                    <td class="p-4 text-right bg-green-50">${s.scenario2.display}</td>
+                    <td class="p-4 text-right bg-amber-50">${s.scenario3.display}</td>
+                    <td class="p-4 text-right bg-orange-50">${s.scenario4.display}</td>
+                    <td class="p-4 text-right bg-purple-50">${s.scenario5.display}</td>
+                    <td class="p-4 text-right bg-pink-50">${s.scenario6.display}</td>
+                    <td class="p-4">
+                        <div id="ambush-${index}" class="${member.talisman === 'ambush' ? '' : 'hidden'}">
+                            <input type="number" value="${member.ambushPower || ''}" 
+                                   placeholder="伏兵戰力"
+                                   onchange="updateAmbush(${index}, this.value)"
+                                   class="w-24 p-1 border rounded text-sm">
+                        </div>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
+        // ==================== 更新函數 ====================
         function updateMember(index, field, value) {
+            if (field === 'basePower') value = Number(value);
             myMembers[index][field] = value;
         }
 
-        function calculateMemberPreview(index) {
-            const member = myMembers[index];
-            const scenarios = BattlePowerCalculator.calculateSixScenarios(member);
-            
-            alert(`
-                ${member.name} 戰力預覽：
-                基礎職務+畢昇：${scenarios.scenario1.display}
-                基礎+募資10%：${scenarios.scenario2.display}
-                錦囊300%：${scenarios.scenario3.display}
-                錦囊300%+募資：${scenarios.scenario4.display}
-                錦囊50%：${scenarios.scenario5.display}
-                錦囊50%+募資：${scenarios.scenario6.display}
-            `);
+        function handleTalismanChange(index, value) {
+            myMembers[index].talisman = value;
+            document.getElementById(`ambush-${index}`).style.display = value === 'ambush' ? 'block' : 'none';
         }
 
-        function saveMyConfig() {
-            localStorage.setItem('myBattlePositions', JSON.stringify(
-                myMembers.map(m => ({ name: m.name, position: m.position }))
-            ));
-            alert('職位調整已儲存！');
+        function updateAmbush(index, value) {
+            myMembers[index].ambushPower = Number(value);
         }
 
-        // ==================== 對戰模擬 ====================
+        // ==================== 模擬函數 ====================
         function simulateBattle() {
-            const globalFundraising = document.getElementById('globalFundraising').checked;
-            
-            const simulator = new BattleSimulator(myMembers, enemyMembers);
-            const results = simulator.simulateBattle(globalFundraising);
-            
-            displayBattleResults(results, globalFundraising);
+            // 待實作
         }
 
         function simulateCombinations() {
-            const globalFundraising = document.getElementById('globalFundraising').checked;
-            
-            const simulator = new BattleSimulator(myMembers, enemyMembers);
-            const results = simulator.simulateCombinations(globalFundraising);
-            
-            displayCombinationsResults(results);
+            // 待實作
         }
 
-        function displayBattleResults(results, globalFundraising) {
-            let html = `
-                <div class="bg-indigo-50 p-8 rounded-2xl">
-                    <h3 class="font-black text-xl mb-6 flex items-center gap-2">
-                        <span>⚔️</span> 對戰結果 ${globalFundraising ? '(含募資)' : ''}
-                    </h3>
-                    
-                    <div class="grid grid-cols-2 gap-6 mb-6">
-                        <div class="bg-white p-6 rounded-2xl">
-                            <p class="text-xs text-slate-400 mb-1">我方總戰力</p>
-                            <p class="text-3xl font-black text-blue-600">${BattlePowerCalculator.formatPower(results.myTotalPower)}</p>
-                        </div>
-                        <div class="bg-white p-6 rounded-2xl">
-                            <p class="text-xs text-slate-400 mb-1">敵方總戰力</p>
-                            <p class="text-3xl font-black text-red-600">${BattlePowerCalculator.formatPower(results.enemyTotalPower)}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-6 p-6 bg-white rounded-2xl">
-                        <p class="text-lg font-bold mb-2">
-                            最終結果：<span class="${results.winner === '我方' ? 'text-blue-600' : 'text-red-600'} text-2xl">${results.winner} 勝利</span>
-                        </p>
-                        <p class="text-sm text-slate-500">
-                            我方剩餘 ${results.myRemainingCount} 人 | 敵方剩餘 ${results.enemyRemainingCount} 人
-                        </p>
-                    </div>
-                    
-                    <details class="mt-4">
-                        <summary class="cursor-pointer text-sm font-bold text-indigo-600">查看詳細對戰過程</summary>
-                        <div class="mt-4 space-y-2 max-h-96 overflow-y-auto">
-                            ${results.battleLog.map(log => `
-                                <div class="p-4 bg-white rounded-xl text-sm">
-                                    <div class="flex justify-between items-center">
-                                        <span class="font-bold text-blue-600">${log.myFighter.name}</span>
-                                        <span class="text-slate-400">第 ${log.round} 回合</span>
-                                        <span class="font-bold text-red-600">${log.enemyFighter.name}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center mt-2 text-xs">
-                                        <span>${BattlePowerCalculator.formatPower(log.myFighter.power)}</span>
-                                        <span class="text-slate-300">vs</span>
-                                        <span>${BattlePowerCalculator.formatPower(log.enemyFighter.power)}</span>
-                                    </div>
-                                    <p class="text-xs mt-2 ${log.winner === 'attacker' ? 'text-blue-600' : 'text-red-600'}">
-                                        ${log.winner === 'attacker' ? '我方獲勝' : '敵方獲勝'}
-                                    </p>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </details>
-                </div>
-            `;
-            
-            document.getElementById('simulateResults').innerHTML = html;
-            document.getElementById('combinationsResults').innerHTML = '';
+        // ==================== 輔助函數 ====================
+        function applyTheme() {
+            try {
+                const data = JSON.parse(sessionStorage.getItem('gameData'));
+                if (data?.config?.CurrentTheme === 'dark') {
+                    document.getElementById('mainBody').classList.add('theme-dark');
+                }
+            } catch (e) {}
         }
 
-        function displayCombinationsResults(comboResults) {
-            let html = `
-                <div class="mt-6 p-8 bg-amber-50 rounded-2xl">
-                    <h4 class="font-black text-xl mb-6 flex items-center gap-2">
-                        <span>🔄</span> 排列組合最佳結果
-                    </h4>
-                    
-                    <div class="mb-6 p-6 bg-white rounded-2xl">
-                        <p class="font-bold mb-3">最佳順序：</p>
-                        <p class="text-sm p-4 bg-slate-50 rounded-xl text-slate-600">${comboResults.bestResult.order}</p>
-                        <p class="mt-4 text-lg">
-                            結果：<span class="text-blue-600 font-black text-2xl">${comboResults.bestResult.result.winner}</span>
-                        </p>
-                        <p class="text-sm text-slate-500 mt-2">
-                            我方剩餘 ${comboResults.bestResult.result.myRemainingCount} 人
-                        </p>
-                    </div>
-                    
-                    <details class="mt-4">
-                        <summary class="cursor-pointer text-sm font-bold text-amber-600">查看所有排列組合</summary>
-                        <div class="mt-4 space-y-2 max-h-60 overflow-y-auto">
-                            ${comboResults.allResults.map((r, i) => `
-                                <div class="p-3 bg-white rounded-xl text-xs">
-                                    <p class="font-bold mb-1">組合 ${i+1}</p>
-                                    <p class="truncate text-slate-500">${r.order}</p>
-                                    <p class="mt-2 ${r.result.winner === '我方' ? 'text-blue-600' : 'text-red-600'}">
-                                        結果：${r.result.winner} (我方剩餘: ${r.result.myRemainingCount})
-                                    </p>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </details>
-                </div>
-            `;
-            
-            document.getElementById('combinationsResults').innerHTML = html;
+        function goBack() {
+            location.href = sessionStorage.getItem('gameData') ? 'portal.html' : 'index.html';
         }
     </script>
 </body>
