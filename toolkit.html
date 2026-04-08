@@ -12,8 +12,9 @@
         .theme-dark .back-btn { background-color: #1e293b !important; border-color: #475569 !important; color: #cbd5e6 !important; }
         .theme-dark .back-btn:hover { background-color: #334155 !important; }
         .theme-dark .badge-dev { background-color: #334155 !important; color: #a5b4fc !important; }
-        .theme-dark .feature-list li { color: #94a3b8 !important; }
-        .theme-dark .feature-icon-bg { background-color: #334155 !important; }
+        .theme-dark .feature-list { background-color: #334155 !important; }
+        .theme-dark .feature-list span:not(.feature-icon-bg) { color: #e2e8f0 !important; }
+        .theme-dark .feature-icon-bg { background-color: #475569 !important; }
         .pulse-ring {
             animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
@@ -30,103 +31,116 @@
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
+        /* 讓列表項目 hover 效果更明顯 */
+        .feature-list {
+            transition: all 0.2s ease;
+        }
+        .feature-list:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all" id="mainBody">
     <div class="max-w-4xl mx-auto">
         
-        <!-- 返回主選單按鈕 (與 battle.html 風格一致) -->
+        <!-- 返回主選單按鈕 -->
         <div class="mb-6">
-            <button onclick="goBack()" class="back-btn flex items-center gap-2 text-slate-400 hover:text-indigo-500 transition-colors group">
-                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span>
-                <span class="font-bold">返回主選單</span>
+            <button onclick="goBack()" class="back-btn flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors group font-medium">
+                <span class="text-2xl group-hover:-translate-x-1 transition-transform">←</span>
+                <span class="font-bold text-base">返回主選單</span>
             </button>
         </div>
 
-        <!-- 測試狀態標籤 -->
+        <!-- 測試狀態標籤 (稍微加大) -->
         <div class="mb-6">
-            <span class="badge-dev bg-amber-100 text-amber-600 text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wider">
+            <span class="badge-dev bg-amber-100 text-amber-700 text-sm font-bold px-5 py-2.5 rounded-full uppercase tracking-wider">
                 🧰 開發中模組 · 工具下載中心
             </span>
         </div>
 
-        <!-- 主要施工中框架 (與 battle.html 結構一致但保留特色) -->
-        <div class="bg-white rounded-[2.5rem] shadow-lg border-2 border-dashed border-slate-200 p-12 text-center test-card relative overflow-hidden">
-            <!-- 動態背景裝飾線條 (施工感) -->
+        <!-- 主要施工中框架 -->
+        <div class="bg-white rounded-[2.5rem] shadow-lg border-2 border-dashed border-slate-200 p-8 md:p-12 text-center test-card relative overflow-hidden">
+            <!-- 動態背景裝飾線條 -->
             <div class="absolute inset-0 opacity-5 pointer-events-none">
                 <div class="absolute top-10 left-10 w-32 h-32 border-4 border-indigo-300 rounded-full"></div>
                 <div class="absolute bottom-10 right-10 w-48 h-48 border-4 border-amber-300 rounded-full"></div>
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-slate-300 rounded-full"></div>
             </div>
             
-            <!-- 主圖示 + 微動畫 -->
-            <div class="text-7xl mb-6 relative inline-block">
+            <!-- 主圖示 + 微動畫 (加大) -->
+            <div class="text-8xl mb-6 relative inline-block">
                 <span class="inline-block animate-bounce">📦</span>
-                <div class="absolute -top-2 -right-4 w-4 h-4 bg-amber-400 rounded-full pulse-ring"></div>
+                <div class="absolute -top-2 -right-4 w-5 h-5 bg-amber-400 rounded-full pulse-ring"></div>
             </div>
             
-            <!-- 標題區塊 -->
-            <h1 class="text-4xl font-black text-slate-300 mb-4 tracking-tight">工具下載</h1>
-            <h2 class="text-2xl font-black text-indigo-400 mb-3">Toolkit Download Center</h2>
+            <!-- 標題區塊 (加大對比) -->
+            <h1 class="text-5xl md:text-6xl font-black text-slate-700 mb-4 tracking-tight">工具下載</h1>
+            <h2 class="text-2xl md:text-3xl font-black text-indigo-500 mb-4">Toolkit Download Center</h2>
             
-            <!-- 施工標示 -->
-            <div class="inline-block bg-amber-50 px-6 py-3 rounded-2xl mb-8 shadow-sm">
-                <span class="text-amber-500 font-black text-sm tracking-widest flex items-center gap-2">
-                    <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+            <!-- 施工標示 (加大) -->
+            <div class="inline-block bg-amber-50 px-8 py-4 rounded-2xl mb-10 shadow-md">
+                <span class="text-amber-600 font-black text-base tracking-widest flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse"></span>
                     🚧 全力開發中 / UNDER CONSTRUCTION
-                    <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                    <span class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse"></span>
                 </span>
             </div>
             
-            <!-- 預計提供的資源列表 (與 battle 風格類似但內容針對下載中心) -->
-            <div class="max-w-md mx-auto space-y-5 text-slate-400">
-                <p class="text-sm font-bold text-indigo-400/80 uppercase tracking-wider">✨ 正式版將提供以下資源 ✨</p>
-                <ul class="text-xs space-y-3 text-left">
-                    <li class="flex items-center gap-3 justify-start bg-slate-50/50 p-3 rounded-xl feature-list">
-                        <span class="feature-icon-bg w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-500">🧧</span>
-                        <span class="flex-1">紅包領取+腳本錄製工具(不須模擬器)</span>
+            <!-- 預計提供的資源列表 - 字體與圖標全面放大 -->
+            <div class="max-w-2xl mx-auto space-y-4 text-slate-600">
+                <p class="text-base font-black text-indigo-600 uppercase tracking-wider mb-4">✨ 正式版將提供以下資源 ✨</p>
+                <ul class="space-y-4 text-left">
+                    <!-- 項目 1 - 紅包工具 -->
+                    <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
+                        <span class="feature-icon-bg w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 text-2xl">🧧</span>
+                        <span class="flex-1 font-bold text-base md:text-lg text-slate-700">紅包領取 + 腳本錄製工具 (不須模擬器)</span>
                     </li>
-                    <li class="flex items-center gap-3 justify-start bg-slate-50/50 p-3 rounded-xl feature-list">
-                        <span class="feature-icon-bg w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-500">🍽</span>
-                        <span class="flex-1">赴宴自動化工具</span>
+                    <!-- 項目 2 - 赴宴工具 -->
+                    <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
+                        <span class="feature-icon-bg w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 text-2xl">🍽️</span>
+                        <span class="flex-1 font-bold text-base md:text-lg text-slate-700">赴宴自動化工具</span>
                     </li>
-                    <li class="flex items-center gap-3 justify-start bg-slate-50/50 p-3 rounded-xl feature-list">
-                        <span class="feature-icon-bg w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-500">↻</span>
-                        <span class="flex-1">待更新</span>
+                    <!-- 項目 3 -->
+                    <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
+                        <span class="feature-icon-bg w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 text-2xl">↻</span>
+                        <span class="flex-1 font-bold text-base md:text-lg text-slate-500">待更新敬請期待</span>
                     </li>
-                    <li class="flex items-center gap-3 justify-start bg-slate-50/50 p-3 rounded-xl feature-list">
-                        <span class="feature-icon-bg w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-500">↻</span>
-                        <span class="flex-1">待更新</span>
+                    <!-- 項目 4 -->
+                    <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
+                        <span class="feature-icon-bg w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 text-2xl">↻</span>
+                        <span class="flex-1 font-bold text-base md:text-lg text-slate-500">待更新敬請期待</span>
                     </li>
-                    <li class="flex items-center gap-3 justify-start bg-slate-50/50 p-3 rounded-xl feature-list">
-                        <span class="feature-icon-bg w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-500">↻</span>
-                        <span class="flex-1">待更新</span>
+                    <!-- 項目 5 -->
+                    <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
+                        <span class="feature-icon-bg w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 text-2xl">↻</span>
+                        <span class="flex-1 font-bold text-base md:text-lg text-slate-500">待更新敬請期待</span>
                     </li>
                 </ul>
             </div>
 
             <!-- 裝飾分隔線 -->
-            <div class="my-8 border-t border-dashed border-slate-200"></div>
+            <div class="my-10 border-t border-dashed border-slate-200"></div>
 
-            <!-- 提示訊息 + 進度條風格 -->
-            <div class="max-w-sm mx-auto">
-                <div class="flex justify-between text-[10px] font-bold text-slate-400 mb-2">
+            <!-- 提示訊息 + 進度條 (加大字體) -->
+            <div class="max-w-md mx-auto">
+                <div class="flex justify-between text-sm font-bold text-slate-500 mb-3">
                     <span>開發進度</span>
-                    <span>20% · 核心建置中</span>
+                    <span class="text-indigo-600">20% · 核心建置中</span>
                 </div>
-                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div class="bg-gradient-to-r from-indigo-400 to-purple-500 h-2 rounded-full w-[20%] shine-effect"></div>
+                <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                    <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full w-[20%] shine-effect"></div>
                 </div>
-                <p class="text-slate-300 text-xs italic mt-6">
-                    檔案將托管於高速雲端空間，屆時支援一鍵下載<br>
+                <p class="text-slate-400 text-sm font-medium mt-6">
+                    📁 檔案將托管於高速雲端空間，屆時支援一鍵下載<br>
                     敬請期待完整工具箱釋出！
                 </p>
             </div>
         </div>
 
-        <!-- 底部提示區 (與 battle.html 風格相似) -->
+        <!-- 底部提示區 -->
         <div class="mt-8 text-center">
-            <p class="text-[10px] text-slate-300 uppercase tracking-widest flex items-center justify-center gap-2">
+            <p class="text-xs text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
                 <span>⚙️ Pre-release Version 0.2.0</span>
                 <span>•</span>
                 <span>此頁面為正式版前導框架</span>
@@ -135,14 +149,13 @@
     </div>
 
     <script>
-        // 套用主題 (從 sessionStorage 繼承主選單的主題，與 battle.html 邏輯完全一致)
+        // 套用主題
         window.onload = function() {
             try {
                 const data = JSON.parse(sessionStorage.getItem('gameData'));
                 if (data?.config?.CurrentTheme) {
                     applyTheme(data.config.CurrentTheme);
                 }
-                // 額外顯示使用者名稱或歡迎小語 (非必要，但與 portal 氛圍相襯)
                 if (data?.user?.name) {
                     console.log(`掌櫃 ${data.user.name} 正在瀏覽工具下載開發頁`);
                 }
@@ -151,7 +164,6 @@
             }
         };
 
-        // 主題套用函數 (複製 battle.html 的邏輯)
         function applyTheme(theme) {
             const body = document.getElementById('mainBody');
             body.classList.remove('theme-dark');
@@ -166,17 +178,14 @@
             }
         }
 
-        // 返回主選單 (導回 portal.html)
         function goBack() {
             location.href = 'portal.html';
         }
 
-        // 如果使用者直接輸入網址但未登入，導回登入頁（安全機制）
         if (!sessionStorage.getItem('gameData')) {
             location.href = 'index.html';
         }
 
-        // 監聽主題變更 (若從其他頁面 localStorage 或 sessionStorage 主題變動，簡易同步)
         window.addEventListener('storage', (e) => {
             if (e.key === 'gameData') {
                 try {
