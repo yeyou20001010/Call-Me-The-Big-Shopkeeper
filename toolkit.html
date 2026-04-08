@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>工具下載 - 建置中｜大掌櫃工具箱</title>
+    <style>
+        .transition-all { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .theme-dark { background-color: #0f172a !important; color: #f8fafc !important; }
+        .theme-dark .test-card { background-color: #1e293b !important; border-color: #334155 !important; }
+        .theme-dark .back-btn { background-color: #1e293b !important; border-color: #475569 !important; color: #cbd5e6 !important; }
+        .theme-dark .back-btn:hover { background-color: #334155 !important; }
+        .theme-dark .badge-dev { background-color: #334155 !important; color: #a5b4fc !important; }
+        .theme-dark .feature-list li { color: #94a3b8 !important; }
+        .theme-dark .feature-icon-bg { background-color: #334155 !important; }
+        .pulse-ring {
+            animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulseRing {
+            0%, 100% { opacity: 0.4; transform: scale(0.95); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .shine-effect {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            background-size: 200% 100%;
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all" id="mainBody">
+    <div class="max-w-4xl mx-auto">
+        
+        <!-- 返回主選單按鈕 (與 battle.html 風格一致) -->
+        <div class="mb-6">
+            <button onclick="goBack()" class="back-btn flex items-center gap-2 text-slate-400 hover:text-indigo-500 transition-colors group">
+                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+                <span class="font-bold">返回主選單</span>
+            </button>
+        </div>
+
+        <!-- 測試狀態標籤 -->
+        <div class="mb-6">
+            <span class="badge-dev bg-amber-100 text-amber-600 text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wider">
+                🧰 開發中模組 · 工具下載中心
+            </span>
+        </div>
+
+        <!-- 主要施工中框架 (與 battle.html 結構一致但保留特色) -->
+        <div class="bg-white rounded-[2.5rem] shadow-lg border-2 border-dashed border-slate-200 p-12 text-center test-card relative overflow-hidden">
+            <!-- 動態背景裝飾線條 (施工感) -->
+            <div class="absolute inset-0 opacity-5 pointer-events-none">
+                <div class="absolute top-10 left-10 w-32 h-32 border-4 border-indigo-300 rounded-full"></div>
+                <div class="absolute bottom-10 right-10 w-48 h-48 border-4 border-amber-300 rounded-full"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-slate-300 rounded-full"></div>
+            </div>
+            
+            <!-- 主圖示 + 微動畫 -->
+            <div class="text-7xl mb-6 relative inline-block">
+                <span class="inline-block animate-bounce">📦</span>
+                <div class="absolute -top-2 -right-4 w-4 h-4 bg-amber-400 rounded-full pulse-ring"></div>
+            </div>
+            
+            <!-- 標題區塊 -->
+            <h1 class="text-4xl font-black text-slate-300 mb-4 tracking-tight">工具下載</h1>
+            <h2 class="text-2xl font-black text-indigo-400 mb-3">Toolkit Download Center</h2>
+            
+            <!-- 施工標示 -->
+            <div class="inline-block bg-amber-50 px-6 py-3 rounded-2xl mb-8 shadow-sm">
+                <span class="text-amber-500 font-black text-sm tracking-widest flex items-center gap-2">
+                    <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                    🚧 全力開發中 / UNDER CONSTRUCTION
+                    <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                </span>
+            </div>
+            
+            <!-- 預計提供的資源列表 (與 battle 風格類似但內容針對下載中心) -->
+            <div class="max-w-md mx-auto space-y-5 text-slate-400">
+                <p class="text-sm font-bold text-indigo-400/80 uppercase tracking-wider">✨ 正式版將提供以下資源 ✨</p>
+                <ul class="text-xs space-y-3 text-left">
+                    <li class="flex items-center gap-3 justify-start bg-slate-50/50 p-3 rounded-xl feature-list">
+                        <span class="feature-icon-bg w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-500">📊</span>
+                        <span class="flex-1">體力監控輔助表單 (Excel / Google Sheets 模板)</span>
+                    </li>
+                    <li class="flex items-center gap-3 justify-start bg-slate-50/50 p-3 rounded-xl feature-list">
+                        <span class="feature-icon-bg w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-500">🃏</span>
+                        <span class="flex-1">翻牌工具路徑計算機 (離線可用版)</span>
+                    </li>
+                    <li class="flex items-center gap-3 justify-start bg-slate-50/50 p-3 rounded-xl feature-list">
+                        <span class="feature-icon-bg w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-500">🚢</span>
+                        <span class="flex-1">偉大航線決策系統完整試算表</span>
+                    </li>
+                    <li class="flex items-center gap-3 justify-start bg-slate-50/50 p-3 rounded-xl feature-list">
+                        <span class="feature-icon-bg w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-500">⚔️</span>
+                        <span class="flex-1">對戰分析模擬器 + 加成計算腳本</span>
+                    </li>
+                    <li class="flex items-center gap-3 justify-start bg-slate-50/50 p-3 rounded-xl feature-list">
+                        <span class="feature-icon-bg w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-500">🧰</span>
+                        <span class="flex-1">整合型巨集合集 & 自動化工具包</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 裝飾分隔線 -->
+            <div class="my-8 border-t border-dashed border-slate-200"></div>
+
+            <!-- 提示訊息 + 進度條風格 -->
+            <div class="max-w-sm mx-auto">
+                <div class="flex justify-between text-[10px] font-bold text-slate-400 mb-2">
+                    <span>開發進度</span>
+                    <span>65% · 核心建置中</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div class="bg-gradient-to-r from-indigo-400 to-purple-500 h-2 rounded-full w-[65%] shine-effect"></div>
+                </div>
+                <p class="text-slate-300 text-xs italic mt-6">
+                    檔案將托管於高速雲端空間，屆時支援一鍵下載<br>
+                    敬請期待完整工具箱釋出！
+                </p>
+            </div>
+        </div>
+
+        <!-- 底部提示區 (與 battle.html 風格相似) -->
+        <div class="mt-8 text-center">
+            <p class="text-[10px] text-slate-300 uppercase tracking-widest flex items-center justify-center gap-2">
+                <span>⚙️ Pre-release Version 0.2.0</span>
+                <span>•</span>
+                <span>此頁面為正式版前導框架</span>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // 套用主題 (從 sessionStorage 繼承主選單的主題，與 battle.html 邏輯完全一致)
+        window.onload = function() {
+            try {
+                const data = JSON.parse(sessionStorage.getItem('gameData'));
+                if (data?.config?.CurrentTheme) {
+                    applyTheme(data.config.CurrentTheme);
+                }
+                // 額外顯示使用者名稱或歡迎小語 (非必要，但與 portal 氛圍相襯)
+                if (data?.user?.name) {
+                    console.log(`掌櫃 ${data.user.name} 正在瀏覽工具下載開發頁`);
+                }
+            } catch (e) {
+                console.log('無法讀取主題設定，使用預設主題');
+            }
+        };
+
+        // 主題套用函數 (複製 battle.html 的邏輯)
+        function applyTheme(theme) {
+            const body = document.getElementById('mainBody');
+            body.classList.remove('theme-dark');
+            body.style.backgroundColor = "";
+
+            if (theme === 'dark') {
+                body.classList.add('theme-dark');
+            } else if (theme === 'christmas') {
+                body.style.backgroundColor = "#fff1f2";
+            } else {
+                body.style.backgroundColor = "#f8fafc";
+            }
+        }
+
+        // 返回主選單 (導回 portal.html)
+        function goBack() {
+            location.href = 'portal.html';
+        }
+
+        // 如果使用者直接輸入網址但未登入，導回登入頁（安全機制）
+        if (!sessionStorage.getItem('gameData')) {
+            location.href = 'index.html';
+        }
+
+        // 監聽主題變更 (若從其他頁面 localStorage 或 sessionStorage 主題變動，簡易同步)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'gameData') {
+                try {
+                    const newData = JSON.parse(e.newValue);
+                    if (newData?.config?.CurrentTheme) {
+                        applyTheme(newData.config.CurrentTheme);
+                    }
+                } catch(err) {}
+            }
+        });
+    </script>
+</body>
+</html>
