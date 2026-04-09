@@ -37,7 +37,7 @@
         .product-type {
             font-weight: 900;
             font-size: 1.05em;
-            color: #5E548E;
+            color: #FF95CA;
         }
         .supplement {
             font-size: 0.75rem;
@@ -46,10 +46,6 @@
         }
         .detail-html {
             line-height: 1.6;
-        }
-        .detail-html .product-name {
-            font-weight: 900;
-            color: #FF95CA;
         }
     </style>
 </head>
@@ -138,9 +134,9 @@
                                 </select>
                             </div>
                             <div class="space-y-4">
-                                <div><label class="row-label">買地售價 (成本)</label><input type="text" :value="formatWithComma(p.bPrice)" @input="p.bPrice = parseNum($event.target.value)" class="input-inline !text-xl"></div>
-                                <div><label class="row-label">可買數量</label><input type="number" v-model.number="p.stock" @input="p.stock = Math.max(0, Math.floor(p.stock || 0))" class="input-inline !text-xl"></div>
-                                <div><label class="row-label">賣地(緊缺地)售價</label><input type="text" :value="formatWithComma(p.sPrice)" @input="p.sPrice = parseNum($event.target.value)" class="input-inline !text-xl"></div>
+                                <div><label class="row-label">買地售價 (成本)</label><input type="text" :value="formatWithComma(p.bPrice)" @input="p.bPrice = parseNum($event.target.value); $forceUpdate()" class="input-inline !text-xl"></div>
+                                <div><label class="row-label">可買數量</label><input type="number" v-model.number="p.stock" @input="p.stock = Math.max(0, Math.floor(p.stock || 0)); $forceUpdate()" class="input-inline !text-xl"></div>
+                                <div><label class="row-label">賣地(緊缺地)售價</label><input type="text" :value="formatWithComma(p.sPrice)" @input="p.sPrice = parseNum($event.target.value); $forceUpdate()" class="input-inline !text-xl"></div>
                                 
                                 <div class="bg-slate-50 p-3 rounded-2xl border border-dashed text-sm space-y-1">
                                     <div class="flex justify-between"><span>已耗資:</span><span>{{ formatWithComma(calcT0(p).cost) }}</span></div>
@@ -182,7 +178,7 @@
                             <tbody class="text-right">
                                 <tr v-for="(p, idx) in [products[1], products[2]]" :key="idx" class="border-b border-gray-100">
                                     <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
-                                    <td><input type="text" :value="formatWithComma(t1Inputs[idx].sPrice)" @input="t1Inputs[idx].sPrice = parseNum($event.target.value)" class="input-inline !w-24"></td>
+                                    <td><input type="text" :value="formatWithComma(t1Inputs[idx].sPrice)" @input="t1Inputs[idx].sPrice = parseNum($event.target.value); $forceUpdate()" class="input-inline !w-24"></td>
                                     <td>{{ calcSub(p, t1Inputs[idx].sPrice, products[0]).qty }}</td>
                                     <td :class="colorScale(calcSub(p, t1Inputs[idx].sPrice, products[0]).net)">{{ formatWithComma(calcSub(p, t1Inputs[idx].sPrice, products[0]).net) }}</td>
                                 </tr>
@@ -211,7 +207,7 @@
                             <tbody class="text-right">
                                 <tr v-for="(p, idx) in getT2List()" :key="idx" class="border-b border-gray-100">
                                     <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
-                                    <td><input type="text" :value="formatWithComma(t2Inputs[idx].sPrice)" @input="t2Inputs[idx].sPrice = parseNum($event.target.value)" class="input-inline !w-24"></td>
+                                    <td><input type="text" :value="formatWithComma(t2Inputs[idx].sPrice)" @input="t2Inputs[idx].sPrice = parseNum($event.target.value); $forceUpdate()" class="input-inline !w-24"></td>
                                     <td>{{ calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).qty }}</td>
                                     <td :class="colorScale(calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).net)">{{ formatWithComma(calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).net) }}</td>
                                 </tr>
@@ -277,19 +273,17 @@
                 },
                 updateFund(e) { this.fund = this.parseNum(e.target.value); },
                 onFundFocus(e) {
-                    // 聚焦時顯示純數字（無逗號）
                     this.displayFund = this.fund.toString();
                 },
                 onFundBlur(e) {
-                    // 離開時格式化加逗號
                     this.displayFund = this.formatWithComma(this.fund);
                 },
                 onFundInput(e) {
-                    // 輸入時更新底層數字
                     const rawValue = e.target.value.replace(/,/g, '');
                     const numValue = parseInt(rawValue, 10) || 0;
                     this.fund = Math.max(0, numValue);
-                    this.displayFund = rawValue; // 保持輸入時的顯示
+                    this.displayFund = rawValue;
+                    this.$forceUpdate();
                 },
                 formatWan(v) {
                     if (v < 10000) return v.toLocaleString();
@@ -299,11 +293,9 @@
                     return p.name ? `${p.label}(${p.name})` : p.label; 
                 },
                 getDisplayNameHTML(p, showKing = false, kingType = '') {
-                    // 產品類型（加粗放大）
-                    const typeHtml = `<span class="product-type">${p.label}</span>`;
-                    // 產品名稱（如果有）
+                    // 統一在產品類型前加一個空格
+                    const typeHtml = `<span class="product-type"> ${p.label}</span>`;
                     const nameHtml = p.name ? `(${p.name})` : '';
-                    // 加註（毛利王）
                     let supplementHtml = '';
                     if (showKing && kingType === 'margin') {
                         supplementHtml = `<span class="supplement">【毛利王】</span>`;
@@ -333,16 +325,13 @@
                 canMultiBuy(type, checkSub = false) {
                     const target = type === '特產' ? this.products[0] : this.getMarginKingObj();
                     
-                    // 如果是毛利王方案，且毛利王就是特產，則不開啟（避免與表1重複）
                     if (type === '毛利王' && target.label === '特產') return false;
                     
                     const res = this.calcT0(target);
                     
-                    // 基本條件：大項有庫存、資金足夠買滿大項、買完有剩餘資金
                     const baseCondition = target.stock > 0 && res.qty >= target.stock && (this.fund - res.cost) > 0;
                     if (!baseCondition) return false;
                     
-                    // 如果需要檢查副產數量（買完大項後是否能買到至少一個副產）
                     if (checkSub) {
                         const remainFund = this.fund - res.cost;
                         let subs;
@@ -441,7 +430,7 @@
                         const specialHtml = this.getDisplayNameHTML(this.products[0]);
                         return {
                             msg: "📝 請完成【表 1】試算",
-                            detail: `買空  ${specialHtml} 後仍有剩餘資金 ${this.formatWithComma(remainAfterSpecial)}，請於【表 1】輸入副產在特產地的售價，系統將自動為您比較最佳方案。`
+                            detail: `買空 ${specialHtml} 後仍有剩餘資金 ${this.formatWithComma(remainAfterSpecial)}，請於【表 1】輸入副產在特產地的售價，系統將自動為您比較最佳方案。`
                         };
                     }
                     
@@ -452,15 +441,14 @@
                         const mkHtml = this.getDisplayNameHTML(mk, true, 'margin');
                         return {
                             msg: "📝 請完成【表 2】試算",
-                            detail: `買空  ${mkHtml} 後仍有剩餘資金 ${this.formatWithComma(remainAfterMk)}，請於【表 2】輸入副產在毛利王產地的售價，系統將自動為您比較最佳方案。`
+                            detail: `買空 ${mkHtml} 後仍有剩餘資金 ${this.formatWithComma(remainAfterMk)}，請於【表 2】輸入副產在毛利王產地的售價，系統將自動為您比較最佳方案。`
                         };
                     }
                     
-                    // 原有比價邏輯（已輸入售價或無需引導）
+                    // 原有比價邏輯
                     const max = this.getMaxProfit();
                     const t1 = this.getT1Total();
                     const t2 = this.getT2Total();
-                    const t0Max = Math.max(...this.products.map(p => this.calcT0(p).net));
                     
                     // 找出淨利王產品
                     let bestProduct = this.products[0];
@@ -482,7 +470,7 @@
                         const bestSubHtml = this.getDisplayNameHTML(bestSub);
                         return {
                             msg: "🏆 方案一：特產買空方案",
-                            detail: `建議：買空  ${specialHtml}，剩餘資金全部投入 ${bestSubHtml}。`
+                            detail: `建議：買空 ${specialHtml}，剩餘資金全部投入 ${bestSubHtml}。`
                         };
                     }
                     
@@ -497,7 +485,7 @@
                         const bestSubHtml = this.getDisplayNameHTML(bestSub);
                         return {
                             msg: "🏆 方案二：毛利王方案",
-                            detail: `建議：優先買空  ${mkHtml}，剩餘資金投入 ${bestSubHtml}。`
+                            detail: `建議：優先買空 ${mkHtml}，剩餘資金投入 ${bestSubHtml}。`
                         };
                     }
                     
@@ -507,13 +495,13 @@
                     
                     if (canT1 && !canT2) {
                         const specialHtml = this.getDisplayNameHTML(this.products[0]);
-                        extraNote = `經試算，買空  ${specialHtml} 後投入其他產品的組合方案總利潤低於購買單一品項，建議集中資金單買  ${bestProductHtml}，無須拆分。`;
+                        extraNote = `經試算，買空 ${specialHtml} 後投入其他產品的組合方案總利潤低於購買單一品項，建議集中資金單買 ${bestProductHtml}，無須拆分。`;
                     } else if (!canT1 && canT2) {
                         const mk = this.getMarginKingObj();
                         const mkHtml = this.getDisplayNameHTML(mk, true, 'margin');
-                        extraNote = `經試算，買空  ${mkHtml} 後投入其他產品的組合方案總利潤低於購買單一品項，建議集中資金單買  ${bestProductHtml}，無須拆分。`;
+                        extraNote = `經試算，買空 ${mkHtml} 後投入其他產品的組合方案總利潤低於購買單一品項，建議集中資金單買 ${bestProductHtml}，無須拆分。`;
                     } else if (canT1 && canT2) {
-                        extraNote = `經試算，買空特產或毛利王後投入其他產品的組合方案利潤均低於單買，建議集中資金單買  ${bestProductHtml}，無須拆分。`;
+                        extraNote = `經試算，買空特產或毛利王後投入其他產品的組合方案利潤均低於單買，建議集中資金單買 ${bestProductHtml}，無須拆分。`;
                     } else {
                         extraNote = `目前資金條件下，單一品項買滿的總收益最高，無需拆分資金。`;
                     }
@@ -540,7 +528,6 @@
             mounted() {
                 const saved = localStorage.getItem('v19_data');
                 if (saved) Object.assign(this.$data, JSON.parse(saved));
-                // 初始化 displayFund
                 this.displayFund = this.formatWithComma(this.fund);
             }
         }).mount('#app');
