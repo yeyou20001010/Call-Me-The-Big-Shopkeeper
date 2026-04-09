@@ -92,9 +92,11 @@
                 <p class="text-base font-black text-indigo-600 uppercase tracking-wider mb-4">✨ 正式版將提供以下資源 ✨</p>
                 <ul class="space-y-4 text-left">
                     <!-- 項目 1 - 紅包工具 -->
-                    <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
+                    <li onclick="downloadFile('https://drive.google.com/uc?export=download&id=1bnzy9UbPRsRM27a0vSLYtlC7EjZBOPEM', '掌櫃助手(簡版).zip')" 
+                        class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 hover:bg-indigo-50 cursor-pointer transition-all">
                         <span class="feature-icon-bg w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 text-2xl">🧧</span>
                         <span class="flex-1 font-bold text-base md:text-lg text-slate-700">紅包領取 + 腳本錄製工具 (不須模擬器)</span>
+                        <span class="text-indigo-500 text-sm font-bold">⬇️ 下載</span>
                     </li>
                     <!-- 項目 2 - 赴宴工具 -->
                     <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
@@ -186,6 +188,12 @@
             location.href = 'index.html';
         }
 
+        // 下載檔案函數（放在其他函數旁邊即可）
+        function downloadFile(url, filename) {
+            // 因為 Google Drive 會跳轉，用 window.open 更適合
+            window.open(url, '_blank');
+        }
+        
         window.addEventListener('storage', (e) => {
             if (e.key === 'gameData') {
                 try {
@@ -196,6 +204,7 @@
                 } catch(err) {}
             }
         });
+        
     </script>
 </body>
 </html>
