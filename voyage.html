@@ -125,7 +125,7 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div v-for="(p, i) in products" :key="i" class="bg-white p-5 rounded-3xl border-2 border-[#D7D3CC]">
+                        <div v-for="(p, idx) in products" :key="idx" class="bg-white p-5 rounded-3xl border-2 border-[#D7D3CC]">
                             <div class="flex justify-between items-center mb-5">
                                 <span class="text-xl font-black text-[#5E548E]">{{ p.label }}</span>
                                 <select v-model="p.name" class="!w-32 text-sm font-black text-slate-600 bg-gray-100 px-2 py-1 rounded-lg">
@@ -134,9 +134,13 @@
                                 </select>
                             </div>
                             <div class="space-y-4">
-                                <div><label class="row-label">買地售價 (成本)</label><input type="text" :value="formatWithComma(p.bPrice)" @input="p.bPrice = parseNum($event.target.value); $forceUpdate()" class="input-inline !text-xl"></div>
+                                <div><label class="row-label">買地售價 (成本)</label>
+                                    <input type="text" :value="displayBuyPrice[idx]" @focus="onBuyPriceFocus(idx)" @blur="onBuyPriceBlur(idx)" @input="onBuyPriceInput(idx, $event.target.value)" class="input-inline !text-xl">
+                                </div>
                                 <div><label class="row-label">可買數量</label><input type="number" v-model.number="p.stock" @input="p.stock = Math.max(0, Math.floor(p.stock || 0)); $forceUpdate()" class="input-inline !text-xl"></div>
-                                <div><label class="row-label">賣地(緊缺地)售價</label><input type="text" :value="formatWithComma(p.sPrice)" @input="p.sPrice = parseNum($event.target.value); $forceUpdate()" class="input-inline !text-xl"></div>
+                                <div><label class="row-label">賣地(緊缺地)售價</label>
+                                    <input type="text" :value="displaySellPrice[idx]" @focus="onSellPriceFocus(idx)" @blur="onSellPriceBlur(idx)" @input="onSellPriceInput(idx, $event.target.value)" class="input-inline !text-xl">
+                                </div>
                                 
                                 <div class="bg-slate-50 p-3 rounded-2xl border border-dashed text-sm space-y-1">
                                     <div class="flex justify-between"><span>已耗資:</span><span>{{ formatWithComma(calcT0(p).cost) }}</span></div>
@@ -178,7 +182,9 @@
                             <tbody class="text-right">
                                 <tr v-for="(p, idx) in [products[1], products[2]]" :key="idx" class="border-b border-gray-100">
                                     <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
-                                    <td><input type="text" :value="formatWithComma(t1Inputs[idx].sPrice)" @input="t1Inputs[idx].sPrice = parseNum($event.target.value); $forceUpdate()" class="input-inline !w-24"></td>
+                                    <td>
+                                        <input type="text" :value="displayT1Price[idx]" @focus="onT1PriceFocus(idx)" @blur="onT1PriceBlur(idx)" @input="onT1PriceInput(idx, $event.target.value)" class="input-inline !w-24">
+                                    </td>
                                     <td>{{ calcSub(p, t1Inputs[idx].sPrice, products[0]).qty }}</td>
                                     <td :class="colorScale(calcSub(p, t1Inputs[idx].sPrice, products[0]).net)">{{ formatWithComma(calcSub(p, t1Inputs[idx].sPrice, products[0]).net) }}</td>
                                 </tr>
@@ -194,7 +200,7 @@
                                 <div class="text-gray-400 text-sm mt-2 flex text-left justify-center">
                                     <span class="shrink-0">使用時機：</span>
                                     <div class="flex flex-col">
-                                        <span>毛利王({{getMarginKingObj().name || '未設品項'}})與淨利王為不同副產時。</span>
+                                        <span>毛利王不是特產時（買空毛利王後，剩餘資金可投資其他產品）。</span>
                                     </div>
                                 </div>
                             </div>
@@ -207,7 +213,9 @@
                             <tbody class="text-right">
                                 <tr v-for="(p, idx) in getT2List()" :key="idx" class="border-b border-gray-100">
                                     <td class="py-4 text-left text-slate-600">{{ getDisplayName(p) }}</td>
-                                    <td><input type="text" :value="formatWithComma(t2Inputs[idx].sPrice)" @input="t2Inputs[idx].sPrice = parseNum($event.target.value); $forceUpdate()" class="input-inline !w-24"></td>
+                                    <td>
+                                        <input type="text" :value="displayT2Price[idx]" @focus="onT2PriceFocus(idx)" @blur="onT2PriceBlur(idx)" @input="onT2PriceInput(idx, $event.target.value)" class="input-inline !w-24">
+                                    </td>
                                     <td>{{ calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).qty }}</td>
                                     <td :class="colorScale(calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).net)">{{ formatWithComma(calcSub(p, t2Inputs[idx].sPrice, getMarginKingObj()).net) }}</td>
                                 </tr>
@@ -259,7 +267,12 @@
                         { label: '副產2', name: '', bPrice: 0, bTrend: 0, stock: 0, sPrice: 0, sTrend: 0 }
                     ],
                     t1Inputs: [{ sPrice: 0 }, { sPrice: 0 }],
-                    t2Inputs: [{ sPrice: 0 }, { sPrice: 0 }]
+                    t2Inputs: [{ sPrice: 0 }, { sPrice: 0 }],
+                    // 金額輸入框顯示用變數
+                    displayBuyPrice: ['0', '0', '0'],
+                    displaySellPrice: ['0', '0', '0'],
+                    displayT1Price: ['0', '0'],
+                    displayT2Price: ['0', '0']
                 }
             },
             methods: {
@@ -271,7 +284,7 @@
                     const num = Number(v.toString().replace(/,/g, '')) || 0;
                     return Math.max(0, num);
                 },
-                updateFund(e) { this.fund = this.parseNum(e.target.value); },
+                // 總資金相關方法
                 onFundFocus(e) {
                     this.displayFund = this.fund.toString();
                 },
@@ -283,6 +296,69 @@
                     const numValue = parseInt(rawValue, 10) || 0;
                     this.fund = Math.max(0, numValue);
                     this.displayFund = rawValue;
+                },
+                // 買地售價相關方法
+                onBuyPriceFocus(idx) {
+                    this.displayBuyPrice[idx] = this.products[idx].bPrice.toString();
+                },
+                onBuyPriceBlur(idx) {
+                    const num = this.parseNum(this.displayBuyPrice[idx]);
+                    this.products[idx].bPrice = num;
+                    this.displayBuyPrice[idx] = this.formatWithComma(num);
+                    this.$forceUpdate();
+                },
+                onBuyPriceInput(idx, rawValue) {
+                    const num = this.parseNum(rawValue);
+                    this.products[idx].bPrice = num;
+                    this.displayBuyPrice[idx] = rawValue;
+                    this.$forceUpdate();
+                },
+                // 緊缺地售價相關方法
+                onSellPriceFocus(idx) {
+                    this.displaySellPrice[idx] = this.products[idx].sPrice.toString();
+                },
+                onSellPriceBlur(idx) {
+                    const num = this.parseNum(this.displaySellPrice[idx]);
+                    this.products[idx].sPrice = num;
+                    this.displaySellPrice[idx] = this.formatWithComma(num);
+                    this.$forceUpdate();
+                },
+                onSellPriceInput(idx, rawValue) {
+                    const num = this.parseNum(rawValue);
+                    this.products[idx].sPrice = num;
+                    this.displaySellPrice[idx] = rawValue;
+                    this.$forceUpdate();
+                },
+                // 表1售價相關方法
+                onT1PriceFocus(idx) {
+                    this.displayT1Price[idx] = this.t1Inputs[idx].sPrice.toString();
+                },
+                onT1PriceBlur(idx) {
+                    const num = this.parseNum(this.displayT1Price[idx]);
+                    this.t1Inputs[idx].sPrice = num;
+                    this.displayT1Price[idx] = this.formatWithComma(num);
+                    this.$forceUpdate();
+                },
+                onT1PriceInput(idx, rawValue) {
+                    const num = this.parseNum(rawValue);
+                    this.t1Inputs[idx].sPrice = num;
+                    this.displayT1Price[idx] = rawValue;
+                    this.$forceUpdate();
+                },
+                // 表2售價相關方法
+                onT2PriceFocus(idx) {
+                    this.displayT2Price[idx] = this.t2Inputs[idx].sPrice.toString();
+                },
+                onT2PriceBlur(idx) {
+                    const num = this.parseNum(this.displayT2Price[idx]);
+                    this.t2Inputs[idx].sPrice = num;
+                    this.displayT2Price[idx] = this.formatWithComma(num);
+                    this.$forceUpdate();
+                },
+                onT2PriceInput(idx, rawValue) {
+                    const num = this.parseNum(rawValue);
+                    this.t2Inputs[idx].sPrice = num;
+                    this.displayT2Price[idx] = rawValue;
                     this.$forceUpdate();
                 },
                 formatWan(v) {
@@ -293,8 +369,7 @@
                     return p.name ? `${p.label}(${p.name})` : p.label; 
                 },
                 getDisplayNameHTML(p, showKing = false, kingType = '') {
-                    // 統一在產品類型前加一個空格
-                    const typeHtml = `<span class="product-type"> ${p.label}</span>`;
+                    const typeHtml = `<span class="product-type">${p.label}</span>`;
                     const nameHtml = p.name ? `(${p.name})` : '';
                     let supplementHtml = '';
                     if (showKing && kingType === 'margin') {
@@ -325,6 +400,7 @@
                 canMultiBuy(type, checkSub = false) {
                     const target = type === '特產' ? this.products[0] : this.getMarginKingObj();
                     
+                    // 表2開啟條件：毛利王不是特產
                     if (type === '毛利王' && target.label === '特產') return false;
                     
                     const res = this.calcT0(target);
@@ -420,7 +496,6 @@
                         return { msg: "等待數據...", detail: "請輸入資金與報價。" };
                     }
                     
-                    const ranks = this.getRankLabels();
                     const canT1 = this.canMultiBuy('特產', true);
                     const canT2 = this.canMultiBuy('毛利王', true);
                     
@@ -528,7 +603,16 @@
             mounted() {
                 const saved = localStorage.getItem('v19_data');
                 if (saved) Object.assign(this.$data, JSON.parse(saved));
+                // 初始化所有顯示變數
                 this.displayFund = this.formatWithComma(this.fund);
+                for (let i = 0; i < 3; i++) {
+                    this.displayBuyPrice[i] = this.formatWithComma(this.products[i].bPrice);
+                    this.displaySellPrice[i] = this.formatWithComma(this.products[i].sPrice);
+                }
+                for (let i = 0; i < 2; i++) {
+                    this.displayT1Price[i] = this.formatWithComma(this.t1Inputs[i].sPrice);
+                    this.displayT2Price[i] = this.formatWithComma(this.t2Inputs[i].sPrice);
+                }
             }
         }).mount('#app');
     </script>
