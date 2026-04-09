@@ -296,22 +296,21 @@
                     if (!baseCondition) return false;
                     
                     // 如果需要檢查副產數量（買完大項後是否能買到至少一個副產）
+                    // 注意：只需要檢查成本(bPrice)是否足夠購買，不需要檢查售價(inputS)
                     if (checkSub) {
                         const remainFund = this.fund - res.cost;
-                        let subs, subPrices;
+                        let subs;
                         if (type === '特產') {
                             subs = [this.products[1], this.products[2]];
-                            subPrices = [this.t1Inputs[0].sPrice, this.t1Inputs[1].sPrice];
                         } else {
                             subs = this.getT2List();
-                            subPrices = [this.t2Inputs[0].sPrice, this.t2Inputs[1].sPrice];
                         }
                         
                         let canBuyAny = false;
                         for (let i = 0; i < subs.length; i++) {
                             const sub = subs[i];
-                            const subSellPrice = subPrices[i];
-                            if (sub.bPrice > 0 && subSellPrice > 0) {
+                            // 只需要檢查成本（買地售價）> 0，且剩餘資金足夠買至少1個
+                            if (sub.bPrice > 0) {
                                 const maxQty = Math.floor(remainFund / sub.bPrice);
                                 if (maxQty > 0) {
                                     canBuyAny = true;
