@@ -324,6 +324,15 @@
                     return true;
                 },
 
+                isTablePriceEmpty(tableType) {
+                    if (tableType === 't1') {
+                        return this.t1Inputs[0].sPrice === 0 && this.t1Inputs[1].sPrice === 0;
+                    } else if (tableType === 't2') {
+                        return this.t2Inputs[0].sPrice === 0 && this.t2Inputs[1].sPrice === 0;
+                    }
+                    return true;
+                },
+
                 getMarginKingObj() {
                     let best = this.products[0], maxR = -999999;
                     this.products.forEach(p => {
@@ -377,16 +386,33 @@
                         return { msg: "等待數據...", detail: "請輸入資金與報價。" };
                     }
                     
+                    const ranks = this.getRankLabels();
+                    const canT1 = this.canMultiBuy('特產', true);
+                    const canT2 = this.canMultiBuy('毛利王', true);
+                    
+                    // 優先判斷：如果表1解鎖但尚未輸入售價，引導使用者輸入
+                    if (canT1 && this.isTablePriceEmpty('t1')) {
+                        const remainAfterSpecial = this.fund - this.calcT0(this.products[0]).cost;
+                        return {
+                            msg: "📝 請完成【表 1】試算",
+                            detail: `買空 ${this.getDisplayName(this.products[0])} 後仍有剩餘資金 ${this.formatWithComma(remainAfterSpecial)}，請於【表 1】輸入副產在特產地的售價，系統將自動為您比較最佳方案。`
+                        };
+                    }
+                    
+                    // 如果表2解鎖但尚未輸入售價，引導使用者輸入
+                    if (canT2 && this.isTablePriceEmpty('t2')) {
+                        const mk = this.getMarginKingObj();
+                        const remainAfterMk = this.fund - this.calcT0(mk).cost;
+                        return {
+                            msg: "📝 請完成【表 2】試算",
+                            detail: `買空 ${this.getDisplayName(mk)} 後仍有剩餘資金 ${this.formatWithComma(remainAfterMk)}，請於【表 2】輸入副產在毛利王產地的售價，系統將自動為您比較最佳方案。`
+                        };
+                    }
+                    
+                    // 原有比價邏輯（已輸入售價或無需引導）
                     const max = this.getMaxProfit();
                     const t1 = this.getT1Total();
                     const t2 = this.getT2Total();
-                    const ranks = this.getRankLabels();
-                    
-                    // 檢查表1是否可執行（買完特產後能買到至少一個副產）
-                    const canT1 = this.canMultiBuy('特產', true);
-                    
-                    // 檢查表2是否可執行（買完毛利王後能買到至少一個副產，且毛利王不是特產）
-                    const canT2 = this.canMultiBuy('毛利王', true);
                     
                     // 方案一：特產買空方案
                     if (canT1 && max === t1) {
@@ -412,14 +438,14 @@
                         };
                     }
                     
-                    // 預設方案：單買淨利最高項
+                    // 預設方案：單買淨利最高項（此時組合方案已計算過但利潤較低）
                     let extraNote = "";
-                    if (!canT1 && !canT2) {
-                        extraNote = " 剩餘資金不足以購買其他產品，建議集中資金單買。";
-                    } else if (!canT1 && this.products[0].stock > 0) {
-                        extraNote = " 買空特產後剩餘資金不足以購買副產，建議改採單買。";
-                    } else if (!canT2) {
-                        extraNote = " 買空毛利王後剩餘資金不足以購買副產，建議改採單買。";
+                    if (canT1 && !canT2) {
+                        extraNote = " 經試算，買空特產後投入副產的組合方案利潤低於單買，建議集中資金單買。";
+                    } else if (!canT1 && canT2) {
+                        extraNote = " 經試算，買空毛利王後投入副產的組合方案利潤低於單買，建議集中資金單買。";
+                    } else if (canT1 && canT2) {
+                        extraNote = " 經試算，組合方案利潤均低於單買，建議集中資金單買。";
                     }
                     
                     return {
