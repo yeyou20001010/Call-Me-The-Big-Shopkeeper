@@ -3,313 +3,290 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大掌櫃工具箱 - 資源下載中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,700;14..32,800;14..32,900&display=swap" rel="stylesheet">
+    <title>工具下載中心｜大掌櫃工具箱</title>
     <style>
-        * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        .transition-all { transition: all 0.3s cubic-bezier(0.2, 0, 0, 1); }
-        /* 主題深色模式 */
-        .theme-dark { background-color: #0f172a !important; color: #f1f5f9 !important; }
-        .theme-dark .download-card { background-color: #1e293b !important; border: 1px solid #334155 !important; color: #e2e8f0 !important; }
-        .theme-dark .info-text { color: #94a3b8 !important; }
-        .theme-dark .badge-soft { background-color: #334155 !important; color: #cbd5e1 !important; }
-        .theme-dark .footer-note { border-top-color: #334155 !important; color: #64748b !important; }
-        .theme-dark .back-button { background-color: #1e293b !important; border-color: #475569 !important; color: #cbd5e6 !important; }
-        .theme-dark .back-button:hover { background-color: #334155 !important; }
-        
-        .download-card {
+        .transition-all { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .theme-dark { background-color: #0f172a !important; color: #f8fafc !important; }
+        .theme-dark .test-card { background-color: #1e293b !important; border-color: #334155 !important; }
+        .theme-dark .back-btn { background-color: #1e293b !important; border-color: #475569 !important; color: #cbd5e6 !important; }
+        .theme-dark .back-btn:hover { background-color: #334155 !important; }
+        .theme-dark .badge-dev { background-color: #334155 !important; color: #a5b4fc !important; }
+        .theme-dark .feature-list { background-color: #334155 !important; }
+        .theme-dark .feature-list span:not(.feature-icon-bg) { color: #e2e8f0 !important; }
+        .theme-dark .feature-icon-bg { background-color: #475569 !important; }
+        .theme-dark .video-card { background-color: #1e293b !important; border-color: #334155 !important; }
+        .theme-dark .video-title { color: #f1f5f9 !important; }
+        .pulse-ring {
+            animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulseRing {
+            0%, 100% { opacity: 0.4; transform: scale(0.95); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .shine-effect {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            background-size: 200% 100%;
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .feature-list {
+            transition: all 0.2s ease;
+        }
+        .feature-list:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .video-card {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .download-card:hover {
+        .video-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15);
         }
-        .btn-download {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            transition: all 0.2s;
-        }
-        .btn-download:hover {
-            filter: brightness(1.05);
-            transform: scale(1.02);
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
-        }
-        .file-icon {
-            background: rgba(79, 70, 229, 0.1);
-            border-radius: 1.2rem;
-        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen p-4 md:p-8 transition-all" id="mainBody">
+<body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all" id="mainBody">
     <div class="max-w-5xl mx-auto">
         
-        <!-- 返回主選單 + 標頭區域 -->
-        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <button onclick="goBackToPortal()" class="back-button flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl px-5 py-2.5 text-slate-600 font-bold shadow-sm hover:bg-slate-100 transition-all group">
-                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span>
-                <span>返回主選單</span>
+        <!-- 返回主選單按鈕 -->
+        <div class="mb-6">
+            <button onclick="goBack()" class="back-btn flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors group font-medium">
+                <span class="text-2xl group-hover:-translate-x-1 transition-transform">←</span>
+                <span class="font-bold text-base">返回主選單</span>
             </button>
-            <div class="flex items-center gap-2 text-xs font-mono text-slate-400 bg-white/60 px-4 py-2 rounded-full shadow-sm">
-                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span>下載中心 · 安全傳輸</span>
+        </div>
+
+        <!-- 狀態標籤 -->
+        <div class="mb-6">
+            <span class="badge-dev bg-amber-100 text-amber-700 text-sm font-bold px-5 py-2.5 rounded-full uppercase tracking-wider">
+                🧰 工具下載中心 · 教學影片
+            </span>
+        </div>
+
+        <!-- ========== 教學影片區塊（卡片式，類似 test5 風格） ========== -->
+        <div class="mb-12">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="text-2xl">📺</span>
+                <h2 class="text-2xl font-black text-slate-700">教學影片</h2>
+                <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">陸續新增</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 影片卡片 1 -->
+                <div class="video-card bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-xl">
+                    <div class="relative pb-[56.25%] h-0 bg-slate-800">
+                        <iframe class="absolute top-0 left-0 w-full h-full" 
+                            src="https://www.youtube.com/embed/請替換為您的影片ID1" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="p-5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-lg">🧧</span>
+                            <h3 class="font-bold text-slate-800 text-lg">紅包領取工具教學</h3>
+                        </div>
+                        <p class="text-slate-500 text-sm leading-relaxed">示範如何使用紅包腳本工具，不需模擬器即可自動領取紅包。</p>
+                        <div class="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                            <span>⏱️ 約 3 分鐘</span>
+                            <span>•</span>
+                            <span>📌 入門篇</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 影片卡片 2 -->
+                <div class="video-card bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-xl">
+                    <div class="relative pb-[56.25%] h-0 bg-slate-800">
+                        <iframe class="absolute top-0 left-0 w-full h-full" 
+                            src="https://www.youtube.com/embed/請替換為您的影片ID2" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="p-5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-lg">🍽️</span>
+                            <h3 class="font-bold text-slate-800 text-lg">赴宴自動化工具教學</h3>
+                        </div>
+                        <p class="text-slate-500 text-sm leading-relaxed">自動參加宴會、領取獎勵，輕鬆完成每日赴宴任務。</p>
+                        <div class="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                            <span>⏱️ 約 4 分鐘</span>
+                            <span>•</span>
+                            <span>📌 效率篇</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 影片卡片 3（預留範例） -->
+                <div class="video-card bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-xl">
+                    <div class="relative pb-[56.25%] h-0 bg-slate-800 flex items-center justify-center">
+                        <div class="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-400 flex-col">
+                            <span class="text-4xl mb-2">🎬</span>
+                            <span class="text-sm font-medium">即將上線</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-lg">🔜</span>
+                            <h3 class="font-bold text-slate-800 text-lg">更多教學影片</h3>
+                        </div>
+                        <p class="text-slate-500 text-sm leading-relaxed">更多工具使用教學，敬請期待！</p>
+                        <div class="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                            <span>⏱️ 準備中</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 影片卡片 4（預留） -->
+                <div class="video-card bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-xl">
+                    <div class="relative pb-[56.25%] h-0 bg-slate-800 flex items-center justify-center">
+                        <div class="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-400 flex-col">
+                            <span class="text-4xl mb-2">📝</span>
+                            <span class="text-sm font-medium">敬請期待</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-lg">⭐</span>
+                            <h3 class="font-bold text-slate-800 text-lg">進階應用教學</h3>
+                        </div>
+                        <p class="text-slate-500 text-sm leading-relaxed">進階功能與技巧分享，幫助您更有效率。</p>
+                        <div class="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                            <span>⏱️ 規劃中</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 主視覺 -->
-        <div class="text-center mb-12 mt-4">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl shadow-xl mb-5">
-                <span class="text-4xl">📦</span>
+        <!-- ========== 工具下載區塊（原有 toolkit 風格） ========== -->
+        <div class="mt-8">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="text-2xl">📦</span>
+                <h2 class="text-2xl font-black text-slate-700">工具下載</h2>
+                <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">一鍵下載</span>
             </div>
-            <h1 class="text-4xl md:text-5xl font-black tracking-tight bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent dark:from-white dark:to-indigo-200">工具箱 · 資源下載</h1>
-            <p class="text-slate-500 font-medium mt-3 max-w-lg mx-auto">輔助腳本、表格範本、規劃檔案 — 一鍵取得最新版本</p>
-        </div>
 
-        <!-- 下載項目網格 (動態生成 + 統一風格) -->
-        <div id="downloadGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 mb-16">
-            <!-- 卡片會透過 JavaScript 動態注入，確保與主題同步且易於擴充 -->
-        </div>
+            <div class="bg-white rounded-[2.5rem] shadow-lg border border-slate-200 p-6 md:p-8 test-card">
+                <div class="max-w-3xl mx-auto space-y-4 text-slate-600">
+                    <ul class="space-y-4 text-left">
+                        <!-- 項目 1 - 紅包工具（可下載） -->
+                        <li onclick="downloadFile('https://drive.google.com/uc?export=download&id=1bnzy9UbPRsRM27a0vSLYtlC7EjZBOPEM', '掌櫃助手(簡版).zip')" 
+                            class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 hover:bg-indigo-50 cursor-pointer transition-all">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🧧</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-700">紅包領取 + 腳本錄製工具 (不須模擬器)</span>
+                            <span class="bg-indigo-500 text-white hover:bg-yellow-400 hover:text-purple-900 text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm transition-all">下載</span>
+                        </li>
+                        <!-- 項目 2 - 赴宴工具（尚未開放） -->
+                        <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 opacity-60">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🍽️</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-700">赴宴自動化工具</span>
+                            <span class="bg-slate-300 text-white text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm">即將開放</span>
+                        </li>
+                        <!-- 項目 3 -->
+                        <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 opacity-60">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🔜</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-500">敬請期待...</span>
+                            <span class="bg-slate-300 text-white text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm">即將開放</span>
+                        </li>
+                        <!-- 項目 4 -->
+                        <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 opacity-60">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🔜</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-500">敬請期待...</span>
+                            <span class="bg-slate-300 text-white text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm">即將開放</span>
+                        </li>
+                    </ul>
+                </div>
 
-        <!-- 說明區塊 / 備註 -->
-        <div class="footer-note mt-12 pt-8 border-t border-slate-200 text-center text-slate-400 text-xs font-medium">
-            <div class="flex flex-wrap justify-center gap-6">
-                <span>🔒 所有檔案均托管於可靠雲端空間</span>
-                <span>⚡ 推薦使用 Chrome / Edge 下載</span>
-                <span>📁 若連結失效請聯絡管理員</span>
+                <!-- 進度條 -->
+                <div class="max-w-md mx-auto mt-8 pt-4 border-t border-dashed border-slate-200">
+                    <div class="flex justify-between text-sm font-bold text-slate-500 mb-3">
+                        <span>開發進度</span>
+                        <span class="text-indigo-600">20% · 持續更新中</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                        <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full w-[20%] shine-effect"></div>
+                    </div>
+                    <p class="text-slate-400 text-xs font-medium mt-4 text-center">
+                        📁 檔案托管於 Google Drive · 一鍵下載即時取得最新版本
+                    </p>
+                </div>
             </div>
-            <p class="mt-4 opacity-70">版本 v2.0 · 即時同步 · 無需額外權限</p>
         </div>
-    </div>
 
-    <!-- 通用訊息彈窗 (簡約) -->
-    <div id="msgToast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm z-50 transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2">
-        <span id="toastIcon">✅</span>
-        <span id="toastMsg">操作成功</span>
+        <!-- 底部提示區 -->
+        <div class="mt-8 text-center">
+            <p class="text-xs text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
+                <span>⚙️ Version 1.0.0</span>
+                <span>•</span>
+                <span>教學影片陸續更新</span>
+                <span>•</span>
+                <span>回饋建議歡迎聯繫管理員</span>
+            </p>
+        </div>
     </div>
 
     <script>
-        // ---------- 1. 主題同步 + 登入檢查 ----------
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyC96mO15fHbbG11IVoWr7c_F63xAGYpYAhANVZGlmyCS43k-Gud26S5fmsIO-mBwy/exec"; 
-        
-        function getStoredTheme() {
+        // 套用主題
+        window.onload = function() {
             try {
                 const data = JSON.parse(sessionStorage.getItem('gameData'));
-                return data?.config?.CurrentTheme || 'default';
-            } catch(e) { return 'default'; }
-        }
+                if (data?.config?.CurrentTheme) {
+                    applyTheme(data.config.CurrentTheme);
+                }
+                if (data?.user?.name) {
+                    console.log(`掌櫃 ${data.user.name} 歡迎使用工具下載中心`);
+                }
+            } catch (e) {
+                console.log('無法讀取主題設定，使用預設主題');
+            }
+        };
 
         function applyTheme(theme) {
             const body = document.getElementById('mainBody');
             body.classList.remove('theme-dark');
             body.style.backgroundColor = "";
-            if(theme === 'dark') {
+
+            if (theme === 'dark') {
                 body.classList.add('theme-dark');
-            } else if(theme === 'christmas') {
+            } else if (theme === 'christmas') {
                 body.style.backgroundColor = "#fff1f2";
             } else {
                 body.style.backgroundColor = "#f8fafc";
             }
         }
 
-        // 登入防護
-        (function checkAuth() {
-            const gameData = sessionStorage.getItem('gameData');
-            if (!gameData) {
-                location.href = "index.html";
-                return;
-            }
-            const theme = getStoredTheme();
-            applyTheme(theme);
-        })();
-
-        // 返回主選單
-        function goBackToPortal() {
-            location.href = "portal.html";
+        function goBack() {
+            location.href = 'portal.html';
         }
 
-        // 簡易提示
-        function showToast(msg, isSuccess = true) {
-            const toast = document.getElementById('msgToast');
-            const iconSpan = document.getElementById('toastIcon');
-            const msgSpan = document.getElementById('toastMsg');
-            iconSpan.innerText = isSuccess ? "✅" : "⚠️";
-            msgSpan.innerText = msg;
-            toast.classList.remove('opacity-0', 'pointer-events-none');
-            toast.classList.add('opacity-100');
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'pointer-events-none');
-                toast.classList.remove('opacity-100');
-            }, 2800);
+        // 登入檢查
+        if (!sessionStorage.getItem('gameData')) {
+            location.href = 'index.html';
         }
 
-        // 下載檔案核心: 支援三種方式 (1) 直接blob下載 (2) 觸發a連結 (3) 外部連結
-        function triggerDownload(url, filename, isExternal = false) {
+        // 下載檔案函數
+        function downloadFile(url, filename) {
             if (!url) {
-                showToast("下載連結無效，請稍後再試", false);
+                alert("下載連結無效，請聯繫管理員");
                 return;
             }
-            // 如果是外部連結（google drive 或其他雲端）直接新分頁開啟下載，避免跨域 blob 問題
-            if (isExternal || url.startsWith('http') && (url.includes('drive.google.com') || url.includes('dropbox.com') || url.includes('github.com'))) {
-                const a = document.createElement('a');
-                a.href = url;
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                a.download = filename; // 部分瀏覽器可能忽略download屬性，但仍會開啟新分頁
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast(`開始下載：${filename}`, true);
-                return;
-            }
-            // 同源或自訂blob：用fetch獲取後建立blob (適合小檔或自己伺服器)
-            fetch(url)
-                .then(res => {
-                    if (!res.ok) throw new Error('網路錯誤');
-                    return res.blob();
-                })
-                .then(blob => {
-                    const blobUrl = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = blobUrl;
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(blobUrl);
-                    showToast(`下載 ${filename} 成功`, true);
-                })
-                .catch(err => {
-                    console.error(err);
-                    showToast(`下載失敗，請檢查網路或稍後重試`, false);
-                });
+            // 紀錄下載（可選）
+            try {
+                const userData = JSON.parse(sessionStorage.getItem('gameData'));
+                console.log(`📥 ${userData?.user?.name || '未知使用者'} 下載了 ${filename}`);
+            } catch(e) {}
+            window.open(url, '_blank');
         }
-
-        // ---------- 2. 定義下載清單 (結構化資料，便於未來維護) ----------
-        // 每個項目包含: 圖示, 標題, 說明, 檔案名稱, 下載連結, 標籤, 是否外部連結 (大部分採用可靠空間直鏈)
-        // 建議做法：檔案可放置於 GitHub Releases、Google Drive 公開分享連結(需取得直接下載連結)、或是自己的雲端空間。
-        // 為確保實用性，這裡提供佔位連結，並以註解說明如何更換為真實連結。
-        // 注意：為了避免空白連結無法運作，預設提供示範檔案 placeholder 並提醒。
         
-        const downloadItems = [
-            {
-                icon: "📊",
-                title: "體力監控輔助表",
-                description: "Excel 自動計算體力恢復時間，支援多活動排程",
-                fileName: "Stamina_Helper_v2.3.xlsx",
-                // 建議使用 GitHub 或 Google Drive 直鏈，以下為範例占位 (可替換)
-                downloadUrl: "https://github.com/user-attachments/files/example/stamina_template.xlsx",
-                isExternal: true,
-                badge: "熱門下載",
-                badgeColor: "bg-amber-100 text-amber-700"
-            },
-            {
-                icon: "🃏",
-                title: "翻牌路徑計算機",
-                description: "機率模擬 + 最短路徑推薦，提升商戰效率",
-                fileName: "Flipping_Tool_v1.4.xlsm",
-                downloadUrl: "https://drive.google.com/uc?export=download&id=EXAMPLE_ID_1",  // 請替換真實ID
-                isExternal: true,
-                badge: "策略必備",
-                badgeColor: "bg-indigo-100 text-indigo-700"
-            },
-            {
-                icon: "🚢",
-                title: "偉大航線決策系統",
-                description: "完整試算表，支援漲跌幅即時模擬",
-                fileName: "Voyage_Decision_v2.0.xlsx",
-                downloadUrl: "https://github.com/yourname/voyage/releases/download/v2.0/Voyage_System.xlsx",
-                isExternal: true,
-                badge: "進階工具",
-                badgeColor: "bg-emerald-100 text-emerald-700"
-            },
-            {
-                icon: "⚔️",
-                title: "對戰分析模擬器",
-                description: "敵我戰力對比 + 畢昇/職務加成計算器",
-                fileName: "Battle_Simulator_v1.0.xlsx",
-                downloadUrl: "https://drive.google.com/uc?export=download&id=YOUR_BATTLE_FILE_ID",
-                isExternal: true,
-                badge: "NEW",
-                badgeColor: "bg-rose-100 text-rose-600"
-            },
-            {
-                icon: "📜",
-                title: "資源整合包 (腳本集)",
-                description: "收錄常用公式、自動化巨集與統計報表",
-                fileName: "DaZhangGui_Toolkit.zip",
-                downloadUrl: "https://github.com/example/toolkit/releases/latest/download/toolkit.zip",
-                isExternal: true,
-                badge: "整合包",
-                badgeColor: "bg-slate-200 text-slate-700"
-            },
-            {
-                icon: "🧮",
-                title: "募資/錦囊效果對照表",
-                description: "錦囊觸發條件及募資效益計算表",
-                fileName: "Capital_Fund_Guide.pdf",
-                downloadUrl: "https://drive.google.com/uc?export=download&id=PDF_SAMPLE_ID",
-                isExternal: true,
-                badge: "PDF",
-                badgeColor: "bg-blue-100 text-blue-700"
-            }
-        ];
-
-        // 為了演示美觀，如果連結尚未更新為真實有效連結，系統會提示管理員修改。
-        // 實際部署時可將下載連結指向：GitHub Releases, 自架NAS, 或 Google Drive 直鏈產生器。
-        // 推薦方案： GitHub Releases (免費、穩定、支援版本控制)
-        // 次要方案： Google Drive 需產生直鏈: 將 {FILE_ID} 替換後使用 "https://drive.google.com/uc?export=download&id=FILE_ID"
-        // 第三方案： 使用 Dropbox 分享連結，將 ?dl=0 改為 ?dl=1 即可直連。
-        
-        // 渲染下載卡片
-        function renderDownloadCards() {
-            const container = document.getElementById('downloadGrid');
-            if (!container) return;
-            
-            container.innerHTML = downloadItems.map(item => `
-                <div class="download-card bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden flex flex-col h-full transition-all hover:shadow-xl">
-                    <div class="p-6 flex-1">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="file-icon w-14 h-14 flex items-center justify-center text-3xl bg-indigo-50 rounded-2xl shadow-inner">
-                                ${item.icon}
-                            </div>
-                            ${item.badge ? `<span class="badge-soft text-[10px] font-black px-2.5 py-1 rounded-full ${item.badgeColor}">${item.badge}</span>` : ''}
-                        </div>
-                        <h3 class="text-xl font-extrabold text-slate-800 dark:text-white mb-2">${item.title}</h3>
-                        <p class="info-text text-slate-500 text-sm leading-relaxed mb-4">${item.description}</p>
-                        <div class="flex items-center gap-2 text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl px-3 py-2 w-fit">
-                            <span>📁</span>
-                            <span class="truncate max-w-[160px]">${item.fileName}</span>
-                        </div>
-                    </div>
-                    <div class="p-5 pt-0 mt-auto">
-                        <button onclick="handleDownload('${item.downloadUrl}', '${item.fileName}', ${item.isExternal})" 
-                                class="btn-download w-full flex items-center justify-center gap-2 text-white font-bold py-3 rounded-xl shadow-md transition-all">
-                            <span>⬇️</span> 立即下載
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // 處理下載並附加安全提示與防呆
-        window.handleDownload = function(url, fileName, isExternal) {
-            if (!url || url.includes("EXAMPLE_ID") || url.includes("YOUR_BATTLE_FILE_ID") || url.includes("PDF_SAMPLE_ID") || url.includes("github.com/user-attachments/files/example/")) {
-                // 示範環境提示更換連結
-                showToast("⚠️ 此連結為範例位址，請管理員至程式碼替換為真實檔案連結 (GitHub/雲端)", false);
-                // 複製管理提示到控制台
-                console.warn(`[下載中心] 請將 ${fileName} 的 downloadUrl 更新為實際有效連結。建議使用 GitHub Releases 或 Google Drive 直鏈。`);
-                return;
-            }
-            // 避免空白
-            if (url === "" || url === "#") {
-                showToast("下載連結尚未設定，請聯繫管理員", false);
-                return;
-            }
-            triggerDownload(url, fileName, isExternal);
-        };
-        
-        // 提供額外功能：若想讓使用者也能上傳或二次提醒，但維持統一風格
-        
-        // 主題監聽 (因為可能從portal切換主題後重新整理時，但此頁面獨立也從session讀取)
+        // 監聽主題變更
         window.addEventListener('storage', (e) => {
             if (e.key === 'gameData') {
                 try {
@@ -317,71 +294,9 @@
                     if (newData?.config?.CurrentTheme) {
                         applyTheme(newData.config.CurrentTheme);
                     }
-                } catch (err) {}
+                } catch(err) {}
             }
         });
-        
-        // 啟動渲染
-        renderDownloadCards();
-
-        // 額外：若需要支援管理者動態配置（從Google試算表拉取下載清單），可延伸fetch，
-        // 但為了單純且快速符合需求，以上靜態清單加上友善備註已經足夠。
-        // 提供一個控制台可視函數方便替換連結 (開發者使用)
-        window.updateDownloadLink = function(index, newUrl, newFileName) {
-            if (downloadItems[index]) {
-                downloadItems[index].downloadUrl = newUrl;
-                if (newFileName) downloadItems[index].fileName = newFileName;
-                renderDownloadCards();
-                showToast(`已更新 ${downloadItems[index].title} 下載連結`, true);
-            } else {
-                console.error("索引無效");
-            }
-        };
-        
-        // 發送使用說明: 建議存放空間
-        console.log("💡 檔案存放建議：\n1. GitHub Releases: 建立版本並上傳附件，取得直鏈。\n2. Google Drive: 分享檔案->取得共用連結->轉換為直鏈 (uc?export=download&id=xxx)\n3. 自有雲端: 確保CORS允許即可。\n4. 本頁面完全支援動態修改，可連接後端API動態獲取下載清單。");
-    </script>
-
-    <!-- 說明區域增強：可視編輯提示（僅開發環境） -->
-    <div class="max-w-5xl mx-auto mt-4 mb-8 px-2">
-        <details class="bg-white/40 dark:bg-slate-800/20 backdrop-blur-sm rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-xs text-slate-500">
-            <summary class="font-bold cursor-pointer select-none text-indigo-600 dark:text-indigo-400">📌 管理員專區：如何更換真實下載連結？</summary>
-            <div class="mt-3 space-y-2 leading-relaxed">
-                <p>✅ <strong class="text-slate-700">推薦作法：使用 GitHub Releases</strong> — 免費、穩定、支援版本記錄。</p>
-                <p>1️⃣ 建立 GitHub 公開倉庫，上傳檔案至 Releases 頁面。<br>
-                2️⃣ 複製下載直鏈 (通常格式為 https://github.com/帳號/倉庫/releases/download/版本/檔名)。<br>
-                3️⃣ 修改下方對應的 <code class="bg-slate-100 px-1 rounded">downloadUrl</code> 即可。</p>
-                <p>🔁 若使用 Google Drive：取得檔案ID後，連結格式 → <code>https://drive.google.com/uc?export=download&id=檔案ID</code></p>
-                <p>⚡ 本頁面已預留動態更新函數，於瀏覽器控制台輸入：<br>
-                <code class="bg-slate-800 text-white px-2 py-1 rounded text-xs">updateDownloadLink(索引, "新網址", "新檔名")</code><br>
-                即可即時更新，不需重新整理。</p>
-                <p class="text-amber-600">※ 目前範例連結皆為佔位符，請務必替換後再提供給使用者。</p>
-            </div>
-        </details>
-    </div>
-
-    <!-- 保留與主portal風格完全一致的深色模式監聽 (被動更新) -->
-    <script>
-        // 再強化同步：若 sessionStorage 內的主題變動可透過簡單定時或監聽
-        (function watchThemeChange() {
-            let lastTheme = getStoredTheme();
-            setInterval(() => {
-                const newTheme = getStoredTheme();
-                if (newTheme !== lastTheme) {
-                    lastTheme = newTheme;
-                    applyTheme(newTheme);
-                }
-            }, 800);
-        })();
-
-        // 返回按鈕增加觸覺反饋
-        const backBtn = document.querySelector('.back-button');
-        if (backBtn) {
-            backBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                goBackToPortal();
-            });
-        }
     </script>
 </body>
 </html>
