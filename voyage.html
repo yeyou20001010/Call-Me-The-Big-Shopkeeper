@@ -394,7 +394,21 @@
                 canMultiBuy(type, checkSub = false) {
                     const target = type === '特產' ? this.products[0] : this.getMarginKingObj();
                     
+                    // ========== 業務規則判斷 ==========
+                    if (type === '特產') {
+                        // 表1只有在以下情況才應該開啟：
+                        // 1. 特產淨利最高，或
+                        // 2. 毛利王 = 特產
+                        const t0Nets = this.products.map(p => this.calcT0(p).net);
+                        const isSpecialProfitKing = (this.calcT0(this.products[0]).net === Math.max(...t0Nets));
+                        const isMarginKingSpecial = (this.getMarginKingObj().label === '特產');
+                        
+                        if (!isSpecialProfitKing && !isMarginKingSpecial) return false;
+                    }
+                    
+                    // 表2開啟條件：毛利王不能是特產
                     if (type === '毛利王' && target.label === '特產') return false;
+                    // =================================
                     
                     const res = this.calcT0(target);
                     
@@ -467,7 +481,6 @@
                     if (!this.canMultiBuy('特產', true)) return -999999;
                     const p0 = this.calcT0(this.products[0]);
                     const subNets = this.t1Inputs.map((input, i) => this.calcSub(this.products[i+1], input.sPrice, this.products[0]).net);
-                    // 只取正值，如果沒有正值則為 0
                     const bestSubNet = Math.max(0, ...subNets);
                     return p0.net + bestSubNet;
                 },
@@ -478,7 +491,6 @@
                     const mkRes = this.calcT0(mk);
                     const list = this.getT2List();
                     const subNets = this.t2Inputs.map((input, i) => this.calcSub(list[i], input.sPrice, mk).net);
-                    // 只取正值，如果沒有正值則為 0
                     const bestSubNet = Math.max(0, ...subNets);
                     return mkRes.net + bestSubNet;
                 },
@@ -499,7 +511,6 @@
                         let best = null;
                         let bestNet = -Infinity;
                         for (const c of candidates) {
-                            // 只選擇可買數量 > 0 且淨利 > 0 的副產
                             if (c.qty > 0 && c.net > 0 && c.net > bestNet) {
                                 bestNet = c.net;
                                 best = c.product;
@@ -518,7 +529,6 @@
                         let best = null;
                         let bestNet = -Infinity;
                         for (const c of candidates) {
-                            // 只選擇可買數量 > 0 且淨利 > 0 的副產
                             if (c.qty > 0 && c.net > 0 && c.net > bestNet) {
                                 bestNet = c.net;
                                 best = c.product;
@@ -570,7 +580,6 @@
                         }
                     });
                     
-                    // 方案一：特產買空方案
                     if (canT1 && max === t1) {
                         const bestSub = this.getBestSubProduct('t1');
                         if (bestSub) {
@@ -581,7 +590,6 @@
                                 detail: `建議：買空 ${specialHtml}，剩餘資金全部投入 ${bestSubHtml}。`
                             };
                         } else {
-                            // 沒有可買的正淨利副產，回退到單買
                             const bestProductHtml = this.getDisplayNameHTML(bestProduct);
                             return {
                                 msg: `🎯 建議單買：${this.getDisplayName(bestProduct)}`,
@@ -590,7 +598,6 @@
                         }
                     }
                     
-                    // 方案二：毛利王方案
                     if (canT2 && max === t2) {
                         const bestSub = this.getBestSubProduct('t2');
                         if (bestSub) {
@@ -602,7 +609,6 @@
                                 detail: `建議：優先買空 ${mkHtml}，剩餘資金投入 ${bestSubHtml}。`
                             };
                         } else {
-                            // 沒有可買的正淨利副產，回退到單買
                             const bestProductHtml = this.getDisplayNameHTML(bestProduct);
                             return {
                                 msg: `🎯 建議單買：${this.getDisplayName(bestProduct)}`,
@@ -611,7 +617,6 @@
                         }
                     }
                     
-                    // 預設方案：單買淨利最高項
                     let extraNote = "";
                     const bestProductHtml = this.getDisplayNameHTML(bestProduct);
                     
