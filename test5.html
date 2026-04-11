@@ -3,51 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大掌櫃工具箱 - 資源下載中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,700;14..32,800;14..32,900&display=swap" rel="stylesheet">
+    <title>工具下載中心｜大掌櫃工具箱</title>
     <style>
-        * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        .transition-all { transition: all 0.3s cubic-bezier(0.2, 0, 0, 1); }
-        
-        /* 主題深色模式 */
-        .theme-dark { background-color: #0f172a !important; color: #f1f5f9 !important; }
-        .theme-dark .download-card { background-color: #1e293b !important; border: 1px solid #334155 !important; color: #e2e8f0 !important; }
-        .theme-dark .info-text { color: #94a3b8 !important; }
-        .theme-dark .badge-soft { background-color: #334155 !important; color: #cbd5e1 !important; }
-        .theme-dark .footer-note { border-top-color: #334155 !important; color: #64748b !important; }
-        .theme-dark .back-button { background-color: #1e293b !important; border-color: #475569 !important; color: #cbd5e6 !important; }
-        .theme-dark .back-button:hover { background-color: #334155 !important; }
-        .theme-dark .video-card, .theme-dark .history-card { background-color: #1e293b !important; border-color: #334155 !important; }
+        .transition-all { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .theme-dark { background-color: #0f172a !important; color: #f8fafc !important; }
+        .theme-dark .test-card { background-color: #1e293b !important; border-color: #334155 !important; }
+        .theme-dark .back-btn { background-color: #1e293b !important; border-color: #475569 !important; color: #cbd5e6 !important; }
+        .theme-dark .back-btn:hover { background-color: #334155 !important; }
+        .theme-dark .badge-dev { background-color: #334155 !important; color: #a5b4fc !important; }
+        .theme-dark .feature-list { background-color: #334155 !important; }
+        .theme-dark .feature-list span:not(.feature-icon-bg) { color: #e2e8f0 !important; }
+        .theme-dark .feature-icon-bg { background-color: #475569 !important; }
+        .theme-dark .video-card { background-color: #1e293b !important; border-color: #334155 !important; }
         .theme-dark .video-title { color: #f1f5f9 !important; }
         .theme-dark .scroll-btn { background-color: #334155 !important; color: #cbd5e6 !important; }
         .theme-dark .scroll-btn:hover { background-color: #475569 !important; }
         
-        .download-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        .pulse-ring {
+            animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        .download-card:hover {
+        @keyframes pulseRing {
+            0%, 100% { opacity: 0.4; transform: scale(0.95); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .shine-effect {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            background-size: 200% 100%;
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .feature-list {
+            transition: all 0.2s ease;
+        }
+        .feature-list:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .video-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            flex-shrink: 0;
+            width: 280px;
+            scroll-snap-align: start;
+        }
+        .video-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15);
         }
-        .btn-download {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            transition: all 0.2s;
-        }
-        .btn-download:hover {
-            filter: brightness(1.05);
-            transform: scale(1.02);
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
-        }
-        .file-icon {
-            background: rgba(79, 70, 229, 0.1);
-            border-radius: 1.2rem;
-        }
-        
-        /* 影片輪播區 */
+        /* 橫向捲軸容器 */
         .video-scroll-container {
             scroll-behavior: smooth;
             scrollbar-width: thin;
+            scroll-snap-type: x mandatory;
         }
         .video-scroll-container::-webkit-scrollbar {
             height: 6px;
@@ -66,223 +76,242 @@
         .theme-dark .video-scroll-container::-webkit-scrollbar-thumb {
             background: #475569;
         }
-        
-        /* 跳動工具箱動畫（移植自 toolkit） */
+        /* 跳動動畫 */
+        .bounce-animation {
+            animation: bounceBox 1.2s ease-in-out infinite;
+        }
         @keyframes bounceBox {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-8px); }
         }
-        .bounce-animation {
-            animation: bounceBox 1.2s ease-in-out infinite;
-        }
-        .pulse-ring {
-            animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulseRing {
-            0%, 100% { opacity: 0.4; transform: scale(0.95); }
-            50% { opacity: 0.8; transform: scale(1.05); }
-        }
-        
-        /* 歷史紀錄 hover 效果 */
-        .history-item {
-            transition: all 0.2s ease;
-        }
-        .history-item:hover {
-            background-color: #f1f5f9;
-            transform: translateX(4px);
-        }
-        .theme-dark .history-item:hover {
-            background-color: #334155;
-        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen p-4 md:p-8 transition-all" id="mainBody">
-    <div class="max-w-6xl mx-auto">
+<body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all" id="mainBody">
+    <div class="max-w-5xl mx-auto">
         
-        <!-- 返回主選單 + 標頭區域 -->
-        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <button onclick="goBackToPortal()" class="back-button flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl px-5 py-2.5 text-slate-600 font-bold shadow-sm hover:bg-slate-100 transition-all group">
-                <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span>
-                <span>返回主選單</span>
+        <!-- 返回主選單按鈕（toolkit風格） -->
+        <div class="mb-6">
+            <button onclick="goBack()" class="back-btn flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors group font-medium">
+                <span class="text-2xl group-hover:-translate-x-1 transition-transform">←</span>
+                <span class="font-bold text-base">返回主選單</span>
             </button>
-            <div class="flex items-center gap-2 text-xs font-mono text-slate-400 bg-white/60 px-4 py-2 rounded-full shadow-sm">
-                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span>下載中心 · 安全傳輸</span>
-            </div>
         </div>
 
-        <!-- 主視覺 + 跳動工具箱動畫（移植自 toolkit） -->
-        <div class="text-center mb-10 mt-2">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl shadow-xl mb-5 relative">
-                <span class="text-4xl bounce-animation">📦</span>
-                <div class="absolute -top-2 -right-3 w-5 h-5 bg-amber-400 rounded-full pulse-ring"></div>
-            </div>
-            <h1 class="text-4xl md:text-5xl font-black tracking-tight bg-gradient-to-r from-slate-800 to-slate-500 bg-clip-text text-transparent dark:from-white dark:to-indigo-200">工具箱 · 資源下載</h1>
-            <p class="text-slate-500 font-medium mt-3 max-w-lg mx-auto">輔助腳本、表格範本、規劃檔案 — 一鍵取得最新版本</p>
+        <!-- 狀態標籤（toolkit風格） -->
+        <div class="mb-6">
+            <span class="badge-dev bg-amber-100 text-amber-700 text-sm font-bold px-5 py-2.5 rounded-full uppercase tracking-wider">
+                🧰 工具下載中心 · 教學影片
+            </span>
         </div>
 
-        <!-- ========== 影片教學區（橫向捲軸 + 左右箭頭 + 觀看紀錄） ========== -->
+        <!-- ========== 教學影片區（橫向捲軸 + 左右箭頭，一排顯示3支） ========== -->
         <div class="mb-12">
-            <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">📺</span>
-                    <h2 class="text-xl font-black text-slate-700">教學影片</h2>
-                    <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">點擊影片可全螢幕觀看</span>
-                </div>
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-2xl">📺</span>
+                <h2 class="text-xl font-black text-slate-700">教學影片</h2>
+                <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">點擊影片可全螢幕觀看</span>
             </div>
             
-            <div class="flex flex-col lg:flex-row gap-6">
-                <!-- 左側：橫向捲軸影片區 -->
-                <div class="flex-1">
-                    <div class="relative group">
-                        <!-- 左箭頭 -->
-                        <button id="scrollLeftBtn" class="scroll-btn absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" style="transform: translateY(-50%);">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-                        <!-- 右箭頭 -->
-                        <button id="scrollRightBtn" class="scroll-btn absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" style="transform: translateY(-50%);">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                        
-                        <!-- 橫向捲軸容器 -->
-                        <div id="videoScrollContainer" class="video-scroll-container flex overflow-x-auto gap-5 pb-4 scroll-smooth" style="scroll-snap-type: x mandatory;">
-                            <!-- 影片卡片 1 -->
-                            <div class="video-card flex-shrink-0 w-72 bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg" data-video-id="video1" data-video-title="紅包領取工具教學" data-video-url="https://www.youtube.com/embed/請替換為您的影片ID1" style="scroll-snap-align: start;">
-                                <div class="relative h-40 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/請替換為您的影片ID1', '紅包領取工具教學')">
-                                    <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
-                                        <div class="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M8 5v14l11-7z"/>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">03:24</div>
-                                </div>
-                                <div class="p-3">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="text-sm">🧧</span>
-                                        <h3 class="font-bold text-slate-800 text-sm">紅包領取工具教學</h3>
-                                    </div>
-                                    <p class="text-slate-400 text-xs">紅包腳本工具示範，不需模擬器</p>
-                                    <button onclick="addToHistoryAndPlay('https://www.youtube.com/embed/請替換為您的影片ID1', '紅包領取工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+            <div class="relative group">
+                <!-- 左箭頭 -->
+                <button id="scrollLeftBtn" class="scroll-btn absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" style="transform: translateY(-50%);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <!-- 右箭頭 -->
+                <button id="scrollRightBtn" class="scroll-btn absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" style="transform: translateY(-50%);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+                
+                <!-- 橫向捲軸容器 - 一排顯示3支（寬度 280px * 3 + 間距 = 約 880px） -->
+                <div id="videoScrollContainer" class="video-scroll-container flex overflow-x-auto gap-5 pb-4 scroll-smooth">
+                    <!-- 影片卡片 1 - 紅包工具 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '紅包領取工具教學')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
                                 </div>
                             </div>
-                            <!-- 影片卡片 2 -->
-                            <div class="video-card flex-shrink-0 w-72 bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg" data-video-id="video2" data-video-title="赴宴自動化工具教學" data-video-url="https://www.youtube.com/embed/請替換為您的影片ID2" style="scroll-snap-align: start;">
-                                <div class="relative h-40 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/請替換為您的影片ID2', '赴宴自動化工具教學')">
-                                    <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
-                                        <div class="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M8 5v14l11-7z"/>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">04:12</div>
-                                </div>
-                                <div class="p-3">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="text-sm">🍽️</span>
-                                        <h3 class="font-bold text-slate-800 text-sm">赴宴自動化工具教學</h3>
-                                    </div>
-                                    <p class="text-slate-400 text-xs">自動參加宴會、領取獎勵</p>
-                                    <button onclick="addToHistoryAndPlay('https://www.youtube.com/embed/請替換為您的影片ID2', '赴宴自動化工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
-                                </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">03:24</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">🧧</span>
+                                <h3 class="font-bold text-slate-800 text-sm">紅包領取工具教學</h3>
                             </div>
-                            <!-- 影片卡片 3 -->
-                            <div class="video-card flex-shrink-0 w-72 bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg" data-video-id="video3" data-video-title="體力監控工具教學" data-video-url="https://www.youtube.com/embed/請替換為您的影片ID3" style="scroll-snap-align: start;">
-                                <div class="relative h-40 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/請替換為您的影片ID3', '體力監控工具教學')">
-                                    <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
-                                        <div class="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M8 5v14l11-7z"/>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">05:30</div>
-                                </div>
-                                <div class="p-3">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="text-sm">⚡</span>
-                                        <h3 class="font-bold text-slate-800 text-sm">體力監控工具教學</h3>
-                                    </div>
-                                    <p class="text-slate-400 text-xs">即時監控體力恢復時間</p>
-                                    <button onclick="addToHistoryAndPlay('https://www.youtube.com/embed/請替換為您的影片ID3', '體力監控工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
-                                </div>
-                            </div>
-                            <!-- 影片卡片 4 -->
-                            <div class="video-card flex-shrink-0 w-72 bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg" data-video-id="video4" data-video-title="對戰分析工具教學" data-video-url="https://www.youtube.com/embed/請替換為您的影片ID4" style="scroll-snap-align: start;">
-                                <div class="relative h-40 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/請替換為您的影片ID4', '對戰分析工具教學')">
-                                    <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
-                                        <div class="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                                            <svg class="w-6 h-6 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M8 5v14l11-7z"/>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">06:15</div>
-                                </div>
-                                <div class="p-3">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="text-sm">⚔️</span>
-                                        <h3 class="font-bold text-slate-800 text-sm">對戰分析工具教學</h3>
-                                    </div>
-                                    <p class="text-slate-400 text-xs">戰力對比與加成計算</p>
-                                    <button onclick="addToHistoryAndPlay('https://www.youtube.com/embed/請替換為您的影片ID4', '對戰分析工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
-                                </div>
-                            </div>
-                            <!-- 影片卡片 5（預留） -->
-                            <div class="video-card flex-shrink-0 w-72 bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg" data-video-id="video5" data-video-title="更多教學影片" data-video-url="" style="scroll-snap-align: start;">
-                                <div class="relative h-40 bg-slate-100 flex items-center justify-center">
-                                    <div class="text-center text-slate-400">
-                                        <span class="text-3xl">🎬</span>
-                                        <p class="text-xs mt-1">即將上線</p>
-                                    </div>
-                                </div>
-                                <div class="p-3">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="text-sm">🔜</span>
-                                        <h3 class="font-bold text-slate-800 text-sm">敬請期待</h3>
-                                    </div>
-                                    <p class="text-slate-400 text-xs">更多教學影片準備中</p>
-                                </div>
-                            </div>
+                            <p class="text-slate-400 text-xs">紅包腳本工具示範，不需模擬器</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '紅包領取工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
                         </div>
                     </div>
+                    <!-- 影片卡片 2 - 赴宴工具 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '赴宴自動化工具教學')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">04:12</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">🍽️</span>
+                                <h3 class="font-bold text-slate-800 text-sm">赴宴自動化工具教學</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">自動參加宴會、領取獎勵</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '赴宴自動化工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+                    <!-- 影片卡片 3 - 體力監控 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '體力監控工具教學')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">05:30</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">⚡</span>
+                                <h3 class="font-bold text-slate-800 text-sm">體力監控工具教學</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">即時監控體力恢復時間</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '體力監控工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+                    <!-- 影片卡片 4 - 對戰分析 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '對戰分析工具教學')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">06:15</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">⚔️</span>
+                                <h3 class="font-bold text-slate-800 text-sm">對戰分析工具教學</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">戰力對比與加成計算</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '對戰分析工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+                    <!-- 影片卡片 5 - 敬請期待 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg opacity-80">
+                        <div class="relative h-36 bg-slate-100 flex items-center justify-center">
+                            <div class="text-center text-slate-400">
+                                <span class="text-3xl">🎬</span>
+                                <p class="text-xs mt-1">即將上線</p>
+                            </div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">🔜</span>
+                                <h3 class="font-bold text-slate-800 text-sm">更多教學影片</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">敬請期待</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 工具下載區塊（維持 toolkit 一列式風格） ========== -->
+        <div class="mt-8">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-2xl">📦</span>
+                <h2 class="text-xl font-black text-slate-700">工具下載</h2>
+                <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">一鍵下載</span>
+            </div>
+
+            <div class="bg-white rounded-[2.5rem] shadow-lg border-2 border-dashed border-slate-200 p-6 md:p-8 test-card relative overflow-hidden">
+                <!-- 動態背景裝飾線條（toolkit風格） -->
+                <div class="absolute inset-0 opacity-5 pointer-events-none">
+                    <div class="absolute top-10 left-10 w-32 h-32 border-4 border-indigo-300 rounded-full"></div>
+                    <div class="absolute bottom-10 right-10 w-48 h-48 border-4 border-amber-300 rounded-full"></div>
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-slate-300 rounded-full"></div>
                 </div>
                 
-                <!-- 右側：最近觀看紀錄 -->
-                <div class="lg:w-72">
-                    <div class="history-card bg-white rounded-xl shadow-md border border-slate-100 p-4">
-                        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
-                            <span class="text-lg">🕐</span>
-                            <h3 class="font-bold text-slate-700 text-sm">最近觀看</h3>
-                            <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-red-500 ml-auto">清空</button>
-                        </div>
-                        <div id="historyList" class="space-y-2 max-h-80 overflow-y-auto">
-                            <div class="text-center text-slate-400 text-xs py-6">暫無觀看紀錄<br>點擊影片即可記錄</div>
-                        </div>
+                <!-- 跳動工具箱圖示（toolkit動畫） -->
+                <div class="flex justify-center mb-6">
+                    <div class="text-6xl relative inline-block">
+                        <span class="inline-block bounce-animation">📦</span>
+                        <div class="absolute -top-2 -right-3 w-4 h-4 bg-amber-400 rounded-full pulse-ring"></div>
                     </div>
+                </div>
+
+                <div class="max-w-3xl mx-auto space-y-4 text-slate-600 relative z-10">
+                    <p class="text-base font-black text-indigo-600 uppercase tracking-wider text-center mb-4">✨ 正式版將提供以下資源 ✨</p>
+                    <ul class="space-y-4 text-left">
+                        <!-- 項目 1 - 紅包工具（可下載） -->
+                        <li onclick="downloadFile('https://drive.google.com/uc?export=download&id=1bnzy9UbPRsRM27a0vSLYtlC7EjZBOPEM', '掌櫃助手(簡版).zip')" 
+                            class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 hover:bg-indigo-50 cursor-pointer transition-all">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🧧</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-700">紅包領取 + 腳本錄製工具 (不須模擬器)</span>
+                            <span class="bg-indigo-500 text-white hover:bg-yellow-400 hover:text-purple-900 text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm transition-all">下載</span>
+                        </li>
+                        <!-- 項目 2 - 赴宴工具（尚未開放） -->
+                        <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 opacity-60">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🍽️</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-700">赴宴自動化工具</span>
+                            <span class="bg-slate-300 text-white text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm">即將開放</span>
+                        </li>
+                        <!-- 項目 3 -->
+                        <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 opacity-60">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🔜</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-500">敬請期待...</span>
+                            <span class="bg-slate-300 text-white text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm">即將開放</span>
+                        </li>
+                        <!-- 項目 4 -->
+                        <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 opacity-60">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🔜</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-500">敬請期待...</span>
+                            <span class="bg-slate-300 text-white text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm">即將開放</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 裝飾分隔線 + 進度條（toolkit風格） -->
+                <div class="max-w-md mx-auto mt-8 pt-4 border-t border-dashed border-slate-200">
+                    <div class="flex justify-between text-sm font-bold text-slate-500 mb-3">
+                        <span>開發進度</span>
+                        <span class="text-indigo-600">25% · 持續更新中</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                        <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full w-[25%] shine-effect"></div>
+                    </div>
+                    <p class="text-slate-400 text-xs font-medium mt-4 text-center">
+                        📁 檔案托管於 Google Drive · 一鍵下載即時取得最新版本
+                    </p>
                 </div>
             </div>
         </div>
 
-        <!-- ========== 下載項目網格 ========== -->
-        <div id="downloadGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            <!-- 卡片會透過 JavaScript 動態注入 -->
-        </div>
-
-        <!-- 說明區塊 / 備註 -->
-        <div class="footer-note mt-8 pt-6 border-t border-slate-200 text-center text-slate-400 text-xs font-medium">
-            <div class="flex flex-wrap justify-center gap-6">
-                <span>🔒 所有檔案均托管於可靠雲端空間</span>
-                <span>⚡ 推薦使用 Chrome / Edge 下載</span>
-                <span>📁 若連結失效請聯絡管理員</span>
-            </div>
-            <p class="mt-3 opacity-70">版本 v2.1 · 即時同步 · 教學影片持續更新</p>
+        <!-- 底部提示區（toolkit風格） -->
+        <div class="mt-8 text-center">
+            <p class="text-xs text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
+                <span>⚙️ Version 1.0.0</span>
+                <span>•</span>
+                <span>教學影片陸續更新</span>
+                <span>•</span>
+                <span>回饋建議歡迎聯繫管理員</span>
+            </p>
         </div>
     </div>
 
@@ -297,63 +326,65 @@
         </div>
     </div>
 
-    <!-- 通用訊息彈窗 -->
-    <div id="msgToast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm z-50 transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2">
-        <span id="toastIcon">✅</span>
-        <span id="toastMsg">操作成功</span>
-    </div>
-
     <script>
-        // ---------- 主題同步 + 登入檢查 ----------
-        function getStoredTheme() {
+        // 套用主題（toolkit風格）
+        window.onload = function() {
             try {
                 const data = JSON.parse(sessionStorage.getItem('gameData'));
-                return data?.config?.CurrentTheme || 'default';
-            } catch(e) { return 'default'; }
-        }
+                if (data?.config?.CurrentTheme) {
+                    applyTheme(data.config.CurrentTheme);
+                }
+                if (data?.user?.name) {
+                    console.log(`掌櫃 ${data.user.name} 歡迎使用工具下載中心`);
+                }
+            } catch (e) {
+                console.log('無法讀取主題設定，使用預設主題');
+            }
+            // 初始化左右箭頭功能
+            initScrollButtons();
+        };
 
         function applyTheme(theme) {
             const body = document.getElementById('mainBody');
             body.classList.remove('theme-dark');
             body.style.backgroundColor = "";
-            if(theme === 'dark') {
+
+            if (theme === 'dark') {
                 body.classList.add('theme-dark');
-            } else if(theme === 'christmas') {
+            } else if (theme === 'christmas') {
                 body.style.backgroundColor = "#fff1f2";
             } else {
                 body.style.backgroundColor = "#f8fafc";
             }
         }
 
-        (function checkAuth() {
-            const gameData = sessionStorage.getItem('gameData');
-            if (!gameData) {
-                location.href = "index.html";
+        function goBack() {
+            location.href = 'portal.html';
+        }
+
+        // 登入檢查
+        if (!sessionStorage.getItem('gameData')) {
+            location.href = 'index.html';
+        }
+
+        // 下載檔案函數（toolkit風格）
+        function downloadFile(url, filename) {
+            if (!url) {
+                alert("下載連結無效，請聯繫管理員");
                 return;
             }
-            applyTheme(getStoredTheme());
-        })();
-
-        function goBackToPortal() { location.href = "portal.html"; }
-        
-        function showToast(msg, isSuccess = true) {
-            const toast = document.getElementById('msgToast');
-            const iconSpan = document.getElementById('toastIcon');
-            const msgSpan = document.getElementById('toastMsg');
-            iconSpan.innerText = isSuccess ? "✅" : "⚠️";
-            msgSpan.innerText = msg;
-            toast.classList.remove('opacity-0', 'pointer-events-none');
-            toast.classList.add('opacity-100');
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'pointer-events-none');
-                toast.classList.remove('opacity-100');
-            }, 2800);
+            // 紀錄下載（可選）
+            try {
+                const userData = JSON.parse(sessionStorage.getItem('gameData'));
+                console.log(`📥 ${userData?.user?.name || '未知使用者'} 下載了 ${filename}`);
+            } catch(e) {}
+            window.open(url, '_blank');
         }
 
         // 全螢幕影片播放
         function openFullscreenVideo(url, title) {
             if (!url) {
-                showToast("影片連結尚未設定", false);
+                alert("影片連結尚未設定");
                 return;
             }
             document.getElementById('fullscreenIframe').src = url + "?autoplay=1";
@@ -368,131 +399,38 @@
             document.getElementById('fullscreenModal').classList.remove('flex');
         }
 
-        // 歷史紀錄管理
-        let watchHistory = JSON.parse(localStorage.getItem('video_watch_history')) || [];
-        
-        function saveHistory() {
-            localStorage.setItem('video_watch_history', JSON.stringify(watchHistory.slice(0, 10))); // 最多保留10筆
-            renderHistoryList();
-        }
-        
-        function addToHistory(videoId, videoTitle, videoUrl) {
-            // 移除已存在的相同影片
-            watchHistory = watchHistory.filter(item => item.id !== videoId);
-            // 新增到最前面
-            watchHistory.unshift({
-                id: videoId,
-                title: videoTitle,
-                url: videoUrl,
-                time: new Date().toLocaleString()
-            });
-            saveHistory();
-        }
-        
-        function addToHistoryAndPlay(videoUrl, videoTitle) {
-            const videoId = videoUrl.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
-            addToHistory(videoId, videoTitle, videoUrl);
-            openFullscreenVideo(videoUrl, videoTitle);
-        }
-        
-        function playFromHistory(url, title) {
-            openFullscreenVideo(url, title);
-        }
-        
-        function clearHistory() {
-            watchHistory = [];
-            saveHistory();
-            showToast("已清空觀看紀錄", true);
-        }
-        
-        function renderHistoryList() {
-            const container = document.getElementById('historyList');
-            if (!container) return;
-            if (watchHistory.length === 0) {
-                container.innerHTML = '<div class="text-center text-slate-400 text-xs py-6">暫無觀看紀錄<br>點擊影片即可記錄</div>';
-                return;
-            }
-            container.innerHTML = watchHistory.map(item => `
-                <div class="history-item p-2 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all" onclick="playFromHistory('${item.url}', '${item.title.replace(/'/g, "\\'")}')">
-                    <div class="flex gap-2">
-                        <span class="text-indigo-500 text-sm">▶</span>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-xs font-bold text-slate-700 truncate">${item.title}</p>
-                            <p class="text-[10px] text-slate-400">${item.time}</p>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // 橫向捲軸控制
+        // 橫向捲軸左右箭頭控制（一排顯示3支，每次滾動約 3 張卡片的寬度）
         function initScrollButtons() {
             const container = document.getElementById('videoScrollContainer');
             const leftBtn = document.getElementById('scrollLeftBtn');
             const rightBtn = document.getElementById('scrollRightBtn');
+            
             if (!container || !leftBtn || !rightBtn) return;
             
-            leftBtn.addEventListener('click', () => {
-                container.scrollBy({ left: -300, behavior: 'smooth' });
+            // 每次滾動的距離：一張卡片寬度(280px) + 間距(20px) = 300px，一次滾動3張 = 900px
+            // 但為了平滑體驗，一次滾動 2~3 張卡片寬度
+            const scrollDistance = 580; // 約兩張卡片的寬度，讓左右箭頭更靈敏
+            
+            leftBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                container.scrollBy({ left: -scrollDistance, behavior: 'smooth' });
             });
-            rightBtn.addEventListener('click', () => {
-                container.scrollBy({ left: 300, behavior: 'smooth' });
+            
+            rightBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                container.scrollBy({ left: scrollDistance, behavior: 'smooth' });
             });
         }
-
-        // ---------- 下載清單 ----------
-        const downloadItems = [
-            { icon: "🧧", title: "紅包領取工具", description: "腳本錄製工具，不須模擬器即可自動領取", fileName: "RedPacket_Tool_v1.0.zip", downloadUrl: "https://drive.google.com/uc?export=download&id=1bnzy9UbPRsRM27a0vSLYtlC7EjZBOPEM", isExternal: true, badge: "熱門", badgeColor: "bg-amber-100 text-amber-700" },
-            { icon: "🍽️", title: "赴宴自動化工具", description: "自動參加宴會、領取獎勵", fileName: "Feast_Tool_v1.0.zip", downloadUrl: "", isExternal: true, badge: "即將開放", badgeColor: "bg-slate-100 text-slate-500" },
-            { icon: "⚡", title: "體力監控輔助表", description: "Excel 自動計算體力恢復時間", fileName: "Stamina_Helper.xlsx", downloadUrl: "", isExternal: true, badge: "準備中", badgeColor: "bg-slate-100 text-slate-500" },
-            { icon: "⚔️", title: "對戰分析模擬器", description: "敵我戰力對比 + 加成計算", fileName: "Battle_Simulator.xlsx", downloadUrl: "", isExternal: true, badge: "準備中", badgeColor: "bg-slate-100 text-slate-500" }
-        ];
-
-        function renderDownloadCards() {
-            const container = document.getElementById('downloadGrid');
-            if (!container) return;
-            container.innerHTML = downloadItems.map(item => `
-                <div class="download-card bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden flex flex-col h-full transition-all hover:shadow-xl">
-                    <div class="p-5 flex-1">
-                        <div class="flex items-start justify-between mb-3">
-                            <div class="file-icon w-12 h-12 flex items-center justify-center text-2xl bg-indigo-50 rounded-xl">${item.icon}</div>
-                            ${item.badge ? `<span class="badge-soft text-[10px] font-black px-2 py-1 rounded-full ${item.badgeColor}">${item.badge}</span>` : ''}
-                        </div>
-                        <h3 class="text-lg font-extrabold text-slate-800 mb-1">${item.title}</h3>
-                        <p class="info-text text-slate-500 text-xs leading-relaxed mb-3">${item.description}</p>
-                        <div class="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-50 rounded-lg px-2 py-1.5 w-fit">📁 ${item.fileName}</div>
-                    </div>
-                    <div class="px-5 pb-5 pt-0 mt-auto">
-                        <button onclick="handleDownload('${item.downloadUrl}', '${item.fileName}', ${item.isExternal})" 
-                                class="btn-download w-full flex items-center justify-center gap-1 text-white font-bold py-2.5 rounded-xl shadow-md transition-all text-sm">
-                            <span>⬇️</span> 下載
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function triggerDownload(url, filename, isExternal = false) {
-            if (!url) { showToast("下載連結尚未開放，敬請期待", false); return; }
-            window.open(url, '_blank');
-            showToast(`開始下載：${filename}`, true);
-        }
-
-        window.handleDownload = function(url, fileName, isExternal) {
-            if (!url || url === "") { showToast("此工具尚在準備中，請稍後再試", false); return; }
-            triggerDownload(url, fileName, isExternal);
-        };
-
-        // 初始化
-        window.onload = function() {
-            renderDownloadCards();
-            renderHistoryList();
-            initScrollButtons();
-        };
-
+        
+        // 監聽主題變更
         window.addEventListener('storage', (e) => {
             if (e.key === 'gameData') {
-                try { applyTheme(JSON.parse(e.newValue)?.config?.CurrentTheme); } catch(err) {}
+                try {
+                    const newData = JSON.parse(e.newValue);
+                    if (newData?.config?.CurrentTheme) {
+                        applyTheme(newData.config.CurrentTheme);
+                    }
+                } catch(err) {}
             }
         });
     </script>
