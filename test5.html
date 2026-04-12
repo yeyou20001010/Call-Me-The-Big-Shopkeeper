@@ -129,7 +129,75 @@
                 <!-- 橫向捲軸容器 - 一排顯示3支（寬度 280px * 3 + 間距 = 約 880px） -->
                 <div id="videoScrollContainer" class="video-scroll-container flex overflow-x-auto gap-5 pb-4 scroll-smooth">
 
-                    <!-- 影片卡片5- 偉大航線 -->
+
+                 <!-- 影片卡片 0 - 修改與重置密碼 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/fYKSexW160c', '修改與重置密碼')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">05:30</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">⚡</span>
+                                <h3 class="font-bold text-slate-800 text-sm">修改與重置密碼</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">修改與重置密碼</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/fYKSexW160c', '修改與重置密碼')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+
+                    <!-- 影片卡片 1 - 體力監控 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/h6UuLSsVJq0', '體力監控工具教學')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">05:30</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">⚡</span>
+                                <h3 class="font-bold text-slate-800 text-sm">體力監控工具教學</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">即時監控體力恢復時間</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/h6UuLSsVJq0', '體力監控工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+
+                    <!-- 影片卡片 2 - 花牌 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/Aoq_p1UqCqc', '花牌之戀')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">05:30</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">⚡</span>
+                                <h3 class="font-bold text-slate-800 text-sm">花牌之戀</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">示範說明</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/Aoq_p1UqCqc', '花牌之戀')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+
+
+                    <!-- 影片卡片3- 偉大航線 -->
                     <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
                         <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/vlEeR7pWY5A', '偉大航線工具教學')">
                             <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
@@ -151,6 +219,7 @@
                         </div>
                     </div>
                     
+
                     <!-- 影片卡片 1 - 紅包工具 -->
                     <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
                         <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '紅包領取工具教學')">
@@ -172,48 +241,8 @@
                             <button onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '紅包領取工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
                         </div>
                     </div>
-                    <!-- 影片卡片 2 - 赴宴工具 -->
-                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
-                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '赴宴自動化工具教學')">
-                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
-                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">04:12</div>
-                        </div>
-                        <div class="p-3">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-base">🍽️</span>
-                                <h3 class="font-bold text-slate-800 text-sm">赴宴自動化工具教學</h3>
-                            </div>
-                            <p class="text-slate-400 text-xs">自動參加宴會、領取獎勵</p>
-                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '赴宴自動化工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
-                        </div>
-                    </div>
-                    <!-- 影片卡片 3 - 體力監控 -->
-                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
-                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '體力監控工具教學')">
-                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
-                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">05:30</div>
-                        </div>
-                        <div class="p-3">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-base">⚡</span>
-                                <h3 class="font-bold text-slate-800 text-sm">體力監控工具教學</h3>
-                            </div>
-                            <p class="text-slate-400 text-xs">即時監控體力恢復時間</p>
-                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '體力監控工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
-                        </div>
-                    </div>
+                   
+
 
 
                     <!-- 影片卡片 4 - 對戰分析 -->
@@ -237,6 +266,9 @@
                             <button onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '對戰分析工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
                         </div>
                     </div>
+
+                    <!-- 影片卡片 2 - 赴宴工具 -->
+                    
                     <!-- 影片卡片 5 - 敬請期待 -->
                     <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg opacity-80">
                         <div class="relative h-36 bg-slate-100 flex items-center justify-center">
