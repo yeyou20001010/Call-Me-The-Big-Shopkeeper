@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>工具下載 - 建置中｜大掌櫃工具箱</title>
+    <title>工具下載中心｜大掌櫃工具箱</title>
     <style>
         .transition-all { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .theme-dark { background-color: #0f172a !important; color: #f8fafc !important; }
@@ -15,6 +15,11 @@
         .theme-dark .feature-list { background-color: #334155 !important; }
         .theme-dark .feature-list span:not(.feature-icon-bg) { color: #e2e8f0 !important; }
         .theme-dark .feature-icon-bg { background-color: #475569 !important; }
+        .theme-dark .video-card { background-color: #1e293b !important; border-color: #334155 !important; }
+        .theme-dark .video-title { color: #f1f5f9 !important; }
+        .theme-dark .scroll-btn { background-color: #334155 !important; color: #cbd5e6 !important; }
+        .theme-dark .scroll-btn:hover { background-color: #475569 !important; }
+        
         .pulse-ring {
             animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
@@ -31,7 +36,6 @@
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
-        /* 讓列表項目 hover 效果更明顯 */
         .feature-list {
             transition: all 0.2s ease;
         }
@@ -39,12 +43,53 @@
             transform: translateX(4px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
+        .video-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            flex-shrink: 0;
+            width: 280px;
+            scroll-snap-align: start;
+        }
+        .video-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15);
+        }
+        /* 橫向捲軸容器 */
+        .video-scroll-container {
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scroll-snap-type: x mandatory;
+        }
+        .video-scroll-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        .video-scroll-container::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        .video-scroll-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .theme-dark .video-scroll-container::-webkit-scrollbar-track {
+            background: #334155;
+        }
+        .theme-dark .video-scroll-container::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        /* 跳動動畫 */
+        .bounce-animation {
+            animation: bounceBox 1.2s ease-in-out infinite;
+        }
+        @keyframes bounceBox {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-12 transition-all" id="mainBody">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-5xl mx-auto">
         
-        <!-- 返回主選單按鈕 -->
+        <!-- 返回主選單按鈕（toolkit風格） -->
         <div class="mb-6">
             <button onclick="goBack()" class="back-btn flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors group font-medium">
                 <span class="text-2xl group-hover:-translate-x-1 transition-transform">←</span>
@@ -52,106 +97,304 @@
             </button>
         </div>
 
-        <!-- 測試狀態標籤 (稍微加大) -->
+        <!-- 狀態標籤（toolkit風格） -->
         <div class="mb-6">
             <span class="badge-dev bg-amber-100 text-amber-700 text-sm font-bold px-5 py-2.5 rounded-full uppercase tracking-wider">
-                🧰 開發中模組 · 工具下載中心
+                🧰 工具下載中心 · 教學影片
             </span>
         </div>
 
-        <!-- 主要施工中框架 -->
-        <div class="bg-white rounded-[2.5rem] shadow-lg border-2 border-dashed border-slate-200 p-8 md:p-12 text-center test-card relative overflow-hidden">
-            <!-- 動態背景裝飾線條 -->
-            <div class="absolute inset-0 opacity-5 pointer-events-none">
-                <div class="absolute top-10 left-10 w-32 h-32 border-4 border-indigo-300 rounded-full"></div>
-                <div class="absolute bottom-10 right-10 w-48 h-48 border-4 border-amber-300 rounded-full"></div>
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-slate-300 rounded-full"></div>
+        <!-- ========== 教學影片區（橫向捲軸 + 左右箭頭，一排顯示3支） ========== -->
+        <div class="mb-12">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-2xl">📺</span>
+                <h2 class="text-xl font-black text-slate-700">教學影片</h2>
+                <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">點擊影片可全螢幕觀看</span>
             </div>
             
-            <!-- 主圖示 + 微動畫 (加大) -->
-            <div class="text-8xl mb-6 relative inline-block">
-                <span class="inline-block animate-bounce">📦</span>
-                <div class="absolute -top-2 -right-4 w-5 h-5 bg-amber-400 rounded-full pulse-ring"></div>
-            </div>
-            
-            <!-- 標題區塊 (加大對比) -->
-            <h1 class="text-5xl md:text-6xl font-black text-slate-700 mb-4 tracking-tight">工具下載</h1>
-            <h2 class="text-2xl md:text-3xl font-black text-indigo-500 mb-4">Toolkit Download Center</h2>
-            
-            <!-- 施工標示 (加大) -->
-            <div class="inline-block bg-amber-50 px-8 py-4 rounded-2xl mb-10 shadow-md">
-                <span class="text-amber-600 font-black text-base tracking-widest flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse"></span>
-                    🚧 全力開發中 / UNDER CONSTRUCTION
-                    <span class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse"></span>
-                </span>
-            </div>
-            
-            <!-- 預計提供的資源列表 - 字體與圖標全面放大 -->
-            <div class="max-w-2xl mx-auto space-y-4 text-slate-600">
-                <p class="text-base font-black text-indigo-600 uppercase tracking-wider mb-4">✨ 正式版將提供以下資源 ✨</p>
-                <ul class="space-y-4 text-left">
-                    <!-- 項目 1 - 紅包工具 -->
-                    <li onclick="downloadFile('https://drive.google.com/uc?export=download&id=1bnzy9UbPRsRM27a0vSLYtlC7EjZBOPEM', '掌櫃助手(簡版).zip')" 
-                        class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 hover:bg-indigo-50 cursor-pointer transition-all">
-                        <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-ambver-700 text-2xl">🧧</span>
-                        <span class="flex-1 font-bold text-base md:text-lg text-slate-700">紅包領取 + 腳本錄製工具 (不須模擬器)</span>
-                       <span class="bg-indigo-500 text-white hover:bg-yellow-400 hover:text-purple-900 text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm transition-all">下載</span>
-                    </li>
-                    <!-- 項目 2 - 赴宴工具 -->
-                    <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
-                        <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-indigo-600 text-2xl">🍽️</span>
-                        <span class="flex-1 font-bold text-base md:text-lg text-slate-700">赴宴自動化工具</span>
-                    </li>
-                    <!-- 項目 3 -->
-                    <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
-                        <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-indigo-600 text-2xl">🔜</span>
-                        <span class="flex-1 font-bold text-base md:text-lg text-slate-500">敬請期待...</span>
-                    </li>
-                    <!-- 項目 4 -->
-                    <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
-                        <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-indigo-600 text-2xl">🔜</span>
-                        <span class="flex-1 font-bold text-base md:text-lg text-slate-500">敬請期待...</span>
-                    </li>
-                    <!-- 項目 5 -->
-                    <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100">
-                        <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-indigo-600 text-2xl">🔜</span>
-                        <span class="flex-1 font-bold text-base md:text-lg text-slate-500">敬請期待...</span>
-                    </li>
-                </ul>
-            </div>
+            <div class="relative group">
+                <!-- 左箭頭 -->
+                <button id="scrollLeftBtn" class="scroll-btn absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" style="transform: translateY(-50%);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <!-- 右箭頭 -->
+                <button id="scrollRightBtn" class="scroll-btn absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" style="transform: translateY(-50%);">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+                
+                <!-- 橫向捲軸容器 - 一排顯示3支（寬度 280px * 3 + 間距 = 約 880px） -->
+                <div id="videoScrollContainer" class="video-scroll-container flex overflow-x-auto gap-5 pb-4 scroll-smooth">
 
-            <!-- 裝飾分隔線 -->
-            <div class="my-10 border-t border-dashed border-slate-200"></div>
 
-            <!-- 提示訊息 + 進度條 (加大字體) -->
-            <div class="max-w-md mx-auto">
-                <div class="flex justify-between text-sm font-bold text-slate-500 mb-3">
-                    <span>開發進度</span>
-                    <span class="text-indigo-600">20% · 核心建置中</span>
+                 <!-- 影片卡片 0 - 修改與重置密碼 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/fYKSexW160c', '修改與重置密碼')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">05:30</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">⚡</span>
+                                <h3 class="font-bold text-slate-800 text-sm">修改與重置密碼</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">修改與重置密碼</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/fYKSexW160c', '修改與重置密碼')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+
+                    <!-- 影片卡片 1 - 體力監控 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/h6UuLSsVJq0', '體力監控工具教學')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">05:30</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">⚡</span>
+                                <h3 class="font-bold text-slate-800 text-sm">體力監控工具教學</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">即時監控體力恢復時間</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/h6UuLSsVJq0', '體力監控工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+
+                    <!-- 影片卡片 2 - 花牌 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/Aoq_p1UqCqc', '花牌之戀')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">05:30</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">⚡</span>
+                                <h3 class="font-bold text-slate-800 text-sm">花牌之戀</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">示範說明</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/Aoq_p1UqCqc', '花牌之戀')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+
+
+                    <!-- 影片卡片3- 偉大航線 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/vlEeR7pWY5A', '偉大航線工具教學')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">06:15</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">⚔️</span>
+                                <h3 class="font-bold text-slate-800 text-sm">偉大航線工具教學</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">範例說明</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/vlEeR7pWY5A', '偉大航線工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+                    
+
+                    <!-- 影片卡片 1 - 紅包工具 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '紅包領取工具教學')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">03:24</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">🧧</span>
+                                <h3 class="font-bold text-slate-800 text-sm">紅包領取工具教學</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">紅包腳本工具示範，不需模擬器</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '紅包領取工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+                   
+
+
+
+                    <!-- 影片卡片 4 - 對戰分析 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg">
+                        <div class="relative h-36 bg-slate-800 cursor-pointer" onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '對戰分析工具教學')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-all">
+                                <div class="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">06:15</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">⚔️</span>
+                                <h3 class="font-bold text-slate-800 text-sm">對戰分析工具教學</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">戰力對比與加成計算</p>
+                            <button onclick="openFullscreenVideo('https://www.youtube.com/embed/dQw4w9WgXcQ', '對戰分析工具教學')" class="mt-2 text-indigo-500 text-xs font-medium hover:underline">▶ 觀看</button>
+                        </div>
+                    </div>
+
+                    <!-- 影片卡片 2 - 赴宴工具 -->
+                    
+                    <!-- 影片卡片 5 - 敬請期待 -->
+                    <div class="video-card bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden transition-all hover:shadow-lg opacity-80">
+                        <div class="relative h-36 bg-slate-100 flex items-center justify-center">
+                            <div class="text-center text-slate-400">
+                                <span class="text-3xl">🎬</span>
+                                <p class="text-xs mt-1">即將上線</p>
+                            </div>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-base">🔜</span>
+                                <h3 class="font-bold text-slate-800 text-sm">更多教學影片</h3>
+                            </div>
+                            <p class="text-slate-400 text-xs">敬請期待</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                    <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full w-[20%] shine-effect"></div>
-                </div>
-                <p class="text-slate-400 text-sm font-medium mt-6">
-                    📁 檔案將托管於高速雲端空間，屆時支援一鍵下載<br>
-                    敬請期待完整工具箱釋出！
-                </p>
             </div>
         </div>
 
-        <!-- 底部提示區 -->
+        <!-- ========== 工具下載區塊（維持 toolkit 一列式風格） ========== -->
+        <div class="mt-8">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-2xl">📦</span>
+                <h2 class="text-xl font-black text-slate-700">工具下載</h2>
+                <span class="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">一鍵下載</span>
+            </div>
+
+            <div class="bg-white rounded-[2.5rem] shadow-lg border-2 border-dashed border-slate-200 p-6 md:p-8 test-card relative overflow-hidden">
+                <!-- 動態背景裝飾線條（toolkit風格） -->
+                <div class="absolute inset-0 opacity-5 pointer-events-none">
+                    <div class="absolute top-10 left-10 w-32 h-32 border-4 border-indigo-300 rounded-full"></div>
+                    <div class="absolute bottom-10 right-10 w-48 h-48 border-4 border-amber-300 rounded-full"></div>
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-slate-300 rounded-full"></div>
+                </div>
+                
+                <!-- 跳動工具箱圖示（toolkit動畫） -->
+                <div class="flex justify-center mb-6">
+                    <div class="text-6xl relative inline-block">
+                        <span class="inline-block bounce-animation">📦</span>
+                        <div class="absolute -top-2 -right-3 w-4 h-4 bg-amber-400 rounded-full pulse-ring"></div>
+                    </div>
+                </div>
+
+                <!-- 標題區塊 (加大對比) - 置中 -->
+                <h1 class="text-5xl md:text-6xl font-black text-slate-700 mb-4 tracking-tight text-center">工具下載</h1>
+                <h2 class="text-2xl md:text-3xl font-black text-indigo-500 mb-4 text-center">Toolkit Download Center</h2>
+                
+                <!-- 施工標示 (加大) - 置中 -->
+                <div class="flex justify-center mb-10">
+                    <div class="inline-block bg-amber-50 px-8 py-4 rounded-2xl shadow-md">
+                        <span class="text-amber-600 font-black text-base tracking-widest flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse"></span>
+                            🚧 全力開發中 / UNDER CONSTRUCTION
+                            <span class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse"></span>
+                        </span>
+                    </div>
+                </div>
+
+               
+                <div class="max-w-3xl mx-auto space-y-4 text-slate-600 relative z-10">
+                    <p class="text-base font-black text-indigo-600 uppercase tracking-wider text-center mb-4">✨ 正式版將提供以下資源 ✨</p>
+                    <ul class="space-y-4 text-left">
+                        <!-- 項目 1 - 紅包工具（可下載） -->
+                        <li onclick="downloadFile('https://drive.google.com/uc?export=download&id=1bnzy9UbPRsRM27a0vSLYtlC7EjZBOPEM', '掌櫃助手(簡版).zip')" 
+                            class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 hover:bg-indigo-50 cursor-pointer transition-all">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🧧</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-700">紅包領取 + 腳本錄製工具 (不須模擬器)</span>
+                            <span class="bg-indigo-500 text-white hover:bg-yellow-400 hover:text-purple-900 text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm transition-all">下載</span>
+                        </li>
+                        <!-- 項目 2 - 赴宴工具（尚未開放） -->
+                        <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 opacity-60">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🍽️</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-700">赴宴自動化工具</span>
+                            <span class="bg-slate-300 text-white text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm">即將開放</span>
+                        </li>
+                        <!-- 項目 3 -->
+                        <li class="flex items-center gap-4 justify-start bg-slate-50/80 p-4 rounded-xl feature-list shadow-sm border border-slate-100 opacity-60">
+                            <span class="feature-icon-bg w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 text-2xl">🔜</span>
+                            <span class="flex-1 font-bold text-base md:text-lg text-slate-500">敬請期待...</span>
+                            <span class="bg-slate-300 text-white text-sm md:text-base font-bold px-4 py-2 rounded-xl shadow-sm">即將開放</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 裝飾分隔線 + 進度條（toolkit風格） -->
+                <div class="max-w-md mx-auto mt-8 pt-4 border-t border-dashed border-slate-200">
+                    <div class="flex justify-between text-sm font-bold text-slate-500 mb-3">
+                        <span>開發進度</span>
+                        <span class="text-indigo-600">25% · 持續更新中</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                        <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full w-[25%] shine-effect"></div>
+                    </div>
+                    <p class="text-slate-400 text-xs font-medium mt-4 text-center">
+                        📁 檔案托管於 Google Drive · 一鍵下載即時取得最新版本
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部提示區（toolkit風格） -->
         <div class="mt-8 text-center">
             <p class="text-xs text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
-                <span>⚙️ Pre-release Version 0.2.0</span>
+                <span>⚙️ Version 1.0.0</span>
                 <span>•</span>
-                <span>此頁面為正式版前導框架</span>
+                <span>教學影片陸續更新</span>
+                <span>•</span>
+                <span>回饋建議歡迎聯繫管理員</span>
             </p>
         </div>
     </div>
 
+    <!-- 全螢幕影片模態框 -->
+    <div id="fullscreenModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[200] p-4" onclick="closeFullscreen()">
+        <div class="relative w-full max-w-4xl" onclick="event.stopPropagation()">
+            <button onclick="closeFullscreen()" class="absolute -top-12 right-0 text-white text-2xl hover:text-gray-300">✕</button>
+            <div class="relative pb-[56.25%] h-0 bg-black rounded-xl overflow-hidden">
+                <iframe id="fullscreenIframe" class="absolute top-0 left-0 w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <p id="fullscreenTitle" class="text-white text-center mt-3 font-medium"></p>
+        </div>
+    </div>
+
     <script>
-        // 套用主題
+        // 套用主題（toolkit風格）
         window.onload = function() {
             try {
                 const data = JSON.parse(sessionStorage.getItem('gameData'));
@@ -159,11 +402,13 @@
                     applyTheme(data.config.CurrentTheme);
                 }
                 if (data?.user?.name) {
-                    console.log(`掌櫃 ${data.user.name} 正在瀏覽工具下載開發頁`);
+                    console.log(`掌櫃 ${data.user.name} 歡迎使用工具下載中心`);
                 }
             } catch (e) {
                 console.log('無法讀取主題設定，使用預設主題');
             }
+            // 初始化左右箭頭功能
+            initScrollButtons();
         };
 
         function applyTheme(theme) {
@@ -184,16 +429,67 @@
             location.href = 'portal.html';
         }
 
+        // 登入檢查
         if (!sessionStorage.getItem('gameData')) {
             location.href = 'index.html';
         }
 
-        // 下載檔案函數（放在其他函數旁邊即可）
+        // 下載檔案函數（toolkit風格）
         function downloadFile(url, filename) {
-            // 因為 Google Drive 會跳轉，用 window.open 更適合
+            if (!url) {
+                alert("下載連結無效，請聯繫管理員");
+                return;
+            }
+            // 紀錄下載（可選）
+            try {
+                const userData = JSON.parse(sessionStorage.getItem('gameData'));
+                console.log(`📥 ${userData?.user?.name || '未知使用者'} 下載了 ${filename}`);
+            } catch(e) {}
             window.open(url, '_blank');
         }
+
+        // 全螢幕影片播放
+        function openFullscreenVideo(url, title) {
+            if (!url) {
+                alert("影片連結尚未設定");
+                return;
+            }
+            document.getElementById('fullscreenIframe').src = url + "?autoplay=1";
+            document.getElementById('fullscreenTitle').innerText = title;
+            document.getElementById('fullscreenModal').classList.remove('hidden');
+            document.getElementById('fullscreenModal').classList.add('flex');
+        }
         
+        function closeFullscreen() {
+            document.getElementById('fullscreenIframe').src = "";
+            document.getElementById('fullscreenModal').classList.add('hidden');
+            document.getElementById('fullscreenModal').classList.remove('flex');
+        }
+
+        // 橫向捲軸左右箭頭控制（一排顯示3支，每次滾動約 3 張卡片的寬度）
+        function initScrollButtons() {
+            const container = document.getElementById('videoScrollContainer');
+            const leftBtn = document.getElementById('scrollLeftBtn');
+            const rightBtn = document.getElementById('scrollRightBtn');
+            
+            if (!container || !leftBtn || !rightBtn) return;
+            
+            // 每次滾動的距離：一張卡片寬度(280px) + 間距(20px) = 300px，一次滾動3張 = 900px
+            // 但為了平滑體驗，一次滾動 2~3 張卡片寬度
+            const scrollDistance = 580; // 約兩張卡片的寬度，讓左右箭頭更靈敏
+            
+            leftBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                container.scrollBy({ left: -scrollDistance, behavior: 'smooth' });
+            });
+            
+            rightBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                container.scrollBy({ left: scrollDistance, behavior: 'smooth' });
+            });
+        }
+        
+        // 監聽主題變更
         window.addEventListener('storage', (e) => {
             if (e.key === 'gameData') {
                 try {
@@ -204,7 +500,6 @@
                 } catch(err) {}
             }
         });
-        
     </script>
 </body>
 </html>
