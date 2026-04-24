@@ -101,15 +101,15 @@
                         <table class="w-full text-sm">
                             <thead><tr class="border-b-2">
                                 <th class="p-2">標的名稱</th><th class="p-2 sort-btn" @click="sortByRisk">本期風險 ⬍</th><th class="p-2">當前價格</th><th class="p-2">上期價格</th><th class="p-2">漲跌幅</th><th class="p-2 sort-btn" @click="sortByTag">小道消息 ⬍</th><th class="p-2">持倉張數</th><th class="p-2">未實現損益</th>
-                            </table></thead>
+                            </tr></thead>
                             <tbody>
                                 <tr v-for="(item, idx) in displayList" :key="idx" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
-                                    <td class="p-2 clickable-name" @click="openHistoryModal(item, item.originalIndex)">{{ item?.name || '?' }}</td>
-                                    <td><div :class="getRiskClass(item?.risk)"><select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)" class="bg-transparent"><option value="">請選擇</option><option value="險">險</option><option value="均">均</option><option value="穩">穩</option></select></div></td>
-                                    <td class="font-mono">{{ formatPrice(item?.price) }}</td>
-                                    <td class="font-mono text-slate-500">{{ formatPrice(item?.lastPrice) }}</td>
+                                    <td class="p-2 clickable-name" @click="openHistoryModal(item, item.originalIndex)">{{ item.name }}</td>
+                                    <td><div :class="getRiskClass(item.risk)"><select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)" class="bg-transparent"><option value="">請選擇</option><option value="險">險</option><option value="均">均</option><option value="穩">穩</option></select></div></td>
+                                    <td class="font-mono">{{ formatPrice(item.price) }}</td>
+                                    <td class="font-mono text-slate-500">{{ formatPrice(item.lastPrice) }}</td>
                                     <td class="font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
-                                    <td><div :class="getTagClass(item?.tag)"><select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)" class="bg-transparent"><option value="">請選擇</option><option value="迅速崛起">迅速崛起</option><option value="穩中向好">穩中向好</option><option value="坊中傳聞">坊中傳聞</option><option value="或有風險">或有風險</option><option value="一文不值">一文不值</option><option value="暫無">暫無</option></select></div></td>
+                                    <td><div :class="getTagClass(item.tag)"><select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)" class="bg-transparent"><option value="">請選擇</option><option value="迅速崛起">迅速崛起</option><option value="穩中向好">穩中向好</option><option value="坊中傳聞">坊中傳聞</option><option value="或有風險">或有風險</option><option value="一文不值">一文不值</option><option value="暫無">暫無</option></select></div></td>
                                     <td><input type="number" v-model.number="item.shares" @change="updateShares(item.originalIndex, item.shares)" class="input-inline !w-24 !text-center" min="0"></td>
                                     <td class="font-mono" :class="getUnrealizedClass(item)">{{ formatPrice(calculateUnrealized(item)) }}</td>
                                 </tr>
@@ -176,14 +176,24 @@
                         let lastPeriod=0;
                         for(let i=period-1;i>=1;i--) if(p.prices[i]>0) { lastPeriod=i; break; }
                         return { ...p, originalIndex: idx, price: p.prices[period]||0, lastPrice: lastPeriod?p.prices[lastPeriod]:0 };
-                    });
+                    }).filter(p => p !== undefined && p !== null);
                 },
                 displayList() {
-                    let list = [...this.effectiveProductList];
-                    if(this.sortRisk) list.sort((a,b)=> this.sortRisk==='asc'? (a.risk==='險'?1:a.risk==='均'?2:a.risk==='穩'?3:4)-(b.risk==='險'?1:b.risk==='均'?2:b.risk==='穩'?3:4) : (b.risk==='險'?1:b.risk==='均'?2:b.risk==='穩'?3:4)-(a.risk==='險'?1:a.risk==='均'?2:a.risk==='穩'?3:4));
-                    else if(this.sortTag) {
+                    let list = [...this.effectiveProductList].filter(p => p && typeof p === 'object');
+                    if(this.sortRisk) {
+                        list.sort((a,b)=> {
+                            const order = { '險':1, '均':2, '穩':3, '':4 };
+                            const av = order[a.risk] || 4;
+                            const bv = order[b.risk] || 4;
+                            return this.sortRisk === 'asc' ? av - bv : bv - av;
+                        });
+                    } else if(this.sortTag) {
                         const order = { '迅速崛起':1, '穩中向好':2, '坊中傳聞':3, '或有風險':4, '一文不值':5, '暫無':6, '':7 };
-                        list.sort((a,b)=> this.sortTag==='asc'? (order[a.tag]||7)-(order[b.tag]||7) : (order[b.tag]||7)-(order[a.tag]||7));
+                        list.sort((a,b)=> {
+                            const av = order[a.tag] || 7;
+                            const bv = order[b.tag] || 7;
+                            return this.sortTag === 'asc' ? av - bv : bv - av;
+                        });
                     }
                     return list;
                 },
