@@ -103,13 +103,13 @@
                                 <th class="p-2">標的名稱</th><th class="p-2 sort-btn" @click="sortByRisk">本期風險 ⬍</th><th class="p-2">當前價格</th><th class="p-2">上期價格</th><th class="p-2">漲跌幅</th><th class="p-2 sort-btn" @click="sortByTag">小道消息 ⬍</th><th class="p-2">持倉張數</th><th class="p-2">未實現損益</th>
                             </table></thead>
                             <tbody>
-                                <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
-                                    <td class="p-2 clickable-name" @click="openHistoryModal(item, item.originalIndex)">{{ item.name }}</td>
-                                    <td><div :class="getRiskClass(item.risk)"><select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)" class="bg-transparent"><option value="">請選擇</option><option value="險">險</option><option value="均">均</option><option value="穩">穩</option></select></div></td>
-                                    <td class="font-mono">{{ formatPrice(item.price) }}</td>
-                                    <td class="font-mono text-slate-500">{{ formatPrice(item.lastPrice) }}</td>
+                                <tr v-for="(item, idx) in displayList" :key="idx" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
+                                    <td class="p-2 clickable-name" @click="openHistoryModal(item, item.originalIndex)">{{ item?.name || '?' }}</td>
+                                    <td><div :class="getRiskClass(item?.risk)"><select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)" class="bg-transparent"><option value="">請選擇</option><option value="險">險</option><option value="均">均</option><option value="穩">穩</option></select></div></td>
+                                    <td class="font-mono">{{ formatPrice(item?.price) }}</td>
+                                    <td class="font-mono text-slate-500">{{ formatPrice(item?.lastPrice) }}</td>
                                     <td class="font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
-                                    <td><div :class="getTagClass(item.tag)"><select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)" class="bg-transparent"><option value="">請選擇</option><option value="迅速崛起">迅速崛起</option><option value="穩中向好">穩中向好</option><option value="坊中傳聞">坊中傳聞</option><option value="或有風險">或有風險</option><option value="一文不值">一文不值</option><option value="暫無">暫無</option></select></div></td>
+                                    <td><div :class="getTagClass(item?.tag)"><select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)" class="bg-transparent"><option value="">請選擇</option><option value="迅速崛起">迅速崛起</option><option value="穩中向好">穩中向好</option><option value="坊中傳聞">坊中傳聞</option><option value="或有風險">或有風險</option><option value="一文不值">一文不值</option><option value="暫無">暫無</option></select></div></td>
                                     <td><input type="number" v-model.number="item.shares" @change="updateShares(item.originalIndex, item.shares)" class="input-inline !w-24 !text-center" min="0"></td>
                                     <td class="font-mono" :class="getUnrealizedClass(item)">{{ formatPrice(calculateUnrealized(item)) }}</td>
                                 </tr>
@@ -122,12 +122,9 @@
                 <div class="card-std bg-slate-800 text-white sticky top-4 shadow-2xl border-none">
                     <div class="bg-orange-500 px-4 py-1 rounded-lg text-xs font-black inline-block mb-6">🏆 即時買入建議</div>
                     
-                    <!-- 待完善資料區塊 -->
                     <div v-if="incompleteList.length" class="bg-yellow-900/30 rounded-2xl p-4 mb-5 border-l-4 border-yellow-500">
                         <div class="font-black text-yellow-300 mb-2">⚠️ 待完善資料</div>
-                        <div v-for="inc in incompleteList" class="text-sm text-yellow-200">
-                            • {{ inc.name }}：{{ inc.reason }}
-                        </div>
+                        <div v-for="inc in incompleteList" class="text-sm text-yellow-200">• {{ inc.name }}：{{ inc.reason }}</div>
                         <div class="text-xs text-yellow-300/70 mt-2">💡 補齊風險後才會列入買入建議</div>
                     </div>
 
@@ -235,7 +232,7 @@
                         t.shares = shares;
                         remain -= t.amount;
                         t.borderColor = t===top[0] ? 'border-orange-400' : 'border-purple-400';
-                        t.badgeClass = t.risk==='險' ? 'bg-red-500/30' : (t.risk==='均'?'bg-yellow-500/30':'bg-green-500/30');
+                        t.badgeClass = t.risk==='險'? 'bg-red-500/30' : (t.risk==='均'?'bg-yellow-500/30':'bg-green-500/30');
                     }
                     return top;
                 },
@@ -256,23 +253,23 @@
                 onFundFocus(){ this.displayFund=this.fund.toString(); },
                 onFundBlur(){ this.displayFund=this.formatWithComma(this.fund); },
                 onFundInput(e){ let num=parseInt(e.target.value.replace(/,/g,''))||0; this.fund=Math.max(0,num); this.displayFund=num.toString(); this.saveAllData(); },
-                getPriceChangePercent(item){ if(item.lastPrice && item.price) return ((item.price-item.lastPrice)/item.lastPrice*100).toFixed(1)+'%'; return '-'; },
-                getPriceChangeClass(item){ let chg = item.lastPrice ? (item.price-item.lastPrice)/item.lastPrice : 0; return chg>0 ? 'text-gain' : chg<0 ? 'text-loss' : ''; },
+                getPriceChangePercent(item){ if(item?.lastPrice && item?.price) return ((item.price-item.lastPrice)/item.lastPrice*100).toFixed(1)+'%'; return '-'; },
+                getPriceChangeClass(item){ let chg = item?.lastPrice ? (item.price-item.lastPrice)/item.lastPrice : 0; return chg>0 ? 'text-gain' : chg<0 ? 'text-loss' : ''; },
                 getRiskClass(r){ return r==='險'?'risk-red':r==='均'?'risk-blue':r==='穩'?'risk-green':'risk-missing'; },
                 getTagClass(t){ return t==='迅速崛起'?'tag-rapid':t==='穩中向好'?'tag-good':t==='坊中傳聞'?'tag-neutral':t==='或有風險'?'tag-risk':t==='一文不值'?'tag-worthless':'tag-none'; },
-                getStopLossTriggered(item){ if(item.shares && item.avgCost && item.price && item.risk){ let loss=(item.price-item.avgCost)/item.avgCost*100, thr=item.risk==='險'?25:item.risk==='均'?20:15; return loss<-thr; } return false; },
-                calculateUnrealized(item){ return item.shares && item.avgCost && item.price ? (item.price-item.avgCost)*item.shares : 0; },
+                getStopLossTriggered(item){ if(item?.shares && item?.avgCost && item?.price && item?.risk){ let loss=(item.price-item.avgCost)/item.avgCost*100, thr=item.risk==='險'?25:item.risk==='均'?20:15; return loss<-thr; } return false; },
+                calculateUnrealized(item){ return item?.shares && item?.avgCost && item?.price ? (item.price-item.avgCost)*item.shares : 0; },
                 getUnrealizedClass(item){ let v=this.calculateUnrealized(item); return v>0?'text-gain':v<0?'text-loss':''; },
-                updateRisk(i,v){ this.productList[i].risk=v; this.saveAllData(); },
-                updateTag(i,v){ this.productList[i].tag=v; this.saveAllData(); },
-                updateShares(i,v){ this.productList[i].shares=v; this.saveAllData(); },
+                updateRisk(i,v){ if(this.productList[i]) this.productList[i].risk=v; this.saveAllData(); },
+                updateTag(i,v){ if(this.productList[i]) this.productList[i].tag=v; this.saveAllData(); },
+                updateShares(i,v){ if(this.productList[i]) this.productList[i].shares=v; this.saveAllData(); },
                 sortByRisk(){ this.sortRisk= this.sortRisk===null ? 'asc' : (this.sortRisk==='asc' ? 'desc' : null); this.sortTag=null; },
                 sortByTag(){ this.sortTag= this.sortTag===null ? 'asc' : (this.sortTag==='asc' ? 'desc' : null); this.sortRisk=null; },
-                openHistoryModal(p, idx){ this.currentProduct=p; this.currentProductIdx=idx; this.modalPriceData=[...p.prices]; this.selectedModalPeriod=this.getLatestPeriod(); this.modalPrice=this.modalPriceData[this.selectedModalPeriod]||0; this.showHistoryModal=true; this.$nextTick(()=>this.drawChart()); },
+                openHistoryModal(p, idx){ if(!p) return; this.currentProduct=p; this.currentProductIdx=idx; this.modalPriceData=[...p.prices]; this.selectedModalPeriod=this.getLatestPeriod(); this.modalPrice=this.modalPriceData[this.selectedModalPeriod]||0; this.showHistoryModal=true; this.$nextTick(()=>this.drawChart()); },
                 closeHistoryModal(){ this.showHistoryModal=false; },
                 selectPeriodInModal(n){ this.selectedModalPeriod=n; this.modalPrice=this.modalPriceData[n]||0; },
-                saveModalPrice(){ this.modalPriceData[this.selectedModalPeriod]=this.modalPrice; this.productList[this.currentProductIdx].prices=[...this.modalPriceData]; this.saveAllData(); this.closeHistoryModal(); },
-                clearSingleProductPrices(){ if(confirm('清除此標所有價格？')){ this.modalPriceData.fill(0); this.productList[this.currentProductIdx].prices=[...this.modalPriceData]; this.saveAllData(); this.modalPrice=0; this.drawChart(); } },
+                saveModalPrice(){ this.modalPriceData[this.selectedModalPeriod]=this.modalPrice; if(this.productList[this.currentProductIdx]) this.productList[this.currentProductIdx].prices=[...this.modalPriceData]; this.saveAllData(); this.closeHistoryModal(); },
+                clearSingleProductPrices(){ if(confirm('清除此標所有價格？')){ this.modalPriceData.fill(0); if(this.productList[this.currentProductIdx]) this.productList[this.currentProductIdx].prices=[...this.modalPriceData]; this.saveAllData(); this.modalPrice=0; this.drawChart(); } },
                 getLatestPeriod(){ for(let i=12;i>=1;i--) if(this.modalPriceData[i]>0) return i; return 1; },
                 drawChart(){
                     let canvas=document.getElementById('priceChart'); if(!canvas) return;
@@ -302,14 +299,18 @@
                         let d=JSON.parse(saved);
                         this.fund=d.fund||0; this.displayFund=this.formatWithComma(this.fund);
                         this.periodMode=d.periodMode||'auto'; this.manualPeriod=d.manualPeriod||1;
-                        for(let i=0;i<this.productList.length;i++) if(d.productList[i]){
-                            this.productList[i].risk=d.productList[i].risk||'';
-                            this.productList[i].tag=d.productList[i].tag||'';
-                            this.productList[i].prices=d.productList[i].prices||Array(13).fill(0);
-                            this.productList[i].shares=d.productList[i].shares||0;
-                            this.productList[i].avgCost=d.productList[i].avgCost||0;
+                        if(d.productList && d.productList.length) {
+                            for(let i=0;i<this.productList.length;i++) {
+                                if(d.productList[i]) {
+                                    this.productList[i].risk=d.productList[i].risk||'';
+                                    this.productList[i].tag=d.productList[i].tag||'';
+                                    this.productList[i].prices=d.productList[i].prices||Array(13).fill(0);
+                                    this.productList[i].shares=d.productList[i].shares||0;
+                                    this.productList[i].avgCost=d.productList[i].avgCost||0;
+                                }
+                            }
                         }
-                    }catch(e){}
+                    }catch(e){ console.log('讀取失敗',e); }
                 },
                 clearAllData(){ if(confirm('確定清除所有資料嗎？')){ localStorage.removeItem('exchange_tool_data'); location.reload(); } },
                 goToPortal(){ location.href='portal.html'; }
