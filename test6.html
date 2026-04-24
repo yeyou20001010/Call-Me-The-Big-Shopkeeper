@@ -12,25 +12,66 @@
         [v-cloak] { display: none; }
         .card-std { background: #FBFBF9; border: 2px solid #D7D3CC; border-radius: 1.5rem; padding: 1.5rem; }
         .input-inline { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; padding: 6px 10px; text-align: right; font-weight: 900; color: #5E548E; outline: none; font-size: 14px; width: 100%; }
-        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; max-width: 450px; padding: 2rem; border: 2px solid #5E548E; }
+        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; max-width: 700px; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         .text-gain { color: #E53935 !important; }
         .text-loss { color: #00897B !important; }
         .row-label { font-size: 12px; color: #8E9AAF; font-weight: 900; margin-bottom: 2px; display: block; }
         .period-btn { background: #EAE8E4; border-radius: 2rem; padding: 0.5rem 1rem; text-align: center; font-weight: 900; cursor: pointer; transition: all 0.2s; border: 1px solid #D7D3CC; }
         .period-btn.active { background: #5E548E; color: white; border-color: #5E548E; }
+        .period-btn-small { background: #EAE8E4; border-radius: 2rem; padding: 0.25rem 0.75rem; text-align: center; font-weight: 900; cursor: pointer; transition: all 0.2s; border: 1px solid #D7D3CC; font-size: 0.8rem; }
+        .period-btn-small.active { background: #5E548E; color: white; border-color: #5E548E; }
+        canvas { background: #F4F2EE; border-radius: 0.75rem; border: 1px solid #D7D3CC; }
+        th, td { text-align: center !important; vertical-align: middle !important; }
+        .clickable-name { cursor: pointer; color: #5E548E; font-weight: 900; }
+        .clickable-name:hover { text-decoration: underline; color: #FF9D6F; }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div id="app" v-cloak class="max-w-[1600px] mx-auto">
         
-        <div v-if="showModal" class="modal-overlay" @click="showModal = false"></div>
-        <div v-if="showModal" class="custom-modal">
-            <h3 class="text-2xl font-black text-[#5E548E] mb-4">{{ modalTitle }}</h3>
-            <p class="text-gray-600 mb-8 font-bold text-lg">{{ modalMsg }}</p>
-            <button @click="showModal = false" class="w-full bg-[#5E548E] text-white py-3 rounded-xl font-black">確定</button>
+        <!-- 彈窗：歷史價格與走勢圖 -->
+        <div v-if="showHistoryModal" class="modal-overlay" @click="closeHistoryModal"></div>
+        <div v-if="showHistoryModal" class="custom-modal">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-black text-[#5E548E]">{{ currentProduct.name }}｜價格走勢</h3>
+                <button @click="closeHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- 左側：期數按鈕 + 價格輸入 -->
+                <div>
+                    <div class="grid grid-cols-4 gap-2 mb-4">
+                        <button v-for="n in 12" :key="n" 
+                            @click="selectPeriodInModal(n)"
+                            class="period-btn-small"
+                            :class="{ active: selectedModalPeriod === n }">
+                            第 {{ n }} 期
+                        </button>
+                    </div>
+                    <div class="mt-4">
+                        <label class="row-label">價格（元）</label>
+                        <input type="number" step="0.01" v-model.number="modalPrice" 
+                            class="input-inline !text-xl" 
+                            placeholder="輸入價格">
+                        <button @click="saveModalPrice" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">
+                            💾 儲存此期價格
+                        </button>
+                    </div>
+                    <div class="mt-4 text-xs text-gray-400">
+                        💡 提示：輸入價格後折線圖會自動更新
+                    </div>
+                </div>
+                <!-- 右側：折線圖 -->
+                <div>
+                    <canvas id="priceChart" width="300" height="200" style="width:100%; height:auto; max-width:300px;"></canvas>
+                    <div class="text-center text-xs text-gray-400 mt-2">
+                        已輸入 {{ modalPriceData.filter(p => p > 0).length }} / 12 期
+                    </div>
+                </div>
+            </div>
         </div>
 
+        <!-- 主內容 -->
         <div class="bg-white rounded-[2rem] shadow-md border-2 border-[#D7D3CC] p-6 mb-6">
             <div class="flex flex-wrap justify-between items-center gap-4">
                 <div class="flex items-center gap-3">
@@ -38,6 +79,7 @@
                     <h1 class="text-2xl font-black text-[#5E548E]">交引風雲｜智慧買入決策工具</h1>
                 </div>
                 <div class="flex gap-3">
+                    <button @click="clearAllData" class="bg-red-400 text-white px-5 py-2 rounded-xl text-sm font-black">🗑️ 清除所有資料</button>
                     <button @click="goToPortal" class="bg-slate-400 text-white px-5 py-2 rounded-xl text-sm font-black">🏠 返回主選單</button>
                 </div>
             </div>
@@ -48,14 +90,11 @@
                 <div class="card-std">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
                         <div class="flex items-center gap-3">
-                            <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black">📅 期數設定</span>
-                            <select v-model="currentPeriod" class="input-inline !w-28">
-                                <option v-for="n in 20" :value="n">第 {{ n }} 期</option>
-                            </select>
+                            <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black">📋 標的一覽（點名稱可編輯歷史價格）</span>
                         </div>
                         <div class="flex items-center gap-4">
                             <div class="text-right">
-                                <span class="row-label">總資金 (元)</span>
+                                <span class="row-label">總資金（元）</span>
                                 <input type="text" v-model="displayFund" @focus="onFundFocus" @blur="onFundBlur" @input="onFundInput" class="input-inline !w-48 !text-xl !font-black !text-orange-600 border-2 border-orange-200">
                             </div>
                             <div class="text-right bg-slate-100 px-4 py-2 rounded-xl">
@@ -68,18 +107,18 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead class="bg-slate-50">
-                                <tr class="text-center text-[#8E9AAF] border-b-2">
+                                <tr class="text-center border-b-2">
                                     <th class="p-2">標的名稱</th>
-                                    <th class="p-2">風險</th>
+                                    <th class="p-2">本期風險</th>
                                     <th class="p-2">當前價格</th>
                                     <th class="p-2">上期價格</th>
                                     <th class="p-2">漲跌幅</th>
-                                    <th class="p-2">消息標籤</th>
+                                    <th class="p-2">小道消息</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(item, idx) in productList" :key="idx" class="border-b text-center">
-                                    <td class="p-2 font-black text-left">{{ item.name }}</td>
+                                <tr v-for="(item, idx) in productList" :key="idx" class="border-b">
+                                    <td class="p-2 clickable-name" @click="openHistoryModal(item, idx)">{{ item.name }}</td>
                                     <td class="p-2">
                                         <select v-model="item.risk" class="input-inline !text-center">
                                             <option value="險">險</option>
@@ -87,9 +126,7 @@
                                             <option value="穩">穩</option>
                                         </select>
                                     </td>
-                                    <td class="p-2">
-                                        <input type="text" v-model="item.displayPrice" @focus="onPriceFocus(idx)" @blur="onPriceBlur(idx)" @input="onPriceInput(idx, $event.target.value)" class="input-inline !w-24">
-                                    </td>
+                                    <td class="p-2 font-mono">{{ formatWithComma(item.price) }}</td>
                                     <td class="p-2 font-mono text-slate-500">{{ formatWithComma(item.lastPrice) }}</td>
                                     <td class="p-2 font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
                                     <td class="p-2">
@@ -100,7 +137,7 @@
                                             <option value="坊中傳聞">坊中傳聞</option>
                                             <option value="或有風險">或有風險</option>
                                             <option value="一文不值">一文不值</option>
-                                            <option value="無">無</option>
+                                            <option value="暫無">暫無</option>
                                         </select>
                                     </td>
                                 </tr>
@@ -108,8 +145,13 @@
                         </table>
                     </div>
 
+                    <div class="mt-6 flex justify-center">
+                        <button @click="runAnalysis" class="bg-orange-500 text-white px-8 py-3 rounded-full font-black text-xl shadow-lg hover:bg-orange-600 transition">
+                            📊 開始分析
+                        </button>
+                    </div>
                     <div class="mt-4 text-right text-xs text-slate-400 border-t pt-3">
-                        💡 提示：切換期數時會自動保留該期價格，若上期無資料則漲跌幅顯示「-」
+                        💡 提示：點擊標的名稱可編輯 12 期歷史價格（自動存檔）
                     </div>
                 </div>
             </div>
@@ -137,14 +179,18 @@
                                 <span>約 {{ rec.shares }} 張</span>
                             </div>
                         </div>
-                        <div v-if="recommendations.length === 0" class="text-center text-gray-400 text-sm py-6">
-                            請輸入本期價格與消息標籤
+                        <div v-if="recommendations.length === 0 && hasAnalyzed" class="text-center text-gray-400 text-sm py-6">
+                            請點擊「開始分析」按鈕
+                        </div>
+                        <div v-if="!hasAnalyzed" class="text-center text-yellow-400 text-sm py-6">
+                            ⚠️ 請先點擊「開始分析」
                         </div>
                     </div>
                     <div class="bg-slate-900/50 p-4 rounded-2xl mt-5 text-xs text-slate-300 space-y-1">
-                        <li>✔ 推薦邏輯：迅速崛起 > 坊中傳聞 > 穩中向好</li>
+                        <li>✔ 推薦邏輯：迅速崛起 > 穩中向好 > 坊中傳聞</li>
                         <li>✔ 低價位（< 5 元）爆發權重加倍</li>
                         <li>✔ 自動排除：一文不值／或有風險</li>
+                        <li>✔ 「暫無」不加碼、不追高</li>
                     </div>
                 </div>
             </div>
@@ -158,37 +204,40 @@
                 return {
                     fund: 0,
                     displayFund: '0',
-                    currentPeriod: 1,
-                    showModal: false,
-                    modalTitle: '',
-                    modalMsg: '',
+                    showHistoryModal: false,
+                    currentProduct: null,
+                    currentProductIdx: -1,
+                    selectedModalPeriod: 1,
+                    modalPrice: 0,
+                    modalPriceData: new Array(13).fill(0),
                     productList: [
-                        { name: '千刻地政', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '米和油店', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '朵朵縫紉', risk: '均', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '安行鞋業', risk: '穩', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '宋城閃送', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '凝禮織造', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '東南園林', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '朧湖水築', risk: '均', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '豬豬戲院', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '衡動建築', risk: '穩', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '神鹿茶坊', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '金銀珠寶', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '彩虹染坊', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '晨曦鏢局', risk: '均', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '萬里馬場', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '嗨嗨邊爐', risk: '穩', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '馬上成衣', risk: '均', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '畢禮戲院', risk: '均', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '二八劇場', risk: '均', price: 0, lastPrice: 0, tag: '', displayPrice: '0' },
-                        { name: '五味食府', risk: '險', price: 0, lastPrice: 0, tag: '', displayPrice: '0' }
+                        { name: '千刻地政', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '米和油店', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '朵朵縫紉', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '安行鞋業', risk: '穩', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '宋城閃送', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '凝禮織造', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '東南園林', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '朧湖水築', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '豬豬戲院', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '衡動建築', risk: '穩', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '神鹿茶坊', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '藍海製衣', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '雪人甜水', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '禧上茶樓', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '榮邸閣', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '畢禮戲院', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '二八劇場', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '嗨嗨邊爐', risk: '穩', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '馬上成衣', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) },
+                        { name: '旭樂坊', risk: '穩', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0) }
                     ],
-                    periodData: {}
+                    hasAnalyzed: false
                 }
             },
             computed: {
                 recommendations() {
+                    if (!this.hasAnalyzed) return [];
                     const candidates = [];
                     for (let i = 0; i < this.productList.length; i++) {
                         const p = this.productList[i];
@@ -196,25 +245,26 @@
                         if (p.tag === '一文不值' || p.tag === '或有風險') continue;
                         let score = 0;
                         if (p.tag === '迅速崛起') score = 100;
-                        else if (p.tag === '坊中傳聞') score = 70;
-                        else if (p.tag === '穩中向好') score = 50;
-                        else score = 10;
+                        else if (p.tag === '穩中向好') score = 70;
+                        else if (p.tag === '坊中傳聞') score = 40;
+                        else if (p.tag === '暫無') score = 10;
+                        else score = 5;
                         if (p.price < 5) score *= 1.8;
                         else if (p.price < 10) score *= 1.2;
-                        candidates.push({ idx: i, name: p.name, risk: p.risk, price: p.price, tag: p.tag, score, amount: 0, shares: 0, borderColor: '', badgeClass: '' });
+                        candidates.push({ idx: i, name: p.name, risk: p.risk, price: p.price, tag: p.tag, score, amount: 0, shares: 0, borderColor: '', badgeClass: '', tagMsg: p.tag || '無消息' });
                     }
                     candidates.sort((a,b) => b.score - a.score);
                     const top = candidates.slice(0, 3);
                     let remain = this.fund;
                     for (let t of top) {
                         let ratio = 0;
-                        if (t.score === top[0].score && top.length === 1) ratio = 1;
+                        if (top.length === 1) ratio = 1;
                         else if (top.length === 2) ratio = t === top[0] ? 0.6 : 0.4;
-                        else if (top.length === 3) {
+                        else {
                             if (t === top[0]) ratio = 0.5;
                             else if (t === top[1]) ratio = 0.3;
                             else ratio = 0.2;
-                        } else ratio = 1/ top.length;
+                        }
                         let alloc = Math.floor(this.fund * ratio);
                         if (alloc > remain) alloc = remain;
                         let shares = Math.floor(alloc / t.price);
@@ -224,7 +274,6 @@
                         remain -= actual;
                         t.borderColor = t === top[0] ? 'border-orange-400' : 'border-purple-400';
                         t.badgeClass = t.risk === '險' ? 'bg-red-500/30 text-red-200' : (t.risk === '均' ? 'bg-yellow-500/30 text-yellow-200' : 'bg-green-500/30 text-green-200');
-                        t.tagMsg = t.tag || '無消息';
                     }
                     return top;
                 },
@@ -232,13 +281,15 @@
                     return this.recommendations.reduce((sum, r) => sum + r.amount, 0);
                 },
                 decisionMsg() {
+                    if (!this.hasAnalyzed) return '⚠️ 尚未分析';
                     if (this.recommendations.length === 0) return '⚠️ 尚無有效標的';
                     if (this.recommendations[0].score >= 100) return '🔥 強烈買入：迅速崛起';
-                    if (this.recommendations[0].score >= 70) return '📈 建議買入：低價反彈機會';
-                    return '📊 穩健配置：優先選低價';
+                    if (this.recommendations[0].score >= 70) return '📈 建議買入：穩中向好';
+                    return '📊 保守配置：低價優先';
                 },
                 decisionDetail() {
-                    if (this.recommendations.length === 0) return '請先輸入本期價格與消息標籤';
+                    if (!this.hasAnalyzed) return '請點擊「開始分析」按鈕';
+                    if (this.recommendations.length === 0) return '無符合條件的標的（價格為0、消息為一文不值/或有風險）';
                     let html = '<ul class="list-disc pl-4 space-y-1">';
                     for (let r of this.recommendations) {
                         html += `<li>${r.name}（${r.risk}）｜消息：${r.tagMsg}｜單價 ${r.price} 元</li>`;
@@ -261,21 +312,7 @@
                     let num = parseInt(raw, 10) || 0;
                     this.fund = Math.max(0, num);
                     this.displayFund = raw;
-                },
-                onPriceFocus(idx) { this.productList[idx].displayPrice = this.productList[idx].price.toString(); },
-                onPriceBlur(idx) {
-                    let p = this.productList[idx];
-                    let num = this.parseNum(p.displayPrice);
-                    p.price = num;
-                    p.displayPrice = this.formatWithComma(num);
-                    this.savePeriodData();
-                },
-                onPriceInput(idx, raw) {
-                    let p = this.productList[idx];
-                    let num = this.parseNum(raw);
-                    p.price = num;
-                    p.displayPrice = raw;
-                    this.savePeriodData();
+                    this.saveAllData();
                 },
                 getPriceChangePercent(item) {
                     if (item.lastPrice && item.lastPrice > 0 && item.price) {
@@ -291,81 +328,155 @@
                     if (change < 0) return 'text-loss';
                     return '';
                 },
-                savePeriodData() {
-                    if (!this.periodData[this.currentPeriod]) this.periodData[this.currentPeriod] = {};
+                updateLastPrice() {
                     for (let i = 0; i < this.productList.length; i++) {
-                        this.periodData[this.currentPeriod][i] = {
-                            price: this.productList[i].price,
-                            risk: this.productList[i].risk,
-                            tag: this.productList[i].tag
-                        };
-                    }
-                    this.loadLastPeriod();
-                },
-                loadLastPeriod() {
-                    let last = this.currentPeriod - 1;
-                    if (last >= 1 && this.periodData[last]) {
-                        for (let i = 0; i < this.productList.length; i++) {
-                            if (this.periodData[last][i]) {
-                                this.productList[i].lastPrice = this.periodData[last][i].price || 0;
-                            } else {
-                                this.productList[i].lastPrice = 0;
+                        let maxPeriod = 0;
+                        let lastPrice = 0;
+                        for (let period = 1; period <= 12; period++) {
+                            if (this.productList[i].prices[period] > 0) {
+                                maxPeriod = period;
+                                lastPrice = this.productList[i].prices[period];
                             }
                         }
-                    } else if (last >= 1 && !this.periodData[last]) {
-                        for (let i = 0; i < this.productList.length; i++) {
-                            this.productList[i].lastPrice = 0;
+                        this.productList[i].lastPrice = lastPrice;
+                        this.productList[i].price = lastPrice;
+                    }
+                },
+                openHistoryModal(product, idx) {
+                    this.currentProduct = product;
+                    this.currentProductIdx = idx;
+                    this.modalPriceData = [...product.prices];
+                    this.selectedModalPeriod = this.getLatestPeriodWithPrice();
+                    this.modalPrice = this.modalPriceData[this.selectedModalPeriod] || 0;
+                    this.showHistoryModal = true;
+                    this.$nextTick(() => {
+                        this.drawChart();
+                    });
+                },
+                closeHistoryModal() {
+                    this.showHistoryModal = false;
+                },
+                selectPeriodInModal(period) {
+                    this.selectedModalPeriod = period;
+                    this.modalPrice = this.modalPriceData[period] || 0;
+                },
+                saveModalPrice() {
+                    this.modalPriceData[this.selectedModalPeriod] = this.modalPrice;
+                    this.productList[this.currentProductIdx].prices = [...this.modalPriceData];
+                    this.updateLastPrice();
+                    this.saveAllData();
+                    this.drawChart();
+                },
+                getLatestPeriodWithPrice() {
+                    for (let i = 12; i >= 1; i--) {
+                        if (this.modalPriceData[i] > 0) return i;
+                    }
+                    return 1;
+                },
+                drawChart() {
+                    const canvas = document.getElementById('priceChart');
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    const width = canvas.clientWidth;
+                    const height = canvas.clientHeight;
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    ctx.clearRect(0, 0, width, height);
+                    
+                    const prices = [];
+                    for (let i = 1; i <= 12; i++) {
+                        prices.push(this.modalPriceData[i] || 0);
+                    }
+                    
+                    const maxPrice = Math.max(...prices.filter(p => p > 0), 10);
+                    const minPrice = Math.min(...prices.filter(p => p > 0), 0);
+                    const range = maxPrice - minPrice || 1;
+                    
+                    const margin = 30;
+                    const graphWidth = width - margin * 2;
+                    const graphHeight = height - margin * 2;
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#5E548E';
+                    ctx.lineWidth = 2;
+                    
+                    let firstPoint = false;
+                    for (let i = 0; i < prices.length; i++) {
+                        if (prices[i] > 0) {
+                            const x = margin + (i / 11) * graphWidth;
+                            const y = margin + graphHeight - ((prices[i] - minPrice) / range) * graphHeight;
+                            if (!firstPoint) {
+                                ctx.moveTo(x, y);
+                                firstPoint = true;
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
                         }
-                        this.showModal = true;
-                        this.modalTitle = '⚠️ 缺期提醒';
-                        this.modalMsg = `尚未輸入第 ${last} 期資料，漲跌幅無法計算。請先切換至第 ${last} 期並輸入價格。`;
-                    } else {
-                        for (let i = 0; i < this.productList.length; i++) {
-                            this.productList[i].lastPrice = 0;
+                    }
+                    ctx.stroke();
+                    
+                    for (let i = 0; i < prices.length; i++) {
+                        if (prices[i] > 0) {
+                            const x = margin + (i / 11) * graphWidth;
+                            const y = margin + graphHeight - ((prices[i] - minPrice) / range) * graphHeight;
+                            ctx.beginPath();
+                            ctx.fillStyle = '#FF9D6F';
+                            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                            ctx.fill();
+                            ctx.fillStyle = '#4A4655';
+                            ctx.font = '10px "Noto Sans TC"';
+                            ctx.fillText(prices[i].toFixed(2), x - 12, y - 8);
+                            ctx.fillStyle = '#8E9AAF';
+                            ctx.fillText(`P${i+1}`, x - 8, y + 15);
                         }
+                    }
+                },
+                runAnalysis() {
+                    this.hasAnalyzed = true;
+                    this.saveAllData();
+                },
+                saveAllData() {
+                    const dataToSave = {
+                        fund: this.fund,
+                        productList: this.productList.map(p => ({
+                            name: p.name,
+                            risk: p.risk,
+                            tag: p.tag,
+                            prices: p.prices
+                        }))
+                    };
+                    localStorage.setItem('exchange_tool_data', JSON.stringify(dataToSave));
+                },
+                loadAllData() {
+                    const saved = localStorage.getItem('exchange_tool_data');
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            this.fund = data.fund || 0;
+                            this.displayFund = this.formatWithComma(this.fund);
+                            for (let i = 0; i < this.productList.length; i++) {
+                                if (data.productList[i]) {
+                                    this.productList[i].risk = data.productList[i].risk || '險';
+                                    this.productList[i].tag = data.productList[i].tag || '';
+                                    this.productList[i].prices = data.productList[i].prices || new Array(13).fill(0);
+                                }
+                            }
+                            this.updateLastPrice();
+                        } catch(e) { console.log('讀取失敗'); }
+                    }
+                },
+                clearAllData() {
+                    if (confirm('確定要清除所有資料嗎？')) {
+                        localStorage.removeItem('exchange_tool_data');
+                        location.reload();
                     }
                 },
                 goToPortal() { window.location.href = 'portal.html'; }
             },
-            watch: {
-                currentPeriod(newVal, oldVal) {
-                    if (oldVal && this.periodData[oldVal]) {
-                        for (let i = 0; i < this.productList.length; i++) {
-                            this.periodData[oldVal][i] = {
-                                price: this.productList[i].price,
-                                risk: this.productList[i].risk,
-                                tag: this.productList[i].tag
-                            };
-                        }
-                    }
-                    if (this.periodData[newVal]) {
-                        for (let i = 0; i < this.productList.length; i++) {
-                            if (this.periodData[newVal][i]) {
-                                this.productList[i].price = this.periodData[newVal][i].price || 0;
-                                this.productList[i].risk = this.periodData[newVal][i].risk || '險';
-                                this.productList[i].tag = this.periodData[newVal][i].tag || '';
-                                this.productList[i].displayPrice = this.formatWithComma(this.productList[i].price);
-                            } else {
-                                this.productList[i].price = 0;
-                                this.productList[i].displayPrice = '0';
-                            }
-                        }
-                    } else {
-                        for (let i = 0; i < this.productList.length; i++) {
-                            this.productList[i].price = 0;
-                            this.productList[i].displayPrice = '0';
-                        }
-                    }
-                    this.loadLastPeriod();
-                }
-            },
             mounted() {
-                this.displayFund = '0';
-                this.fund = 0;
-                for (let i = 0; i < this.productList.length; i++) {
-                    this.productList[i].displayPrice = '0';
-                    this.productList[i].price = 0;
-                }
+                this.loadAllData();
+                this.updateLastPrice();
             }
         }).mount('#app');
     </script>
