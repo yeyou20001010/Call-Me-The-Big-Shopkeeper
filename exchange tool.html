@@ -17,8 +17,6 @@
         .text-gain { color: #E53935 !important; }
         .text-loss { color: #00897B !important; }
         .row-label { font-size: 12px; color: #8E9AAF; font-weight: 900; margin-bottom: 2px; display: block; }
-        .period-btn { background: #EAE8E4; border-radius: 2rem; padding: 0.5rem 1rem; text-align: center; font-weight: 900; cursor: pointer; transition: all 0.2s; border: 1px solid #D7D3CC; }
-        .period-btn.active { background: #5E548E; color: white; border-color: #5E548E; }
         .period-btn-small { background: #EAE8E4; border-radius: 2rem; padding: 0.25rem 0.75rem; text-align: center; font-weight: 900; cursor: pointer; transition: all 0.2s; border: 1px solid #D7D3CC; font-size: 0.8rem; }
         .period-btn-small.active { background: #5E548E; color: white; border-color: #5E548E; }
         canvas { background: #F4F2EE; border-radius: 0.75rem; border: 1px solid #D7D3CC; }
@@ -42,39 +40,28 @@
 <body class="p-4 md:p-8">
     <div id="app" v-cloak class="max-w-[1600px] mx-auto">
         
-        <!-- 彈窗：歷史價格與走勢圖 -->
+        <!-- 彈窗 -->
         <div v-if="showHistoryModal" class="modal-overlay" @click="closeHistoryModal"></div>
         <div v-if="showHistoryModal" class="custom-modal">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-black text-[#5E548E]">{{ currentProduct.name }}｜價格走勢</h3>
+                <h3 class="text-2xl font-black text-[#5E548E]">{{ currentProduct?.name || '標的' }}｜價格走勢</h3>
                 <button @click="closeHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <div class="grid grid-cols-4 gap-2 mb-4">
-                        <button v-for="n in 12" :key="n" 
-                            @click="selectPeriodInModal(n)"
-                            class="period-btn-small"
-                            :class="{ active: selectedModalPeriod === n }">
-                            第 {{ n }} 期
-                        </button>
+                        <button v-for="n in 12" :key="n" @click="selectPeriodInModal(n)" class="period-btn-small" :class="{ active: selectedModalPeriod === n }">第 {{ n }} 期</button>
                     </div>
                     <div class="mt-4">
                         <label class="row-label">價格（元）</label>
-                        <input type="number" step="0.01" v-model.number="modalPrice" 
-                            class="input-inline !text-xl" placeholder="輸入價格">
-                        <button @click="saveModalPrice" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存此期價格</button>
-                        <button @click="clearSingleProductPrices" class="mt-2 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除此標的所有價格</button>
-                    </div>
-                    <div class="mt-4 text-xs text-gray-400">
-                        💡 提示：輸入價格後折線圖會自動更新
+                        <input type="number" step="0.01" v-model.number="modalPrice" class="input-inline !text-xl">
+                        <button @click="saveModalPrice" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存</button>
+                        <button @click="clearSingleProductPrices" class="mt-2 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除此標價格</button>
                     </div>
                 </div>
                 <div>
                     <canvas id="priceChart" width="300" height="200" style="width:100%; height:auto; max-width:300px;"></canvas>
-                    <div class="text-center text-xs text-gray-400 mt-2">
-                        已輸入 {{ modalPriceData.filter(p => p > 0).length }} / 12 期
-                    </div>
+                    <div class="text-center text-xs text-gray-400 mt-2">已輸入 {{ modalPriceData.filter(p => p > 0).length }} / 12 期</div>
                 </div>
             </div>
         </div>
@@ -89,7 +76,7 @@
                 <div class="flex gap-3">
                     <button @click="clearAllData" class="bg-red-400 text-white px-5 py-2 rounded-xl text-sm font-black">🗑️ 清除所有資料</button>
                     <button @click="exportData" class="bg-green-600 text-white px-5 py-2 rounded-xl text-sm font-black">📋 複製數據</button>
-                    <button @click="goToPortal" class="bg-slate-400 text-white px-5 py-2 rounded-xl text-sm font-black">🏠 返回主選單</button>
+                    <button @click="goToPortal" class="bg-slate-400 text-white px-5 py-2 rounded-xl text-sm font-black">🏠 返回</button>
                 </div>
             </div>
         </div>
@@ -98,561 +85,213 @@
             <div class="lg:col-span-8 space-y-6">
                 <div class="card-std">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                        <div class="flex items-center gap-3">
-                            <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black">📋 標的一覽（點名稱可編輯歷史價格）</span>
-                        </div>
+                        <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black">📋 標的一覽（點名稱編輯歷史）</span>
                         <div class="flex items-center gap-4">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm text-gray-500">期數基準：</span>
-                                <select v-model="periodMode" class="input-inline !w-32">
-                                    <option value="auto">自動（最新期數）</option>
-                                    <option value="manual">手動鎖定</option>
-                                </select>
-                                <input v-if="periodMode === 'manual'" type="number" v-model.number="manualPeriod" min="1" max="12" class="input-inline !w-20">
-                            </div>
-                            <div class="text-right">
-                                <span class="row-label">總資金（元）</span>
-                                <input type="text" v-model="displayFund" @focus="onFundFocus" @blur="onFundBlur" @input="onFundInput" class="input-inline !w-48 !text-xl !font-black !text-orange-600 border-2 border-orange-200">
-                            </div>
-                            <div class="text-right bg-slate-100 px-4 py-2 rounded-xl">
-                                <span class="text-xs text-gray-500">約</span>
-                                <span class="font-black text-indigo-600">{{ formatWan(fund) }}</span>
-                            </div>
+                            <select v-model="periodMode" class="input-inline !w-32">
+                                <option value="auto">自動（最新期數）</option>
+                                <option value="manual">手動鎖定</option>
+                            </select>
+                            <input v-if="periodMode === 'manual'" type="number" v-model.number="manualPeriod" min="1" max="12" class="input-inline !w-20">
+                            <input type="text" v-model="displayFund" @focus="onFundFocus" @blur="onFundBlur" @input="onFundInput" class="input-inline !w-48 !text-xl !text-orange-600 border-2 border-orange-200" placeholder="總資金(元)">
+                            <div class="bg-slate-100 px-4 py-2 rounded-xl"><span class="font-black text-indigo-600">{{ formatWan(fund) }}</span></div>
                         </div>
                     </div>
-
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
-                            <thead class="bg-slate-50">
-                                <tr class="text-center border-b-2">
-                                    <th class="p-2">標的名稱</th>
-                                    <th class="p-2 sort-btn" @click="sortByRisk">本期風險 ⬍</th>
-                                    <th class="p-2">當前價格</th>
-                                    <th class="p-2">上期價格</th>
-                                    <th class="p-2" style="min-width: 70px;">漲跌幅</th>
-                                    <th class="p-2 sort-btn" @click="sortByTag">小道消息 ⬍</th>
-                                    <th class="p-2" style="min-width: 80px;">持倉張數</th>
-                                    <th class="p-2" style="min-width: 100px;">未實現損益</th>
-                                </table>
-                            </thead>
+                            <thead><tr class="border-b-2">
+                                <th class="p-2">標的名稱</th><th class="p-2 sort-btn" @click="sortByRisk">本期風險 ⬍</th><th class="p-2">當前價格</th><th class="p-2">上期價格</th><th class="p-2">漲跌幅</th><th class="p-2 sort-btn" @click="sortByTag">小道消息 ⬍</th><th class="p-2">持倉張數</th><th class="p-2">未實現損益</th>
+                            </tr></thead>
                             <tbody>
-                                <tr v-for="(item, idx) in displayList" :key="item.originalIndex" class="border-b" :class="{ 'stop-loss-row': getStopLossTriggered(item) }">
+                                <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
                                     <td class="p-2 clickable-name" @click="openHistoryModal(item, item.originalIndex)">{{ item.name }}</td>
-                                    <td class="p-2">
-                                        <div :class="getRiskClass(item.risk)">
-                                            <select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)" class="bg-transparent text-center font-black" style="width: 50px;">
-                                                <option value="險">險</option>
-                                                <option value="均">均</option>
-                                                <option value="穩">穩</option>
-                                            </select>
-                                        </div>
-                                    </td>
-                                    <td class="p-2 font-mono">{{ formatPrice(item.price) }}</td>
-                                    <td class="p-2 font-mono text-slate-500">{{ formatPrice(item.lastPrice) }}</td>
-                                    <td class="p-2 font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
-                                    <td class="p-2">
-                                        <div :class="getTagClass(item.tag || '')">
-                                            <select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)" class="bg-transparent text-center" style="width: 100px;">
-                                                <option value="">請選擇</option>
-                                                <option value="迅速崛起">迅速崛起</option>
-                                                <option value="穩中向好">穩中向好</option>
-                                                <option value="坊中傳聞">坊中傳聞</option>
-                                                <option value="或有風險">或有風險</option>
-                                                <option value="一文不值">一文不值</option>
-                                                <option value="暫無">暫無</option>
-                                            </select>
-                                        </div>
-                                    </td>
-                                    <td class="p-2">
-                                        <input type="number" v-model.number="item.shares" @change="updateShares(item.originalIndex, item.shares)" class="input-inline !w-24 !text-center" min="0" step="1">
-                                    </td>
-                                    <td class="p-2 font-mono" :class="getUnrealizedClass(item)">
-                                        {{ formatPrice(calculateUnrealized(item)) }}
-                                    </td>
+                                    <td><div :class="getRiskClass(item.risk)"><select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)" class="bg-transparent"><option value="險">險</option><option value="均">均</option><option value="穩">穩</option></select></div></td>
+                                    <td class="font-mono">{{ formatPrice(item.price) }}</td>
+                                    <td class="font-mono text-slate-500">{{ formatPrice(item.lastPrice) }}</td>
+                                    <td class="font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
+                                    <td><div :class="getTagClass(item.tag)"><select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)" class="bg-transparent"><option value="">請選擇</option><option value="迅速崛起">迅速崛起</option><option value="穩中向好">穩中向好</option><option value="坊中傳聞">坊中傳聞</option><option value="或有風險">或有風險</option><option value="一文不值">一文不值</option><option value="暫無">暫無</option></select></div></td>
+                                    <td><input type="number" v-model.number="item.shares" @change="updateShares(item.originalIndex, item.shares)" class="input-inline !w-24 !text-center" min="0"></td>
+                                    <td class="font-mono" :class="getUnrealizedClass(item)">{{ formatPrice(calculateUnrealized(item)) }}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-4 text-right text-xs text-slate-400 border-t pt-3">
-                        💡 提示：點擊標的名稱可編輯 12 期歷史價格｜點擊「本期風險」「小道消息」可排序
-                    </div>
                 </div>
             </div>
-
             <div class="lg:col-span-4">
                 <div class="card-std bg-slate-800 text-white sticky top-4 shadow-2xl border-none">
-                    <div class="bg-orange-500 text-white px-4 py-1 rounded-lg text-xs font-black inline-block mb-6 shadow-lg">🏆 即時買入建議</div>
-                    
-                    <div v-if="stopLossList.length > 0" class="bg-red-900/30 rounded-2xl p-4 mb-5 border-l-4 border-red-500">
+                    <div class="bg-orange-500 px-4 py-1 rounded-lg text-xs font-black inline-block mb-6">🏆 即時買入建議</div>
+                    <div v-if="stopLossList.length" class="bg-red-900/30 rounded-2xl p-4 mb-5 border-l-4 border-red-500">
                         <div class="font-black text-red-300 mb-2">⚠️ 停損提醒</div>
-                        <div v-for="sl in stopLossList" :key="sl.name" class="text-sm text-red-200 mb-1">
-                            {{ sl.name }}：虧損 {{ Math.abs(sl.lossPercent).toFixed(1) }}% 
-                            <span class="text-yellow-300">💡 建議賣出換股</span>
-                        </div>
+                        <div v-for="sl in stopLossList" class="text-sm text-red-200">{{ sl.name }}：虧損 {{ Math.abs(sl.lossPercent).toFixed(1) }}% 💡 建議賣出</div>
                     </div>
-
-                    <div class="bg-white/10 rounded-3xl p-5 border border-white/20 mb-5">
+                    <div class="bg-white/10 rounded-3xl p-5 mb-5">
                         <h4 class="text-xl font-black text-yellow-400 mb-3">{{ decisionMsg }}</h4>
-                        <div class="text-sm space-y-2 text-slate-200 font-bold" v-html="decisionDetail"></div>
-                        <div class="border-t border-white/10 mt-4 pt-3 flex justify-between">
-                            <span class="text-xs opacity-70">建議總金額</span>
-                            <span class="text-xl font-black text-pink-300">{{ formatWithComma(suggestedAmount) }} 元</span>
-                        </div>
+                        <div class="text-sm text-slate-200" v-html="decisionDetail"></div>
+                        <div class="border-t mt-4 pt-3 flex justify-between"><span class="text-xs">建議金額</span><span class="text-xl text-pink-300">{{ formatWithComma(suggestedAmount) }} 元</span></div>
                     </div>
-                    <div class="space-y-3">
-                        <div v-for="rec in recommendations" :key="rec.idx" class="bg-black/30 rounded-xl p-3 border-l-4" :class="rec.borderColor">
-                            <div class="flex justify-between items-center">
-                                <span class="font-black">{{ rec.name }}</span>
-                                <span class="text-xs px-2 py-0.5 rounded-full" :class="rec.badgeClass">{{ rec.risk }}</span>
-                            </div>
-                            <div class="text-xs text-gray-300 mt-1">{{ rec.tagMsg }}</div>
-                            <div class="flex justify-between mt-2 text-sm">
-                                <span>投入 {{ formatWithComma(rec.amount) }} 元</span>
-                                <span>約 {{ rec.shares }} 張</span>
-                            </div>
-                        </div>
-                        <div v-if="recommendations.length === 0" class="text-center text-gray-400 text-sm py-6">
-                            無符合條件的標的（價格為0、消息為一文不值/或有風險/暫無）
-                        </div>
+                    <div v-for="rec in recommendations" class="bg-black/30 rounded-xl p-3 mb-2 border-l-4" :class="rec.borderColor">
+                        <div class="flex justify-between"><span class="font-black">{{ rec.name }}</span><span class="text-xs px-2 rounded-full" :class="rec.badgeClass">{{ rec.risk }}</span></div>
+                        <div class="text-xs text-gray-300">{{ rec.tagMsg }}</div>
+                        <div class="flex justify-between mt-1 text-sm"><span>投入 {{ formatWithComma(rec.amount) }} 元</span><span>≈ {{ rec.shares }} 張</span></div>
                     </div>
-                    <div class="bg-slate-900/50 p-4 rounded-2xl mt-5 text-xs text-slate-300 space-y-1">
-                        <li>✔ 推薦邏輯：迅速崛起 > 穩中向好 > 坊中傳聞</li>
-                        <li>✔ 低價位（< 5 元）爆發權重加倍</li>
-                        <li>✔ 自動排除：一文不值／或有風險／暫無</li>
-                        <li>✔ 停損門檻：險25% / 均20% / 穩15%</li>
-                        <li>✔ ALL IN：當第一名分數 > 第二名 2 倍時觸發</li>
-                    </div>
+                    <div class="bg-slate-900/50 p-3 rounded-2xl mt-4 text-xs text-slate-300">✔ 推薦：迅速崛起 > 穩中向好<br>✔ 低價(<5)權重加倍<br>✔ 排除暫無/一文不值<br>✔ 停損：險25% / 均20% / 穩15%</div>
                 </div>
             </div>
         </div>
     </div>
-
     <script>
+        const defaultProducts = [
+            '千刻地政','米和油店','朵朵縫紉','安行鞋業','宋城閃送','凝禮織造','東南園林','朧湖水築','豬豬戲院','衡動建築',
+            '神鹿茶坊','藍海製衣','雪人甜水','禧上茶樓','榮邸閣','畢禮戲院','二八劇場','嗨嗨邊爐','馬上成衣','旭樂坊'
+        ];
         const { createApp } = Vue;
         createApp({
-            data() {
-                return {
-                    fund: 0,
-                    displayFund: '0',
-                    periodMode: 'auto',
-                    manualPeriod: 1,
-                    showHistoryModal: false,
-                    currentProduct: null,
-                    currentProductIdx: -1,
-                    selectedModalPeriod: 1,
-                    modalPrice: 0,
-                    modalPriceData: new Array(13).fill(0),
-                    sortRisk: null,
-                    sortTag: null,
-                    productList: [
-                        { name: '千刻地政', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 0 },
-                        { name: '米和油店', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 1 },
-                        { name: '朵朵縫紉', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 2 },
-                        { name: '安行鞋業', risk: '穩', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 3 },
-                        { name: '宋城閃送', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 4 },
-                        { name: '凝禮織造', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 5 },
-                        { name: '東南園林', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 6 },
-                        { name: '朧湖水築', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 7 },
-                        { name: '豬豬戲院', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 8 },
-                        { name: '衡動建築', risk: '穩', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 9 },
-                        { name: '神鹿茶坊', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 10 },
-                        { name: '藍海製衣', risk: '險', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 11 },
-                        { name: '雪人甜水', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 12 },
-                        { name: '禧上茶樓', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 13 },
-                        { name: '榮邸閣', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 14 },
-                        { name: '畢禮戲院', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 15 },
-                        { name: '二八劇場', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 16 },
-                        { name: '嗨嗨邊爐', risk: '穩', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 17 },
-                        { name: '馬上成衣', risk: '均', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 18 },
-                        { name: '旭樂坊', risk: '穩', price: 0, lastPrice: 0, tag: '', prices: new Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: 19 }
-                    ]
-                }
-            },
+            data() { return {
+                fund: 0, displayFund: '0', periodMode: 'auto', manualPeriod: 1,
+                showHistoryModal: false, currentProduct: null, currentProductIdx: -1,
+                selectedModalPeriod: 1, modalPrice: 0, modalPriceData: Array(13).fill(0),
+                sortRisk: null, sortTag: null,
+                productList: defaultProducts.map((name, idx) => ({
+                    name, risk: '險', tag: '', prices: Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: idx
+                }))
+            }},
             computed: {
                 currentPeriod() {
                     if (this.periodMode === 'manual') return this.manualPeriod;
-                    let maxPeriod = 0;
-                    for (let p of this.productList) {
-                        for (let i = 1; i <= 12; i++) {
-                            if (p.prices[i] > 0 && i > maxPeriod) maxPeriod = i;
-                        }
-                    }
-                    return maxPeriod || 1;
+                    let max=0;
+                    for(let p of this.productList) for(let i=1;i<=12;i++) if(p.prices[i]>0 && i>max) max=i;
+                    return max||1;
                 },
                 effectiveProductList() {
                     const period = this.currentPeriod;
-                    return this.productList.map((p, idx) => {
-                        const lastPeriod = this.getLastPeriodWithPrice(p, period);
-                        return {
-                            ...p,
-                            originalIndex: idx,
-                            price: p.prices[period] || 0,
-                            lastPrice: lastPeriod > 0 ? p.prices[lastPeriod] : 0
-                        };
+                    return this.productList.map((p,idx) => {
+                        let lastPeriod=0;
+                        for(let i=period-1;i>=1;i--) if(p.prices[i]>0) { lastPeriod=i; break; }
+                        return { ...p, originalIndex: idx, price: p.prices[period]||0, lastPrice: lastPeriod?p.prices[lastPeriod]:0 };
                     });
                 },
                 displayList() {
                     let list = [...this.effectiveProductList];
-                    if (this.sortRisk !== null) {
-                        const riskOrder = { '險': 1, '均': 2, '穩': 3 };
-                        list.sort((a,b) => this.sortRisk === 'asc' ? riskOrder[a.risk] - riskOrder[b.risk] : riskOrder[b.risk] - riskOrder[a.risk]);
-                    } else if (this.sortTag !== null) {
-                        const tagOrder = { '迅速崛起': 1, '穩中向好': 2, '坊中傳聞': 3, '或有風險': 4, '一文不值': 5, '暫無': 6, '': 7 };
-                        list.sort((a,b) => this.sortTag === 'asc' ? (tagOrder[a.tag] || 7) - (tagOrder[b.tag] || 7) : (tagOrder[b.tag] || 7) - (tagOrder[a.tag] || 7));
+                    if(this.sortRisk) list.sort((a,b)=> this.sortRisk==='asc'? (a.risk==='險'?1:a.risk==='均'?2:3)-(b.risk==='險'?1:b.risk==='均'?2:3) : (b.risk==='險'?1:b.risk==='均'?2:3)-(a.risk==='險'?1:a.risk==='均'?2:3));
+                    else if(this.sortTag) {
+                        const order = { '迅速崛起':1, '穩中向好':2, '坊中傳聞':3, '或有風險':4, '一文不值':5, '暫無':6, '':7 };
+                        list.sort((a,b)=> this.sortTag==='asc'? (order[a.tag]||7)-(order[b.tag]||7) : (order[b.tag]||7)-(order[a.tag]||7));
                     }
                     return list;
                 },
                 stopLossList() {
-                    const list = [];
-                    for (let p of this.effectiveProductList) {
-                        if (p.shares > 0 && p.avgCost > 0 && p.price > 0) {
-                            const lossPercent = (p.price - p.avgCost) / p.avgCost * 100;
-                            let threshold = 15;
-                            if (p.risk === '險') threshold = 25;
-                            else if (p.risk === '均') threshold = 20;
-                            if (lossPercent < -threshold) {
-                                list.push({ name: p.name, lossPercent: lossPercent });
-                            }
-                        }
+                    let res=[];
+                    for(let p of this.effectiveProductList) if(p.shares && p.avgCost && p.price) {
+                        let loss = (p.price-p.avgCost)/p.avgCost*100, thr = p.risk==='險'?25 : p.risk==='均'?20 : 15;
+                        if(loss < -thr) res.push({name:p.name, lossPercent:loss});
                     }
-                    return list;
+                    return res;
                 },
                 recommendations() {
-                    const candidates = [];
-                    const period = this.currentPeriod;
-                    for (let i = 0; i < this.productList.length; i++) {
-                        const pRaw = this.productList[i];
-                        const price = pRaw.prices[period] || 0;
-                        if (price <= 0) continue;
-                        let tag = pRaw.tag || '';
-                        if (!tag) tag = '暫無';
-                        if (tag === '一文不值' || tag === '或有風險' || tag === '暫無') continue;
-                        let score = 0;
-                        if (tag === '迅速崛起') score = 100;
-                        else if (tag === '穩中向好') score = 70;
-                        else if (tag === '坊中傳聞') score = 40;
-                        if (price < 5) score *= 1.8;
-                        else if (price < 10) score *= 1.2;
-                        candidates.push({ idx: i, name: pRaw.name, risk: pRaw.risk, price, tag, score, amount: 0, shares: 0, borderColor: '', badgeClass: '', tagMsg: tag });
+                    let period = this.currentPeriod, candidates=[];
+                    for(let p of this.productList) {
+                        let price = p.prices[period]||0;
+                        if(price<=0) continue;
+                        let tag = p.tag||'暫無';
+                        if(['一文不值','或有風險','暫無'].includes(tag)) continue;
+                        let score = tag==='迅速崛起'?100 : tag==='穩中向好'?70 : tag==='坊中傳聞'?40 : 0;
+                        if(price<5) score*=1.8;
+                        else if(price<10) score*=1.2;
+                        candidates.push({ idx:p.originalIndex, name:p.name, risk:p.risk, price, tag, score, amount:0, shares:0, tagMsg:tag });
                     }
-                    candidates.sort((a,b) => b.score - a.score);
-                    if (candidates.length === 0) return [];
-                    const top1 = candidates[0];
-                    const top2 = candidates[1];
-                    const isAllIn = top2 && (top1.score > top2.score * 2);
-                    let top;
-                    if (isAllIn) {
-                        top = [candidates[0]];
-                    } else {
-                        top = candidates.slice(0, 3);
-                    }
+                    candidates.sort((a,b)=>b.score-a.score);
+                    if(!candidates.length) return [];
+                    let isAllIn = candidates[1] && candidates[0].score > candidates[1].score*2;
+                    let top = isAllIn ? [candidates[0]] : candidates.slice(0,3);
                     let remain = this.fund;
-                    for (let t of top) {
-                        let ratio = 0;
-                        if (top.length === 1) ratio = 1;
-                        else if (top.length === 2) ratio = t === top[0] ? 0.6 : 0.4;
-                        else {
-                            if (t === top[0]) ratio = 0.5;
-                            else if (t === top[1]) ratio = 0.3;
-                            else ratio = 0.2;
-                        }
-                        let alloc = Math.floor(this.fund * ratio);
-                        if (alloc > remain) alloc = remain;
-                        let shares = Math.floor(alloc / t.price);
-                        let actual = shares * t.price;
-                        t.amount = actual;
+                    for(let t of top) {
+                        let ratio = top.length===1 ? 1 : top.length===2 ? (t===top[0]?0.6:0.4) : (t===top[0]?0.5 : t===top[1]?0.3 : 0.2);
+                        let alloc = Math.min(Math.floor(this.fund*ratio), remain);
+                        let shares = Math.floor(alloc/t.price);
+                        t.amount = shares*t.price;
                         t.shares = shares;
-                        remain -= actual;
-                        t.borderColor = t === top[0] ? 'border-orange-400' : 'border-purple-400';
-                        t.badgeClass = t.risk === '險' ? 'bg-red-500/30 text-red-200' : (t.risk === '均' ? 'bg-yellow-500/30 text-yellow-200' : 'bg-green-500/30 text-green-200');
+                        remain -= t.amount;
+                        t.borderColor = t===top[0] ? 'border-orange-400' : 'border-purple-400';
+                        t.badgeClass = t.risk==='險' ? 'bg-red-500/30' : (t.risk==='均'?'bg-yellow-500/30':'bg-green-500/30');
                     }
                     return top;
                 },
-                suggestedAmount() {
-                    return this.recommendations.reduce((sum, r) => sum + r.amount, 0);
-                },
+                suggestedAmount() { return this.recommendations.reduce((s,r)=>s+r.amount,0); },
                 decisionMsg() {
-                    if (this.recommendations.length === 0) return '⚠️ 尚無有效標的';
-                    if (this.recommendations[0].score >= 100) {
-                        if (this.recommendations.length === 1) return '🔥 強烈建議 ALL IN：迅速崛起';
-                        return '🔥 強烈買入：迅速崛起';
-                    }
-                    if (this.recommendations[0].score >= 70) return '📈 建議買入：穩中向好';
-                    return '📊 保守配置：低價優先';
+                    if(!this.recommendations.length) return '⚠️ 無有效標的';
+                    let r=this.recommendations[0];
+                    if(r.score>=100) return this.recommendations.length===1 ? '🔥 ALL IN：'+r.name : '🔥 強買：'+r.name;
+                    return r.score>=70 ? '📈 建議買入：'+r.name : '📊 保守配置';
                 },
-                decisionDetail() {
-                    if (this.recommendations.length === 0) return '無符合條件的標的（價格為0、消息為一文不值/或有風險/暫無）';
-                    let html = '<ul class="list-disc pl-4 space-y-1">';
-                    for (let r of this.recommendations) {
-                        html += `<li>${r.name}（${r.risk}）｜消息：${r.tagMsg}｜單價 ${this.formatPrice(r.price)} 元</li>`;
-                    }
-                    html += '</ul>';
-                    return html;
-                }
+                decisionDetail() { return this.recommendations.length ? '<ul><li>'+this.recommendations.map(r=>`${r.name}(${r.risk}/${r.tagMsg}) 單價${this.formatPrice(r.price)}`).join('</li><li>')+'</li></ul>' : '無'; }
             },
             methods: {
-                formatPrice(v) { return (Math.floor((v || 0) * 100) / 100).toFixed(2); },
-                formatWithComma(v) { return Math.floor(v || 0).toLocaleString(); },
-                formatWan(v) {
-                    if (v < 10000) return v.toLocaleString() + ' 元';
-                    return (Math.floor((v / 10000) * 1000) / 1000).toFixed(3) + ' 萬';
-                },
-                parseNum(v) { return Number(v.toString().replace(/,/g, '')) || 0; },
-                onFundFocus() { this.displayFund = this.fund.toString(); },
-                onFundBlur() { this.displayFund = this.formatWithComma(this.fund); },
-                onFundInput(e) {
-                    let raw = e.target.value.replace(/,/g, '');
-                    let num = parseInt(raw, 10) || 0;
-                    this.fund = Math.max(0, num);
-                    this.displayFund = raw;
-                    this.saveAllData();
-                },
-                getLastPeriodWithPrice(product, currentPeriod) {
-                    for (let i = currentPeriod - 1; i >= 1; i--) {
-                        if (product.prices[i] > 0) return i;
-                    }
-                    return 0;
-                },
-                getPriceChangePercent(item) {
-                    if (item.lastPrice && item.lastPrice > 0 && item.price) {
-                        let change = ((item.price - item.lastPrice) / item.lastPrice * 100);
-                        return change.toFixed(1) + '%';
-                    }
-                    return '-';
-                },
-                getPriceChangeClass(item) {
-                    if (!item.lastPrice || !item.price) return '';
-                    let change = (item.price - item.lastPrice) / item.lastPrice;
-                    if (change > 0) return 'text-gain';
-                    if (change < 0) return 'text-loss';
-                    return '';
-                },
-                getRiskClass(risk) {
-                    if (risk === '險') return 'risk-red';
-                    if (risk === '均') return 'risk-blue';
-                    return 'risk-green';
-                },
-                getTagClass(tag) {
-                    if (tag === '迅速崛起') return 'tag-rapid';
-                    if (tag === '穩中向好') return 'tag-good';
-                    if (tag === '坊中傳聞') return 'tag-neutral';
-                    if (tag === '或有風險') return 'tag-risk';
-                    if (tag === '一文不值') return 'tag-worthless';
-                    return 'tag-none';
-                },
-                getStopLossTriggered(item) {
-                    if (item.shares > 0 && item.avgCost > 0 && item.price > 0) {
-                        const lossPercent = (item.price - item.avgCost) / item.avgCost * 100;
-                        let threshold = 15;
-                        if (item.risk === '險') threshold = 25;
-                        else if (item.risk === '均') threshold = 20;
-                        return lossPercent < -threshold;
-                    }
-                    return false;
-                },
-                calculateUnrealized(item) {
-                    if (item.shares > 0 && item.avgCost > 0 && item.price > 0) {
-                        return (item.price - item.avgCost) * item.shares;
-                    }
-                    return 0;
-                },
-                getUnrealizedClass(item) {
-                    const val = this.calculateUnrealized(item);
-                    if (val > 0) return 'text-gain';
-                    if (val < 0) return 'text-loss';
-                    return '';
-                },
-                updateRisk(idx, value) { this.productList[idx].risk = value; this.saveAllData(); },
-                updateTag(idx, value) { this.productList[idx].tag = value; this.saveAllData(); },
-                updateShares(idx, value) { this.productList[idx].shares = value; this.saveAllData(); },
-                sortByRisk() {
-                    if (this.sortRisk === null) this.sortRisk = 'asc';
-                    else if (this.sortRisk === 'asc') this.sortRisk = 'desc';
-                    else this.sortRisk = null;
-                    this.sortTag = null;
-                },
-                sortByTag() {
-                    if (this.sortTag === null) this.sortTag = 'asc';
-                    else if (this.sortTag === 'asc') this.sortTag = 'desc';
-                    else this.sortTag = null;
-                    this.sortRisk = null;
-                },
-                updateProductData() {
-                    const period = this.currentPeriod;
-                    for (let p of this.productList) {
-                        const lastPeriod = this.getLastPeriodWithPrice(p, period);
-                        const price = p.prices[period] || 0;
-                        if (p.shares > 0 && price > 0 && p.avgCost === 0) {
-                            p.avgCost = price;
-                        }
-                    }
-                    this.saveAllData();
-                },
-                openHistoryModal(product, idx) {
-                    this.currentProduct = product;
-                    this.currentProductIdx = idx;
-                    this.modalPriceData = [...product.prices];
-                    this.selectedModalPeriod = this.getLatestPeriodWithPriceInModal();
-                    this.modalPrice = this.modalPriceData[this.selectedModalPeriod] || 0;
-                    this.showHistoryModal = true;
-                    this.$nextTick(() => {
-                        this.drawChart();
-                    });
-                },
-                closeHistoryModal() {
-                    this.showHistoryModal = false;
-                },
-                selectPeriodInModal(period) {
-                    this.selectedModalPeriod = period;
-                    this.modalPrice = this.modalPriceData[period] || 0;
-                },
-                saveModalPrice() {
-                    this.modalPriceData[this.selectedModalPeriod] = this.modalPrice;
-                    this.productList[this.currentProductIdx].prices = [...this.modalPriceData];
-                    this.updateProductData();
-                    this.saveAllData();
-                    this.closeHistoryModal();
-                    this.$forceUpdate();
-                },
-                clearSingleProductPrices() {
-                    if (confirm('確定清除此標的所有歷史價格嗎？')) {
-                        this.modalPriceData.fill(0);
-                        this.productList[this.currentProductIdx].prices = [...this.modalPriceData];
-                        this.updateProductData();
-                        this.saveAllData();
-                        this.modalPrice = 0;
-                        this.drawChart();
-                    }
-                },
-                getLatestPeriodWithPriceInModal() {
-                    for (let i = 12; i >= 1; i--) {
-                        if (this.modalPriceData[i] > 0) return i;
-                    }
-                    return 1;
-                },
-                drawChart() {
-                    const canvas = document.getElementById('priceChart');
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-                    const width = canvas.clientWidth;
-                    const height = canvas.clientHeight;
-                    canvas.width = width;
-                    canvas.height = height;
-                    
-                    ctx.clearRect(0, 0, width, height);
-                    
-                    const prices = [];
-                    for (let i = 1; i <= 12; i++) {
-                        prices.push(this.modalPriceData[i] || 0);
-                    }
-                    
-                    const maxPrice = Math.max(...prices.filter(p => p > 0), 10);
-                    const minPrice = Math.min(...prices.filter(p => p > 0), 0);
-                    const range = maxPrice - minPrice || 1;
-                    
-                    const margin = 30;
-                    const graphWidth = width - margin * 2;
-                    const graphHeight = height - margin * 2;
-                    
-                    ctx.beginPath();
-                    ctx.strokeStyle = '#5E548E';
-                    ctx.lineWidth = 2;
-                    
-                    let firstPoint = false;
-                    for (let i = 0; i < prices.length; i++) {
-                        if (prices[i] > 0) {
-                            const x = margin + (i / 11) * graphWidth;
-                            const y = margin + graphHeight - ((prices[i] - minPrice) / range) * graphHeight;
-                            if (!firstPoint) {
-                                ctx.moveTo(x, y);
-                                firstPoint = true;
-                            } else {
-                                ctx.lineTo(x, y);
-                            }
-                        }
+                formatPrice(v){ return (Math.floor((v||0)*100)/100).toFixed(2); },
+                formatWithComma(v){ return Math.floor(v||0).toLocaleString(); },
+                formatWan(v){ return v<10000 ? v.toLocaleString()+'元' : (Math.floor(v/10000*1000)/1000).toFixed(3)+'萬'; },
+                parseNum(v){ return Number(v.toString().replace(/,/g,''))||0; },
+                onFundFocus(){ this.displayFund=this.fund.toString(); },
+                onFundBlur(){ this.displayFund=this.formatWithComma(this.fund); },
+                onFundInput(e){ let num=parseInt(e.target.value.replace(/,/g,''))||0; this.fund=Math.max(0,num); this.displayFund=num.toString(); this.saveAllData(); },
+                getPriceChangePercent(item){ if(item.lastPrice && item.price) return ((item.price-item.lastPrice)/item.lastPrice*100).toFixed(1)+'%'; return '-'; },
+                getPriceChangeClass(item){ let chg = item.lastPrice ? (item.price-item.lastPrice)/item.lastPrice : 0; return chg>0 ? 'text-gain' : chg<0 ? 'text-loss' : ''; },
+                getRiskClass(r){ return r==='險'?'risk-red':r==='均'?'risk-blue':'risk-green'; },
+                getTagClass(t){ return t==='迅速崛起'?'tag-rapid':t==='穩中向好'?'tag-good':t==='坊中傳聞'?'tag-neutral':t==='或有風險'?'tag-risk':t==='一文不值'?'tag-worthless':'tag-none'; },
+                getStopLossTriggered(item){ if(item.shares && item.avgCost && item.price){ let loss=(item.price-item.avgCost)/item.avgCost*100, thr=item.risk==='險'?25:item.risk==='均'?20:15; return loss<-thr; } return false; },
+                calculateUnrealized(item){ return item.shares && item.avgCost && item.price ? (item.price-item.avgCost)*item.shares : 0; },
+                getUnrealizedClass(item){ let v=this.calculateUnrealized(item); return v>0?'text-gain':v<0?'text-loss':''; },
+                updateRisk(i,v){ this.productList[i].risk=v; this.saveAllData(); },
+                updateTag(i,v){ this.productList[i].tag=v; this.saveAllData(); },
+                updateShares(i,v){ this.productList[i].shares=v; this.saveAllData(); },
+                sortByRisk(){ this.sortRisk= this.sortRisk===null ? 'asc' : (this.sortRisk==='asc' ? 'desc' : null); this.sortTag=null; },
+                sortByTag(){ this.sortTag= this.sortTag===null ? 'asc' : (this.sortTag==='asc' ? 'desc' : null); this.sortRisk=null; },
+                openHistoryModal(p, idx){ this.currentProduct=p; this.currentProductIdx=idx; this.modalPriceData=[...p.prices]; this.selectedModalPeriod=this.getLatestPeriod(); this.modalPrice=this.modalPriceData[this.selectedModalPeriod]||0; this.showHistoryModal=true; this.$nextTick(()=>this.drawChart()); },
+                closeHistoryModal(){ this.showHistoryModal=false; },
+                selectPeriodInModal(n){ this.selectedModalPeriod=n; this.modalPrice=this.modalPriceData[n]||0; },
+                saveModalPrice(){ this.modalPriceData[this.selectedModalPeriod]=this.modalPrice; this.productList[this.currentProductIdx].prices=[...this.modalPriceData]; this.saveAllData(); this.closeHistoryModal(); },
+                clearSingleProductPrices(){ if(confirm('清除此標所有價格？')){ this.modalPriceData.fill(0); this.productList[this.currentProductIdx].prices=[...this.modalPriceData]; this.saveAllData(); this.modalPrice=0; this.drawChart(); } },
+                getLatestPeriod(){ for(let i=12;i>=1;i--) if(this.modalPriceData[i]>0) return i; return 1; },
+                drawChart(){
+                    let canvas=document.getElementById('priceChart'); if(!canvas) return;
+                    let ctx=canvas.getContext('2d'), w=canvas.clientWidth, h=canvas.clientHeight;
+                    canvas.width=w; canvas.height=h; ctx.clearRect(0,0,w,h);
+                    let prices=this.modalPriceData.slice(1);
+                    let max=Math.max(...prices.filter(v=>v>0),10), min=Math.min(...prices.filter(v=>v>0),0), range=max-min||1;
+                    let margin=30, gw=w-margin*2, gh=h-margin*2, first=false;
+                    ctx.beginPath(); ctx.strokeStyle='#5E548E'; ctx.lineWidth=2;
+                    for(let i=0;i<prices.length;i++) if(prices[i]>0){
+                        let x=margin+(i/11)*gw, y=margin+gh-((prices[i]-min)/range)*gh;
+                        if(!first) ctx.moveTo(x,y), first=true; else ctx.lineTo(x,y);
                     }
                     ctx.stroke();
-                    
-                    for (let i = 0; i < prices.length; i++) {
-                        if (prices[i] > 0) {
-                            const x = margin + (i / 11) * graphWidth;
-                            const y = margin + graphHeight - ((prices[i] - minPrice) / range) * graphHeight;
-                            ctx.beginPath();
-                            ctx.fillStyle = '#FF9D6F';
-                            ctx.arc(x, y, 5, 0, 2 * Math.PI);
-                            ctx.fill();
-                            ctx.fillStyle = '#4A4655';
-                            ctx.font = '10px "Noto Sans TC"';
-                            ctx.fillText(this.formatPrice(prices[i]), x - 12, y - 8);
-                            ctx.fillStyle = '#8E9AAF';
-                            ctx.fillText(`P${i+1}`, x - 8, y + 15);
+                    for(let i=0;i<prices.length;i++) if(prices[i]>0){
+                        let x=margin+(i/11)*gw, y=margin+gh-((prices[i]-min)/range)*gh;
+                        ctx.beginPath(); ctx.fillStyle='#FF9D6F'; ctx.arc(x,y,5,0,2*Math.PI); ctx.fill();
+                        ctx.fillStyle='#4A4655'; ctx.font='10px sans-serif'; ctx.fillText(this.formatPrice(prices[i]), x-12, y-8);
+                        ctx.fillStyle='#8E9AAF'; ctx.fillText(`P${i+1}`, x-8, y+15);
+                    }
+                },
+                exportData(){ let headers=['標的名稱','本期風險','本期價格','上期價格','小道消息','持倉張數']; let rows=this.effectiveProductList.map(p=>[p.name,p.risk,this.formatPrice(p.price),this.formatPrice(p.lastPrice),p.tag||'暫無',p.shares]); navigator.clipboard.writeText([headers,...rows].map(r=>r.join(',')).join('\n')).then(()=>alert('已複製，可貼到AI')); },
+                saveAllData(){ localStorage.setItem('exchange_tool_data',JSON.stringify({fund:this.fund, periodMode:this.periodMode, manualPeriod:this.manualPeriod, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,shares:p.shares,avgCost:p.avgCost}))})); },
+                loadAllData(){
+                    let saved=localStorage.getItem('exchange_tool_data');
+                    if(saved) try{
+                        let d=JSON.parse(saved);
+                        this.fund=d.fund||0; this.displayFund=this.formatWithComma(this.fund);
+                        this.periodMode=d.periodMode||'auto'; this.manualPeriod=d.manualPeriod||1;
+                        for(let i=0;i<this.productList.length;i++) if(d.productList[i]){
+                            this.productList[i].risk=d.productList[i].risk||'險';
+                            this.productList[i].tag=d.productList[i].tag||'';
+                            this.productList[i].prices=d.productList[i].prices||Array(13).fill(0);
+                            this.productList[i].shares=d.productList[i].shares||0;
+                            this.productList[i].avgCost=d.productList[i].avgCost||0;
                         }
-                    }
+                    }catch(e){}
                 },
-                exportData() {
-                    const headers = ['標的名稱', '本期風險', '本期價格', '上期價格', '小道消息', '持倉張數'];
-                    const rows = this.effectiveProductList.map(p => [
-                        p.name,
-                        p.risk,
-                        this.formatPrice(p.price),
-                        this.formatPrice(p.lastPrice),
-                        p.tag || '暫無',
-                        p.shares
-                    ]);
-                    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
-                    navigator.clipboard.writeText(csvContent).then(() => {
-                        alert('數據已複製到剪貼簿，可貼到 AI 詢問');
-                    });
-                },
-                saveAllData() {
-                    const dataToSave = {
-                        fund: this.fund,
-                        periodMode: this.periodMode,
-                        manualPeriod: this.manualPeriod,
-                        productList: this.productList.map(p => ({
-                            name: p.name,
-                            risk: p.risk,
-                            tag: p.tag,
-                            prices: p.prices,
-                            shares: p.shares,
-                            avgCost: p.avgCost
-                        }))
-                    };
-                    localStorage.setItem('exchange_tool_data', JSON.stringify(dataToSave));
-                },
-                loadAllData() {
-                    const saved = localStorage.getItem('exchange_tool_data');
-                    if (saved) {
-                        try {
-                            const data = JSON.parse(saved);
-                            this.fund = data.fund || 0;
-                            this.displayFund = this.formatWithComma(this.fund);
-                            this.periodMode = data.periodMode || 'auto';
-                            this.manualPeriod = data.manualPeriod || 1;
-                            for (let i = 0; i < this.productList.length; i++) {
-                                if (data.productList[i]) {
-                                    this.productList[i].risk = data.productList[i].risk || '險';
-                                    this.productList[i].tag = data.productList[i].tag || '';
-                                    this.productList[i].prices = data.productList[i].prices || new Array(13).fill(0);
-                                    this.productList[i].shares = data.productList[i].shares || 0;
-                                    this.productList[i].avgCost = data.productList[i].avgCost || 0;
-                                }
-                            }
-                        } catch(e) { console.log('讀取失敗'); }
-                    }
-                },
-                clearAllData() {
-                    if (confirm('確定清除所有資料嗎？此操作無法復原。')) {
-                        localStorage.removeItem('exchange_tool_data');
-                        location.reload();
-                    }
-                },
-                goToPortal() { window.location.href = 'portal.html'; }
+                clearAllData(){ if(confirm('確定清除所有資料？')){ localStorage.removeItem('exchange_tool_data'); location.reload(); } },
+                goToPortal(){ location.href='portal.html'; }
             },
-            mounted() {
-                this.loadAllData();
-                this.updateProductData();
-            }
+            mounted(){ this.loadAllData(); }
         }).mount('#app');
     </script>
 </body>
