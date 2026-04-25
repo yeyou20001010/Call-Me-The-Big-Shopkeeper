@@ -17,7 +17,7 @@
         /* 彈窗寬度獨立控制 */
         .import-modal { max-width: 750px; }
         .export-modal, .alert-modal { max-width: 450px; }
-        .chart-modal { max-width: 850px; }
+        .chart-modal, .history-modal { max-width: 850px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
         
@@ -31,6 +31,8 @@
         th, td { text-align: center !important; vertical-align: middle !important; }
         .clickable-name { cursor: pointer; color: #5E548E; font-weight: 900; }
         .clickable-name:hover { text-decoration: underline; color: #FF9D6F; }
+        .clickable-shares { cursor: pointer; font-weight: 900; }
+        .clickable-shares:hover { text-decoration: underline; color: #FF9D6F; }
         
         /* 風險：邊條與文字都變色 */
         .risk-red { color: #E53935 !important; border-left: 3px solid #E53935; padding-left: 6px; }
@@ -130,28 +132,48 @@
             </div>
         </div>
 
-        <!-- 歷史價格彈窗：兩個按鈕，按儲存才寫入主表格 -->
-        <div v-if="showHistoryModal" class="modal-overlay" @click="closeHistoryModalWithoutSave"></div>
-        <div v-if="showHistoryModal" class="custom-modal chart-modal">
+        <!-- 價格歷史彈窗 -->
+        <div v-if="showPriceHistoryModal" class="modal-overlay" @click="closePriceHistoryModal"></div>
+        <div v-if="showPriceHistoryModal" class="custom-modal chart-modal">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-black text-[#5E548E]">{{ currentProduct?.name || '標的' }}｜價格走勢</h3>
-                <button @click="closeHistoryModalWithoutSave" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+                <button @click="closePriceHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <div class="grid grid-cols-4 gap-2 mb-4">
-                        <button v-for="n in 12" :key="n" @click="selectedPeriodInModal = n" class="period-btn-small" :class="{ active: selectedPeriodInModal === n }">第 {{ n }} 期</button>
+                        <button v-for="n in 12" :key="n" @click="selectedPricePeriod = n" class="period-btn-small" :class="{ active: selectedPricePeriod === n }">第 {{ n }} 期</button>
                     </div>
                     <div class="mt-4">
                         <label class="row-label">價格（元）</label>
                         <input type="number" step="0.01" v-model.number="modalPrice" class="input-inline !text-xl">
-                        <button @click="saveCurrentPeriod" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存此期</button>
+                        <button @click="savePricePeriod" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存此期</button>
                         <button @click="clearAllPrices" class="mt-2 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除所有價格</button>
                     </div>
                 </div>
                 <div>
                     <canvas id="priceChart" width="450" height="280" style="width:100%; height:auto; max-width:450px;"></canvas>
-                    <div class="text-center text-xs text-gray-400 mt-2">已輸入 {{ modalPriceData.filter(p => p > 0).length }} / 12 期</div>
+                    <div class="text-center text-xs text-gray-400 mt-2">已輸入 {{ priceModalData.filter(p => p > 0).length }} / 12 期</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 持倉歷史彈窗 -->
+        <div v-if="showSharesHistoryModal" class="modal-overlay" @click="closeSharesHistoryModal"></div>
+        <div v-if="showSharesHistoryModal" class="custom-modal history-modal">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-black text-[#5E548E]">{{ currentProduct?.name || '標的' }}｜持倉記錄</h3>
+                <button @click="closeSharesHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+            </div>
+            <div class="grid grid-cols-1 gap-4">
+                <div class="grid grid-cols-4 gap-2 mb-4">
+                    <button v-for="n in 12" :key="n" @click="selectedSharesPeriod = n" class="period-btn-small" :class="{ active: selectedSharesPeriod === n }">第 {{ n }} 期</button>
+                </div>
+                <div class="mt-2">
+                    <label class="row-label">持倉張數</label>
+                    <input type="number" step="1" v-model.number="modalShares" class="input-inline !text-xl">
+                    <button @click="saveSharesPeriod" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存此期</button>
+                    <button @click="clearAllShares" class="mt-2 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除所有持倉</button>
                 </div>
             </div>
         </div>
@@ -178,7 +200,7 @@
             <div class="lg:col-span-8 space-y-6">
                 <div class="card-std">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                        <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black">📋 標的一覽（點名稱編輯歷史）</span>
+                        <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black">📋 標的一覽（點名稱編輯價格/點張數編輯持倉）</span>
                         <div class="flex items-center gap-4">
                             <select v-model="periodMode" class="border border-[#D7D3CC] rounded-xl p-2 text-sm font-bold bg-white text-[#4A4655]">
                                 <option value="auto">自動（最新期數）</option>
@@ -203,13 +225,13 @@
                             </tr></thead>
                             <tbody>
                                 <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
-                                    <td class="p-2 clickable-name" @click="openHistoryModal(item)">{{ item.name }}</td>
+                                    <td class="p-2 clickable-name" @click="openPriceHistoryModal(item)">{{ item.name }}</td>
                                     <td class="p-2"><div :class="getRiskClass(item.risk)"><select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)" class="bg-transparent"><option value="">請選擇</option><option value="險">險</option><option value="均">均</option><option value="穩">穩</option></select></div></td>
                                     <td class="font-mono">{{ formatPrice(item.price) }}</td>
                                     <td class="font-mono text-slate-500">{{ formatPrice(item.lastPrice) }}</td>
                                     <td class="font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
                                     <td class="p-2"><div :class="getTagClass(item.tag)"><select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)" class="bg-transparent"><option value="">請選擇</option><option value="迅速崛起">迅速崛起</option><option value="穩中向好">穩中向好</option><option value="坊中傳聞">坊中傳聞</option><option value="或有風險">或有風險</option><option value="一文不值">一文不值</option><option value="暫無">暫無</option></select></div></td>
-                                    <td class="p-2"><input type="number" v-model.number="item.shares" @change="updateShares(item.originalIndex, item.shares)" class="input-inline !w-24 !text-center" min="0"></td>
+                                    <td class="p-2 clickable-shares" @click="openSharesHistoryModal(item)">{{ item.shares }}</td>
                                     <td class="font-mono" :class="getUnrealizedClass(item)">{{ formatPrice(calculateUnrealized(item)) }}</td>
                                 </tr>
                             </tbody>
@@ -253,8 +275,9 @@
         createApp({
             data() { return {
                 fund: 0, displayFund: '0', periodMode: 'auto', manualPeriod: 1,
-                showHistoryModal: false, currentProduct: null, currentProductIdx: -1,
-                selectedPeriodInModal: 1, modalPrice: 0, modalPriceData: Array(13).fill(0),
+                showPriceHistoryModal: false, currentProduct: null, currentProductIdx: -1,
+                selectedPricePeriod: 1, modalPrice: 0, priceModalData: Array(13).fill(0),
+                showSharesHistoryModal: false, selectedSharesPeriod: 1, modalShares: 0, sharesModalData: Array(13).fill(0),
                 sortKey: null, sortOrder: 'asc',
                 showImportModal: false, showExportModal: false,
                 importOptions: { price: false, risk: false, tag: false, shares: false, fund: false },
@@ -263,7 +286,7 @@
                 presets: { 1: null, 2: null }, lastUsedPreset: null,
                 modalVisible: false, modalTitle: '', modalMsg: '', modalType: '', modalCallback: null,
                 productList: defaultProducts.map((name, idx) => ({
-                    name, risk: '', tag: '', prices: Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: idx
+                    name, risk: '', tag: '', prices: Array(13).fill(0), sharesHistory: Array(13).fill(0), avgCost: 0, originalIndex: idx
                 }))
             }},
             computed: {
@@ -278,7 +301,13 @@
                     return this.productList.map((p,idx) => {
                         let lastPeriod=0;
                         for(let i=period-1;i>=1;i--) if(p.prices[i]>0) { lastPeriod=i; break; }
-                        return { ...p, originalIndex: idx, price: p.prices[period]||0, lastPrice: lastPeriod?p.prices[lastPeriod]:0 };
+                        return { 
+                            ...p, 
+                            originalIndex: idx, 
+                            price: p.prices[period]||0, 
+                            lastPrice: lastPeriod?p.prices[lastPeriod]:0,
+                            shares: p.sharesHistory[period]||0
+                        };
                     }).filter(p => p && typeof p === 'object');
                 },
                 displayList() {
@@ -375,11 +404,17 @@
                     return 'risk-missing';
                 },
                 getStopLossTriggered(item){ if(item?.shares && item?.avgCost && item?.price && item?.risk){ let loss=(item.price-item.avgCost)/item.avgCost*100, thr=item.risk==='險'?25:item.risk==='均'?20:15; return loss<-thr; } return false; },
-                calculateUnrealized(item){ return item?.shares && item?.avgCost && item?.price ? (item.price-item.avgCost)*item.shares : 0; },
+                calculateUnrealized(item){ 
+                    let period = this.currentPeriod;
+                    let buyPrice = this.productList[item.originalIndex]?.prices[period];
+                    if(item.shares && buyPrice && buyPrice > 0 && item.price) {
+                        return (item.price - buyPrice) * item.shares;
+                    }
+                    return 0;
+                },
                 getUnrealizedClass(item){ let v=this.calculateUnrealized(item); return v>0?'text-gain':v<0?'text-loss':''; },
                 updateRisk(i,v){ if(this.productList[i]) this.productList[i].risk=v; this.saveAllData(); },
                 updateTag(i,v){ if(this.productList[i]) this.productList[i].tag=v; this.saveAllData(); },
-                updateShares(i,v){ if(this.productList[i]) this.productList[i].shares=v; this.saveAllData(); },
                 sortByRisk(){ this.setSort('risk'); },
                 sortByTag(){ this.setSort('tag'); },
                 sortByShares(){ this.setSort('shares'); },
@@ -387,43 +422,37 @@
                     if(this.sortKey === key) this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
                     else { this.sortKey = key; this.sortOrder = 'asc'; }
                 },
-                openHistoryModal(p){ 
+                // 價格歷史彈窗
+                openPriceHistoryModal(p){ 
                     if(!p) return; 
                     this.currentProduct=p; 
                     this.currentProductIdx=p.originalIndex; 
-                    this.modalPriceData = [...p.prices]; 
-                    this.selectedPeriodInModal = this.getLatestPeriod(); 
-                    this.modalPrice = this.modalPriceData[this.selectedPeriodInModal]||0; 
-                    this.showHistoryModal=true; 
-                    this.$nextTick(()=>this.drawChart()); 
+                    this.priceModalData = [...p.prices]; 
+                    this.selectedPricePeriod = this.getLatestPeriod(this.priceModalData); 
+                    this.modalPrice = this.priceModalData[this.selectedPricePeriod]||0; 
+                    this.showPriceHistoryModal=true; 
+                    this.$nextTick(()=>this.drawPriceChart()); 
                 },
-                closeHistoryModalWithoutSave(){ this.showHistoryModal=false; },
-                saveCurrentPeriod(){ 
-                    // 修正：將目前修改的價格寫回暫存區
-                    this.modalPriceData[this.selectedPeriodInModal] = this.modalPrice; 
-                    // 修正：立即將暫存區的完整價格陣列寫回 productList
-                    this.productList[this.currentProductIdx].prices = [...this.modalPriceData];
-                    // 儲存到 localStorage 並更新介面
+                closePriceHistoryModal(){ this.showPriceHistoryModal=false; },
+                savePricePeriod(){ 
+                    this.priceModalData[this.selectedPricePeriod] = this.modalPrice; 
+                    this.productList[this.currentProductIdx].prices = [...this.priceModalData];
                     this.saveAllData(); 
-                    this.updateProductData(); 
-                    // 重新繪製折線圖以反映更新
-                    this.drawChart();
-                    // 可選：顯示一個短暫的儲存成功提示（但不影響操作）
-                    // alert(`已儲存第 ${this.selectedPeriodInModal} 期價格`); 
+                    this.drawPriceChart();
                 },
                 clearAllPrices(){ 
-                    if(confirm('清除此標所有價格？')){ 
-                        this.modalPriceData.fill(0); 
+                    this.showModalMessage('🗑️ 清除所有價格', `確定要清除 ${this.currentProduct.name} 的所有歷史價格嗎？`, 'confirm', () => {
+                        this.priceModalData.fill(0); 
                         this.modalPrice=0; 
-                        this.drawChart(); 
-                    } 
+                        this.drawPriceChart();
+                    });
                 },
-                getLatestPeriod(){ for(let i=12;i>=1;i--) if(this.modalPriceData[i]>0) return i; return 1; },
-                drawChart(){
+                getLatestPeriod(data){ for(let i=12;i>=1;i--) if(data[i]>0) return i; return 1; },
+                drawPriceChart(){
                     let canvas=document.getElementById('priceChart'); if(!canvas) return;
                     let ctx=canvas.getContext('2d'), w=canvas.clientWidth, h=canvas.clientHeight;
                     canvas.width=w; canvas.height=h; ctx.clearRect(0,0,w,h);
-                    let prices=this.modalPriceData.slice(1);
+                    let prices=this.priceModalData.slice(1);
                     let validPrices = prices.filter(p => p > 0);
                     if(validPrices.length === 0) return;
                     let max=Math.max(...validPrices,10), min=Math.min(...validPrices,0), range=max-min||1;
@@ -461,7 +490,33 @@
                         ctx.fillText(`P${p.idx+1}`, p.x-8, margin.top+gh+15);
                     }
                 },
-                copyCSV(){ let headers=['標的名稱','本期風險','本期價格','上期價格','小道消息','持倉張數']; let rows=this.effectiveProductList.map(p=>[p.name,p.risk||'未選',this.formatPrice(p.price),this.formatPrice(p.lastPrice),p.tag||'暫無',p.shares]); navigator.clipboard.writeText([headers,...rows].map(r=>r.join(',')).join('\n')).then(()=>this.showModalMessage('✅ 複製成功', '數據已複製到剪貼簿', 'alert')); },
+                // 持倉歷史彈窗
+                openSharesHistoryModal(p){ 
+                    if(!p) return; 
+                    this.currentProduct=p; 
+                    this.currentProductIdx=p.originalIndex; 
+                    this.sharesModalData = [...p.sharesHistory]; 
+                    this.selectedSharesPeriod = this.getLatestPeriod(this.sharesModalData); 
+                    this.modalShares = this.sharesModalData[this.selectedSharesPeriod]||0; 
+                    this.showSharesHistoryModal=true; 
+                },
+                closeSharesHistoryModal(){ this.showSharesHistoryModal=false; },
+                saveSharesPeriod(){ 
+                    this.sharesModalData[this.selectedSharesPeriod] = this.modalShares; 
+                    this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData];
+                    this.saveAllData(); 
+                },
+                clearAllShares(){ 
+                    this.showModalMessage('🗑️ 清除所有持倉', `確定要清除 ${this.currentProduct.name} 的所有歷史持倉嗎？`, 'confirm', () => {
+                        this.sharesModalData.fill(0); 
+                        this.modalShares=0;
+                    });
+                },
+                copyCSV(){ 
+                    let headers=['標的名稱','本期風險','本期價格','上期價格','小道消息','持倉張數']; 
+                    let rows=this.effectiveProductList.map(p=>[p.name,p.risk||'未選',this.formatPrice(p.price),this.formatPrice(p.lastPrice),p.tag||'暫無',p.shares]); 
+                    navigator.clipboard.writeText([headers,...rows].map(r=>r.join(',')).join('\n')).then(()=>this.showModalMessage('✅ 複製成功', '數據已複製到剪貼簿', 'alert')); 
+                },
                 openImportModal(){ this.loadLastUsedPreset(); this.showImportModal=true; },
                 closeImportModal(){ this.showImportModal=false; },
                 openExportModal(){ this.exportVersion=new Date().toISOString().slice(0,10); this.showExportModal=true; },
@@ -471,18 +526,10 @@
                 loadPreset(n){ let preset=this.presets[n]||JSON.parse(localStorage.getItem('exchange_preset_'+n)); if(preset){ this.importOptions={...preset}; this.importAll=Object.values(preset).every(v=>v===true); this.currentPresetName=`配置${n}`; this.lastUsedPreset=n; localStorage.setItem('exchange_last_preset',n); } },
                 resetToDefault(){ this.importOptions={price:true,risk:true,tag:true,shares:true,fund:true}; this.importAll=true; this.currentPresetName='全選（預設）'; this.lastUsedPreset=null; localStorage.removeItem('exchange_last_preset'); },
                 loadLastUsedPreset(){ let last=localStorage.getItem('exchange_last_preset'); if(last==='1') this.loadPreset(1); else if(last==='2') this.loadPreset(2); else this.resetToDefault(); },
-                confirmImport(){ this.closeImportModal(); let data=this.importDataBuffer; if(!data) return; if(this.importOptions.price) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.prices) this.productList[i].prices=data.productList[i].prices.slice(); if(this.importOptions.risk) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.risk) this.productList[i].risk=data.productList[i].risk; if(this.importOptions.tag) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.tag) this.productList[i].tag=data.productList[i].tag; if(this.importOptions.shares) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.shares) this.productList[i].shares=data.productList[i].shares; if(this.importOptions.fund && data.fund) this.fund=data.fund; this.saveAllData(); this.updateProductData(); this.showModalMessage('✅ 匯入完成', '設定已更新', 'alert'); },
-                doExport(){ let exportData={version:this.exportVersion, activityStart:this.activityStart, activityEnd:this.activityEnd, fund:this.fund, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,shares:p.shares,avgCost:p.avgCost}))}; let blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='exchange_preset.json'; a.click(); URL.revokeObjectURL(a.href); this.closeExportModal(); },
+                confirmImport(){ this.closeImportModal(); let data=this.importDataBuffer; if(!data) return; if(this.importOptions.price) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.prices) this.productList[i].prices=data.productList[i].prices.slice(); if(this.importOptions.risk) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.risk) this.productList[i].risk=data.productList[i].risk; if(this.importOptions.tag) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.tag) this.productList[i].tag=data.productList[i].tag; if(this.importOptions.shares) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.sharesHistory) this.productList[i].sharesHistory=data.productList[i].sharesHistory.slice(); if(this.importOptions.fund && data.fund) this.fund=data.fund; this.saveAllData(); this.showModalMessage('✅ 匯入完成', '設定已更新', 'alert'); },
+                doExport(){ let exportData={version:this.exportVersion, activityStart:this.activityStart, activityEnd:this.activityEnd, fund:this.fund, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,sharesHistory:p.sharesHistory,avgCost:p.avgCost}))}; let blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='exchange_preset.json'; a.click(); URL.revokeObjectURL(a.href); this.closeExportModal(); },
                 async loadFromGitHub(){ try{ let res=await fetch(GITHUB_RAW_URL); if(!res.ok) throw new Error(); let data=await res.json(); this.importDataBuffer=data; this.openImportModal(); } catch(e){ this.showModalMessage('❌ 載入失敗', '無法讀取共用設定，請確認 GitHub 檔案是否存在', 'alert'); } },
-                updateProductData(){ 
-                    this.effectiveProductList.forEach(p=>{ 
-                        let idx=p.originalIndex; 
-                        if(p.shares && p.price && !this.productList[idx].avgCost) 
-                            this.productList[idx].avgCost=p.price; 
-                    }); 
-                    this.saveAllData(); 
-                },
-                saveAllData(){ localStorage.setItem('exchange_tool_data',JSON.stringify({fund:this.fund, periodMode:this.periodMode, manualPeriod:this.manualPeriod, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,shares:p.shares,avgCost:p.avgCost}))})); },
+                saveAllData(){ localStorage.setItem('exchange_tool_data',JSON.stringify({fund:this.fund, periodMode:this.periodMode, manualPeriod:this.manualPeriod, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,sharesHistory:p.sharesHistory,avgCost:p.avgCost}))})); },
                 loadAllData(){
                     let saved=localStorage.getItem('exchange_tool_data');
                     if(saved) try{
@@ -495,7 +542,7 @@
                                     this.productList[i].risk=d.productList[i].risk||'';
                                     this.productList[i].tag=d.productList[i].tag||'';
                                     this.productList[i].prices=d.productList[i].prices||Array(13).fill(0);
-                                    this.productList[i].shares=d.productList[i].shares||0;
+                                    this.productList[i].sharesHistory=d.productList[i].sharesHistory||Array(13).fill(0);
                                     this.productList[i].avgCost=d.productList[i].avgCost||0;
                                 }
                             }
@@ -507,7 +554,7 @@
                 closeModal(){ this.modalVisible=false; this.modalCallback=null; },
                 confirmModal(){ if(this.modalCallback) this.modalCallback(); this.closeModal(); }
             },
-            mounted(){ this.loadAllData(); this.updateProductData(); }
+            mounted(){ this.loadAllData(); }
         }).mount('#app');
     </script>
 </body>
