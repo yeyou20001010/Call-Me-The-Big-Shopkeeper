@@ -38,21 +38,22 @@
         .clickable-shares { cursor: pointer; font-weight: 900; }
         .clickable-shares:hover { text-decoration: underline; color: #FF9D6F; }
         
-        /* 風險：只有外層邊條與文字變色，內層 select 無邊條 */
+        /* 風險：只有外層 div 有邊條與文字顏色，內層 select 無樣式 */
         .risk-red { color: #E53935 !important; border-left: 3px solid #E53935; padding-left: 6px; }
         .risk-blue { color: #1E88E5 !important; border-left: 3px solid #1E88E5; padding-left: 6px; }
         .risk-green { color: #43A047 !important; border-left: 3px solid #43A047; padding-left: 6px; }
         .risk-missing { color: #6B7280 !important; border-left: 3px solid #6B7280; padding-left: 6px; }
         
-        /* 小道消息：純文字變色 */
+        /* 小道消息：純文字變色，無邊條 */
         .tag-rapid { color: #E53935 !important; }
         .tag-good { color: #FB8C00 !important; }
         .tag-neutral { color: #1E88E5 !important; }
         .tag-risk { color: #8E24AA !important; }
         .tag-worthless { color: #4E5C35 !important; }
         .tag-none { color: #6B7280 !important; }
+        .tag-missing { color: #6B7280 !important; }
         
-        /* 透明 select 樣式 - 修正反藍底白字問題 */
+        /* 透明 select 樣式 - 徹底解決反藍底白字 */
         .transparent-select { position: relative; width: 100%; min-width: 85px; }
         .transparent-select select {
             color: transparent !important;
@@ -64,12 +65,19 @@
             outline: none;
             cursor: pointer;
         }
-        /* 強制覆蓋 focus 時的藍底白字 */
+        /* 強制覆蓋 focus 時的所有樣式 */
         .transparent-select select:focus,
-        .transparent-select select:focus-visible {
+        .transparent-select select:focus-visible,
+        .transparent-select select:active {
             outline: none !important;
             background-color: transparent !important;
             color: transparent !important;
+            box-shadow: none !important;
+        }
+        /* 確保下拉選項文字正常顯示 */
+        .transparent-select select option {
+            color: #4B5563 !important;
+            background-color: white !important;
         }
         .select-overlay-text {
             position: absolute;
@@ -91,7 +99,6 @@
         .preset-action-btn { background-color: #8E9AAF; color: white; border: none; }
         .preset-action-btn:hover { background-color: #7D8A9E; }
         
-        /* 持倉彈窗表格緊湊樣式 */
         .compact-table td, .compact-table th { padding: 6px 4px; }
     </style>
 </head>
@@ -173,7 +180,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <div class="grid grid-cols-4 gap-2 mb-4">
-                        <button v-for="n in 12" :key="n" @click="selectedPricePeriod = n" class="period-btn-small" :class="{ active: selectedPricePeriod === n }">第 {{ n }} 期</button>
+                        <button v-for="n in 12" :key="n" @click="selectedPricePeriod = n; loadPriceForPeriod(n)" class="period-btn-small" :class="{ active: selectedPricePeriod === n }">第 {{ n }} 期</button>
                     </div>
                     <div class="mt-4">
                         <label class="row-label">價格（元）</label>
@@ -189,7 +196,7 @@
             </div>
         </div>
 
-        <!-- 持倉歷史彈窗：表格內直接編輯，加入提示 -->
+        <!-- 持倉歷史彈窗：加入儲存按鈕 -->
         <div v-if="showSharesHistoryModal" class="modal-overlay" @click="closeSharesHistoryModal"></div>
         <div v-if="showSharesHistoryModal" class="custom-modal history-modal">
             <div class="flex justify-between items-center mb-4">
@@ -197,12 +204,13 @@
                 <button @click="closeSharesHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
             </div>
             <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg mb-3 text-center">💡 當期清倉請輸入 0，不必刪除歷史期數</div>
-            <button @click="clearAllSharesPrompt" class="mb-4 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除所有持倉</button>
-            <div class="overflow-y-auto max-h-96">
+            <button @click="clearAllSharesPrompt" class="mb-3 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除所有持倉</button>
+            <button @click="saveSharesHistory" class="mb-4 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black text-sm">💾 儲存所有變更</button>
+            <div class="overflow-y-auto max-h-80">
                 <table class="w-full text-sm compact-table">
                     <thead class="sticky top-0 bg-white"><tr class="border-b-2"><th class="p-2">期數</th><th class="p-2">持倉（張）</th></tr></thead>
                     <tbody>
-                        <tr v-for="n in 12" :key="n" class="border-b"><td class="p-2 text-center">第 {{ n }} 期</td><td class="p-2 text-center"><input type="number" v-model.number="sharesModalData[n]" @change="updateSharesModalData" class="input-inline !w-24 !text-center" min="0"></td></tr>
+                        <tr v-for="n in 12" :key="n" class="border-b"><td class="p-2 text-center">第 {{ n }} 期</td><td class="p-2 text-center"><input type="number" v-model.number="sharesModalData[n]" class="input-inline !w-24 !text-center" min="0"></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -252,11 +260,11 @@
                                 <th class="p-2 sort-btn" style="min-width: 90px;" @click="sortByTag">小道消息 ⬍</th>
                                 <th class="p-2 sort-btn" style="min-width: 85px;" @click="sortByShares">持倉張數 ⬍</th>
                                 <th class="p-2">未實現損益</th>
-                            <tr></thead>
+                            </tr></thead>
                             <tbody>
                                 <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
                                     <td class="p-2 clickable-name" @click="openPriceHistoryModal(item)">{{ item.name }}</td>
-                                    <!-- 風險：透明 select，外層 div 負責邊條與文字顏色 -->
+                                    <!-- 風險：外層 div 控管邊條與文字顏色 -->
                                     <td class="p-2">
                                         <div :class="getRiskClass(item.risk)" class="transparent-select">
                                             <span class="select-overlay-text" :class="getRiskClass(item.risk)">{{ item.risk || '請選擇' }}</span>
@@ -271,9 +279,9 @@
                                     <td class="font-mono">{{ formatPrice(item.price) }}</td>
                                     <td class="font-mono text-slate-500">{{ formatPrice(item.lastPrice) }}</td>
                                     <td class="font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
-                                    <!-- 小道消息：透明 select -->
+                                    <!-- 小道消息：只有文字顏色，無邊條 -->
                                     <td class="p-2">
-                                        <div :class="getTagClass(item.tag)" class="transparent-select">
+                                        <div class="transparent-select">
                                             <span class="select-overlay-text" :class="getTagClass(item.tag)">{{ item.tag || '請選擇' }}</span>
                                             <select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)">
                                                 <option value="">請選擇</option>
@@ -343,7 +351,7 @@
                 productList: defaultProducts.map((name, idx) => ({
                     name, risk: '', tag: '', prices: Array(13).fill(0), sharesHistory: Array(13).fill(0), avgCost: 0, originalIndex: idx
                 })),
-                fileInput: null
+                tempFileInput: null
             }},
             computed: {
                 currentPeriod() {
@@ -559,7 +567,7 @@
                     if(t==='或有風險') return 'tag-risk';
                     if(t==='一文不值') return 'tag-worthless';
                     if(t==='暫無') return 'tag-none';
-                    return 'risk-missing';
+                    return 'tag-missing';
                 },
                 getStopLossTriggered(item){ if(item?.shares && item?.avgCost && item?.price && item?.risk){ return item.profitPercent < (item.risk==='險'?-25:item.risk==='均'?-20:-15); } return false; },
                 calculateUnrealized(item){ return item?.shares && item?.avgCost && item?.price ? (item.price-item.avgCost)*item.shares : 0; },
@@ -590,17 +598,21 @@
                     }
                     return totalShares > 0 ? totalCost / totalShares : 0;
                 },
+                // 價格彈窗方法
                 openPriceHistoryModal(p){ 
                     if(!p) return; 
                     this.currentProduct=p; 
                     this.currentProductIdx=p.originalIndex; 
                     this.priceModalData = [...p.prices]; 
                     this.selectedPricePeriod = this.getLatestPeriod(this.priceModalData); 
-                    this.modalPrice = this.priceModalData[this.selectedPricePeriod]||0; 
+                    this.loadPriceForPeriod(this.selectedPricePeriod);
                     this.showPriceHistoryModal=true; 
                     this.$nextTick(()=>this.drawPriceChart()); 
                 },
                 closePriceHistoryModal(){ this.showPriceHistoryModal=false; },
+                loadPriceForPeriod(period) {
+                    this.modalPrice = this.priceModalData[period] || 0;
+                },
                 savePricePeriod(){ 
                     this.priceModalData[this.selectedPricePeriod] = this.modalPrice; 
                     this.productList[this.currentProductIdx].prices = [...this.priceModalData];
@@ -658,6 +670,7 @@
                         ctx.fillText(`P${p.idx+1}`, p.x-8, margin.top+gh+15);
                     }
                 },
+                // 持倉彈窗方法
                 openSharesHistoryModal(p){ 
                     if(!p) return; 
                     this.currentProduct=p; 
@@ -666,10 +679,11 @@
                     this.showSharesHistoryModal=true; 
                 },
                 closeSharesHistoryModal(){ this.showSharesHistoryModal=false; },
-                updateSharesModalData(){ 
+                saveSharesHistory(){ 
                     this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData];
                     this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData);
                     this.saveAllData(); 
+                    this.showModalMessage('✅ 儲存成功', `${this.currentProduct.name} 的持倉記錄已更新`, 'alert');
                 },
                 clearAllSharesPrompt(){ 
                     this.showModalMessage('🗑️ 清除所有持倉', `確定要清除 ${this.currentProduct.name} 的所有歷史持倉嗎？`, 'confirm', () => {
@@ -686,9 +700,32 @@
                 },
                 openImportModal(){ 
                     this.loadLastUsedPreset(); 
-                    // 強制重置 file input
-                    if (this.fileInput) this.fileInput.value = '';
-                    this.showImportModal=true; 
+                    // 每次都建立全新的 file input，確保能再次選擇檔案
+                    if (this.tempFileInput) {
+                        this.tempFileInput.remove();
+                    }
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.json';
+                    input.style.display = 'none';
+                    input.addEventListener('change', (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            try {
+                                this.importDataBuffer = JSON.parse(ev.target.result);
+                                this.openImportModal(); // 重新開啟匯入設定視窗
+                            } catch (err) {
+                                this.showModalMessage('❌ 讀取失敗', '檔案格式錯誤，請選擇正確的 JSON 檔案', 'alert');
+                            }
+                        };
+                        reader.readAsText(file);
+                        input.remove();
+                    });
+                    document.body.appendChild(input);
+                    input.click();
+                    this.tempFileInput = input;
                 },
                 closeImportModal(){ this.showImportModal=false; },
                 openExportModal(){ this.exportVersion=new Date().toISOString().slice(0,10); this.showExportModal=true; },
@@ -765,16 +802,6 @@
             },
             mounted(){ 
                 this.loadAllData(); 
-                // 建立隱藏的 file input
-                this.fileInput = document.createElement('input');
-                this.fileInput.type = 'file';
-                this.fileInput.accept = '.json';
-                this.fileInput.style.display = 'none';
-                this.fileInput.addEventListener('change', (e) => this.importFullData(e));
-                document.body.appendChild(this.fileInput);
-            },
-            beforeDestroy() {
-                if (this.fileInput) this.fileInput.remove();
             }
         }).mount('#app');
     </script>
