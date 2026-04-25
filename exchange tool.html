@@ -13,44 +13,50 @@
         [v-cloak] { display: none; }
         .card-std { background: #FBFBF9; border: 2px solid #D7D3CC; border-radius: 1.5rem; padding: 1.5rem; }
         .input-inline { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; padding: 6px 10px; text-align: right; font-weight: 900; color: #5E548E; outline: none; font-size: 14px; width: 100%; }
-        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; max-width: 800px; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
+        /* 彈窗寬度獨立控制 */
+        .import-modal { max-width: 750px; }
+        .export-modal, .alert-modal { max-width: 450px; }
+        .chart-modal { max-width: 850px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
+        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
+        
         .text-gain { color: #E53935 !important; }
         .text-loss { color: #00897B !important; }
         .row-label { font-size: 12px; color: #8E9AAF; font-weight: 900; margin-bottom: 2px; display: block; }
         .period-btn-small { background: #EAE8E4; border-radius: 2rem; padding: 0.25rem 0.75rem; text-align: center; font-weight: 900; cursor: pointer; transition: all 0.2s; border: 1px solid #D7D3CC; font-size: 0.8rem; }
         .period-btn-small.active { background: #5E548E; color: white; border-color: #5E548E; }
-        canvas { background: #F4F2EE; border-radius: 0.75rem; border: 1px solid #D7D3CC; width:100%; height:auto; }
+        canvas { background: #FDFCF8; border-radius: 0.75rem; border: 1px solid #D7D3CC; width:100%; height:auto; }
         th, td { text-align: center !important; vertical-align: middle !important; }
         .clickable-name { cursor: pointer; color: #5E548E; font-weight: 900; }
         .clickable-name:hover { text-decoration: underline; color: #FF9D6F; }
-        /* 風險顏色只作用在顯示文字上，不干擾下拉選單選項 */
-        .risk-red { color: #E53935; border-left: 3px solid #E53935; padding-left: 6px; }
+        /* 風險與消息顏色 */
+        .risk-red, .tag-rapid { color: #E53935; border-left: 3px solid #E53935; padding-left: 6px; }
         .risk-blue { color: #1E88E5; border-left: 3px solid #1E88E5; padding-left: 6px; }
-        .risk-green { color: #43A047; border-left: 3px solid #43A047; padding-left: 6px; }
-        .risk-missing { color: #9E9E9E; border-left: 3px solid #9E9E9E; padding-left: 6px; }
-        /* 小道消息顏色 */
-        .tag-rapid { color: #E53935; }
-        .tag-good { color: #FB8C00; }
+        .risk-green, .tag-good { color: #43A047; border-left: 3px solid #43A047; padding-left: 6px; }
+        .risk-missing { color: #9CA3AF; border-left: 3px solid #9CA3AF; padding-left: 6px; }
         .tag-neutral { color: #1E88E5; }
         .tag-risk { color: #8E24AA; }
         .tag-worthless { color: #9E9E9E; }
-        .tag-none { color: #BDBDBD; }
-        /* 強制下拉選單內文字為黑色 */
-        select, select option { color: #4A4655 !important; background-color: #F4F2EE !important; }
+        .tag-none { color: #A0A0A0; }
+        /* 確保下拉選單內選項永遠為深灰色 */
+        select, select option { color: #4B5563 !important; background-color: #F4F2EE !important; }
         .sort-btn { cursor: pointer; user-select: none; }
         .sort-btn:hover { opacity: 0.7; }
         .stop-loss-row { background-color: rgba(229, 57, 53, 0.1); }
-        .config-link { color: #1E88E5; cursor: pointer; text-decoration: underline; font-weight: bold; }
-        .config-link:hover { color: #FF9D6F; }
+        /* 匯入設定按鈕樣式 */
+        .preset-link-btn, .preset-action-btn { border-radius: 0.75rem; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 900; text-align: center; transition: all 0.2s; cursor: pointer; }
+        .preset-link-btn { background-color: #E5E7EB; color: #4B5563; border: 1px solid #D1D5DB; }
+        .preset-link-btn:hover { background-color: #D1D5DB; color: #1F2937; }
+        .preset-action-btn { background-color: #8E9AAF; color: white; border: none; }
+        .preset-action-btn:hover { background-color: #7D8A9E; }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div id="app" v-cloak class="max-w-[1600px] mx-auto">
         
-        <!-- 通用 Modal -->
+        <!-- 通用確認 Modal（窄版） -->
         <div v-if="modalVisible" class="modal-overlay" @click="closeModal"></div>
-        <div v-if="modalVisible" class="custom-modal">
+        <div v-if="modalVisible" class="custom-modal export-modal">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">{{ modalTitle }}</h3>
             <p class="text-gray-600 mb-8 font-bold text-lg whitespace-pre-wrap">{{ modalMsg }}</p>
             <div class="flex gap-4">
@@ -60,13 +66,12 @@
             <button v-if="modalType === 'alert'" @click="closeModal" class="w-full mt-4 bg-[#5E548E] text-white py-3 rounded-xl font-black">確定</button>
         </div>
 
-        <!-- 匯入選項 Modal (新版面) -->
+        <!-- 匯入設定 Modal（加寬） -->
         <div v-if="showImportModal" class="modal-overlay" @click="closeImportModal"></div>
-        <div v-if="showImportModal" class="custom-modal">
+        <div v-if="showImportModal" class="custom-modal import-modal">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">📥 匯入設定</h3>
             <p class="text-sm text-gray-500 mb-4 border-b pb-2">目前使用：{{ currentPresetName }}</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- 左側：勾選項目 -->
                 <div>
                     <label class="flex items-center gap-2 mb-3"><input type="checkbox" v-model="importAll" @change="onImportAllChange"> 全選</label>
                     <div class="grid grid-cols-1 gap-2">
@@ -77,16 +82,15 @@
                         <label><input type="checkbox" v-model="importOptions.fund"> 總資金</label>
                     </div>
                 </div>
-                <!-- 右側：配置管理 -->
                 <div>
-                    <div class="grid grid-cols-2 gap-2 mb-4">
-                        <button @click="savePreset(1)" class="bg-[#8E9AAF] text-white px-3 py-2 rounded-lg text-sm font-black">💾 儲存為配置1</button>
-                        <button @click="savePreset(2)" class="bg-[#8E9AAF] text-white px-3 py-2 rounded-lg text-sm font-black">💾 儲存為配置2</button>
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <button @click="savePreset(1)" class="preset-action-btn">💾 儲存為配置1</button>
+                        <button @click="savePreset(2)" class="preset-action-btn">💾 儲存為配置2</button>
                     </div>
-                    <div class="flex flex-wrap items-center justify-center gap-4 mt-4">
-                        <span class="config-link" @click="loadPreset(1)">配置1</span>
-                        <span class="config-link" @click="loadPreset(2)">配置2</span>
-                        <span class="config-link" @click="resetToDefault">恢復預設（全選）</span>
+                    <div class="grid grid-cols-1 gap-3">
+                        <button @click="loadPreset(1)" class="preset-link-btn">配置1</button>
+                        <button @click="loadPreset(2)" class="preset-link-btn">配置2</button>
+                        <button @click="resetToDefault" class="preset-link-btn">恢復預設（全選）</button>
                     </div>
                 </div>
             </div>
@@ -96,9 +100,9 @@
             </div>
         </div>
 
-        <!-- 匯出選項 Modal -->
+        <!-- 匯出設定 Modal（窄版） -->
         <div v-if="showExportModal" class="modal-overlay" @click="closeExportModal"></div>
-        <div v-if="showExportModal" class="custom-modal">
+        <div v-if="showExportModal" class="custom-modal export-modal">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">📤 匯出設定</h3>
             <div class="mb-4">
                 <label class="block text-sm font-bold">版本標籤</label>
@@ -115,9 +119,9 @@
             </div>
         </div>
 
-        <!-- 歷史價格彈窗 (修正儲存邏輯) -->
+        <!-- 歷史價格彈窗（加寬，批次編輯） -->
         <div v-if="showHistoryModal" class="modal-overlay" @click="closeHistoryModalWithoutSave"></div>
-        <div v-if="showHistoryModal" class="custom-modal">
+        <div v-if="showHistoryModal" class="custom-modal chart-modal">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-black text-[#5E548E]">{{ currentProduct?.name || '標的' }}｜價格走勢</h3>
                 <button @click="closeHistoryModalWithoutSave" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
@@ -130,12 +134,13 @@
                     <div class="mt-4">
                         <label class="row-label">價格（元）</label>
                         <input type="number" step="0.01" v-model.number="modalPrice" class="input-inline !text-xl">
-                        <button @click="saveCurrentPeriodAndClose" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存並關閉</button>
+                        <button @click="saveCurrentPeriod" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存此期</button>
                         <button @click="clearAllPrices" class="mt-2 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除所有價格</button>
+                        <button @click="saveAndCloseModal" class="mt-2 w-full bg-green-600 text-white py-2 rounded-xl font-black">✅ 儲存並關閉</button>
                     </div>
                 </div>
                 <div>
-                    <canvas id="priceChart" width="400" height="250" style="width:100%; height:auto; max-width:400px;"></canvas>
+                    <canvas id="priceChart" width="450" height="280" style="width:100%; height:auto; max-width:450px;"></canvas>
                     <div class="text-center text-xs text-gray-400 mt-2">已輸入 {{ modalPriceData.filter(p => p > 0).length }} / 12 期</div>
                 </div>
             </div>
@@ -148,7 +153,6 @@
                     <div class="w-12 h-12 bg-[#5E548E] rounded-2xl flex items-center justify-center text-white text-2xl">📈</div>
                     <h1 class="text-2xl font-black text-[#5E548E]">交引風雲｜智慧買入決策工具</h1>
                 </div>
-                <!-- 按鈕順序調整 -->
                 <div class="flex gap-3 flex-wrap">
                     <button @click="loadFromGitHub" class="bg-[#6D6875] text-white px-4 py-2 rounded-xl text-sm font-black">🌐 載入共用設定</button>
                     <button @click="openImportModal" class="bg-[#B8B0A5] text-white px-4 py-2 rounded-xl text-sm font-black">📥 匯入設定</button>
@@ -179,7 +183,7 @@
                         <table class="w-full text-sm">
                             <thead><tr class="border-b-2">
                                 <th class="p-2">標的名稱</th><th class="p-2 sort-btn" @click="sortByRisk">本期風險 ⬍</th><th class="p-2">當前價格</th><th class="p-2">上期價格</th><th class="p-2">漲跌幅</th><th class="p-2 sort-btn" @click="sortByTag">小道消息 ⬍</th><th class="p-2">持倉張數</th><th class="p-2">未實現損益</th>
-                            </tr></thead>
+                            <tr></thead>
                             <tbody>
                                 <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
                                     <td class="p-2 clickable-name" @click="openHistoryModal(item)">{{ item.name }}</td>
@@ -245,9 +249,8 @@
                     name, risk: '', tag: '', prices: Array(13).fill(0), shares: 0, avgCost: 0, originalIndex: idx
                 }))
             }},
-            // ... (computed, methods 保持與之前相同，確保核心功能正常) ...
             computed: {
-                currentPeriod() { /* ... 保持不變 ... */ 
+                currentPeriod() {
                     if (this.periodMode === 'manual') return this.manualPeriod;
                     let max=0;
                     for(let p of this.productList) for(let i=1;i<=12;i++) if(p.prices[i]>0 && i>max) max=i;
@@ -337,6 +340,7 @@
                     if(t==='坊中傳聞') return 'tag-neutral';
                     if(t==='或有風險') return 'tag-risk';
                     if(t==='一文不值') return 'tag-worthless';
+                    if(t==='暫無') return 'tag-none';
                     return 'tag-none';
                 },
                 getStopLossTriggered(item){ if(item?.shares && item?.avgCost && item?.price && item?.risk){ let loss=(item.price-item.avgCost)/item.avgCost*100, thr=item.risk==='險'?25:item.risk==='均'?20:15; return loss<-thr; } return false; },
@@ -358,53 +362,68 @@
                     this.$nextTick(()=>this.drawChart()); 
                 },
                 closeHistoryModalWithoutSave(){ this.showHistoryModal=false; },
-                saveCurrentPeriodAndClose(){ 
+                saveCurrentPeriod(){ 
                     this.modalPriceData[this.selectedPeriodInModal] = this.modalPrice; 
+                    this.drawChart(); 
+                },
+                clearAllPrices(){ 
+                    if(confirm('清除此標所有價格？')){ 
+                        this.modalPriceData.fill(0); 
+                        this.modalPrice=0; 
+                        this.drawChart(); 
+                    } 
+                },
+                saveAndCloseModal(){ 
                     this.productList[this.currentProductIdx].prices = [...this.modalPriceData]; 
                     this.saveAllData(); 
                     this.updateProductData(); 
                     this.showHistoryModal=false; 
                 },
-                clearAllPrices(){ if(confirm('清除此標所有價格？')){ this.modalPriceData.fill(0); this.modalPrice=0; this.drawChart(); } },
                 getLatestPeriod(){ for(let i=12;i>=1;i--) if(this.modalPriceData[i]>0) return i; return 1; },
                 drawChart(){
                     let canvas=document.getElementById('priceChart'); if(!canvas) return;
                     let ctx=canvas.getContext('2d'), w=canvas.clientWidth, h=canvas.clientHeight;
                     canvas.width=w; canvas.height=h; ctx.clearRect(0,0,w,h);
                     let prices=this.modalPriceData.slice(1);
-                    let max=Math.max(...prices.filter(v=>v>0),10), min=Math.min(...prices.filter(v=>v>0),0), range=max-min||1;
-                    let margin=30, gw=w-margin*2, gh=h-margin*2;
+                    let validPrices = prices.filter(p => p > 0);
+                    if(validPrices.length === 0) return;
+                    let max=Math.max(...validPrices,10), min=Math.min(...validPrices,0), range=max-min||1;
+                    let margin={top:40, right:30, bottom:30, left:40};
+                    let gw=w-margin.left-margin.right, gh=h-margin.top-margin.bottom;
+                    
                     // 畫折線
-                    ctx.beginPath(); ctx.strokeStyle='#5E548E'; ctx.lineWidth=2.5;
-                    let firstPoint=true;
                     let points = [];
-                    for(let i=0;i<prices.length;i++) if(prices[i]>0){
-                        let x=margin+(i/11)*gw, y=margin+gh-((prices[i]-min)/range)*gh;
-                        points.push({x,y,price:prices[i],index:i});
-                        if(firstPoint) { ctx.moveTo(x,y); firstPoint=false; }
-                        else ctx.lineTo(x,y);
+                    ctx.beginPath(); ctx.strokeStyle='#6D8F9F'; ctx.lineWidth=2;
+                    let first=true;
+                    for(let i=0;i<prices.length;i++){
+                        if(prices[i]>0){
+                            let x=margin.left+(i/11)*gw;
+                            let y=margin.top+gh-((prices[i]-min)/range)*gh;
+                            points.push({x,y,price:prices[i],idx:i});
+                            if(first){ ctx.moveTo(x,y); first=false; }
+                            else ctx.lineTo(x,y);
+                        }
                     }
                     ctx.stroke();
-                    // 畫點與價格標籤
+                    
+                    // 畫點與標籤
                     for(let p of points){
-                        ctx.beginPath(); ctx.fillStyle='#FF9D6F'; ctx.arc(p.x,p.y,5,0,2*Math.PI); ctx.fill();
-                        ctx.fillStyle='#1E293B'; ctx.font='bold 11px sans-serif';
-                        let label = this.formatPrice(p.price);
-                        let xOffset = -15, yOffset = -10;
-                        // 判斷高低點來決定標籤位置
-                        let isHigh = true;
-                        if(points.length > 1){
-                            let prev = points.find(p2=>p2.index===p.index-1);
-                            let next = points.find(p2=>p2.index===p.index+1);
-                            if(prev && next) isHigh = (p.price > prev.price && p.price > next.price);
-                            else if(prev) isHigh = (p.price > prev.price);
-                            else if(next) isHigh = (p.price > next.price);
-                        }
-                        if(isHigh) yOffset = -20;
-                        else yOffset = 8;
-                        ctx.fillText(label, p.x + xOffset, p.y + yOffset);
-                        ctx.fillStyle='#8E9AAF'; ctx.font='10px sans-serif';
-                        ctx.fillText(`P${p.index+1}`, p.x-8, p.y+15);
+                        ctx.beginPath(); ctx.fillStyle='#E88D67'; ctx.arc(p.x,p.y,5,0,2*Math.PI); ctx.fill();
+                        ctx.fillStyle = '#2C3E50'; ctx.font = 'bold 12px sans-serif';
+                        let yOffset = -15;
+                        // 判斷是否為區域高點來決定標籤上下
+                        let isPeak = true;
+                        let prev = points.find(p2=>p2.idx===p.idx-1);
+                        let next = points.find(p2=>p2.idx===p.idx+1);
+                        if(prev && next) isPeak = (p.price >= prev.price && p.price >= next.price);
+                        else if(prev) isPeak = (p.price >= prev.price);
+                        else if(next) isPeak = (p.price >= next.price);
+                        if(!isPeak) yOffset = 12;
+                        ctx.fillText(this.formatPrice(p.price), p.x-20, p.y+yOffset);
+                        
+                        // 固定 X 軸期數標籤
+                        ctx.fillStyle = '#9CA3AF'; ctx.font = '10px sans-serif';
+                        ctx.fillText(`P${p.idx+1}`, p.x-8, margin.top+gh+15);
                     }
                 },
                 copyCSV(){ let headers=['標的名稱','本期風險','本期價格','上期價格','小道消息','持倉張數']; let rows=this.effectiveProductList.map(p=>[p.name,p.risk||'未選',this.formatPrice(p.price),this.formatPrice(p.lastPrice),p.tag||'暫無',p.shares]); navigator.clipboard.writeText([headers,...rows].map(r=>r.join(',')).join('\n')).then(()=>this.showModalMessage('✅ 複製成功', '數據已複製到剪貼簿', 'alert')); },
