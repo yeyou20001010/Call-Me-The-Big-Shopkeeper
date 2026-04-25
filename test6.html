@@ -29,17 +29,26 @@
         th, td { text-align: center !important; vertical-align: middle !important; }
         .clickable-name { cursor: pointer; color: #5E548E; font-weight: 900; }
         .clickable-name:hover { text-decoration: underline; color: #FF9D6F; }
-        /* 風險與消息顏色 */
-        .risk-red, .tag-rapid { color: #E53935; border-left: 3px solid #E53935; padding-left: 6px; }
-        .risk-blue { color: #1E88E5; border-left: 3px solid #1E88E5; padding-left: 6px; }
-        .risk-green, .tag-good { color: #43A047; border-left: 3px solid #43A047; padding-left: 6px; }
-        .risk-missing { color: #9CA3AF; border-left: 3px solid #9CA3AF; padding-left: 6px; }
-        .tag-neutral { color: #1E88E5; }
-        .tag-risk { color: #8E24AA; }
-        .tag-worthless { color: #9E9E9E; }
-        .tag-none { color: #A0A0A0; }
-        /* 確保下拉選單內選項永遠為深灰色 */
-        select, select option { color: #4B5563 !important; background-color: #F4F2EE !important; }
+        
+        /* 風險：邊條顏色 + 文字顏色 */
+        .risk-red { color: #E53935 !important; border-left: 3px solid #E53935; padding-left: 6px; }
+        .risk-blue { color: #1E88E5 !important; border-left: 3px solid #1E88E5; padding-left: 6px; }
+        .risk-green { color: #43A047 !important; border-left: 3px solid #43A047; padding-left: 6px; }
+        .risk-missing { color: #D1D5DB !important; border-left: 3px solid #D1D5DB; padding-left: 6px; } /* 淺灰色 */
+        
+        /* 小道消息：純文字顏色 */
+        .tag-rapid { color: #E53935 !important; }        /* 迅速崛起：紅色 */
+        .tag-good { color: #FB8C00 !important; }         /* 穩中向好：橘色 */
+        .tag-neutral { color: #1E88E5 !important; }      /* 坊中傳聞：藍色 */
+        .tag-risk { color: #8E24AA !important; }         /* 或有風險：紫色 */
+        .tag-worthless { color: #4E5C35 !important; }    /* 一文不值：墨綠灰 */
+        .tag-none { color: #6B7280 !important; }         /* 暫無：藍灰色 */
+        
+        /* 下拉選單內選項（未選擇時）一律為淺灰色 */
+        select, select option { color: #D1D5DB !important; background-color: #F4F2EE !important; }
+        /* 強制表格內 select 已選值的文字為深灰（非選單狀態），避免過淺 */
+        td select { color: #4B5563 !important; }
+        
         .sort-btn { cursor: pointer; user-select: none; }
         .sort-btn:hover { opacity: 0.7; }
         .stop-loss-row { background-color: rgba(229, 57, 53, 0.1); }
@@ -187,11 +196,11 @@
                             <tbody>
                                 <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
                                     <td class="p-2 clickable-name" @click="openHistoryModal(item)">{{ item.name }}</td>
-                                    <td><div :class="getRiskClass(item.risk)"><select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)" class="bg-transparent"><option value="">請選擇</option><option value="險">險</option><option value="均">均</option><option value="穩">穩</option></select></div></td>
+                                    <td class="p-2"><div :class="getRiskClass(item.risk)"><select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)" class="bg-transparent"><option value="">請選擇</option><option value="險">險</option><option value="均">均</option><option value="穩">穩</option></select></div></td>
                                     <td class="font-mono">{{ formatPrice(item.price) }}</td>
                                     <td class="font-mono text-slate-500">{{ formatPrice(item.lastPrice) }}</td>
                                     <td class="font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
-                                    <td><div :class="getTagClass(item.tag)"><select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)" class="bg-transparent"><option value="">請選擇</option><option value="迅速崛起">迅速崛起</option><option value="穩中向好">穩中向好</option><option value="坊中傳聞">坊中傳聞</option><option value="或有風險">或有風險</option><option value="一文不值">一文不值</option><option value="暫無">暫無</option></select></div></td>
+                                    <td class="p-2"><div :class="getTagClass(item.tag)"><select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)" class="bg-transparent"><option value="">請選擇</option><option value="迅速崛起">迅速崛起</option><option value="穩中向好">穩中向好</option><option value="坊中傳聞">坊中傳聞</option><option value="或有風險">或有風險</option><option value="一文不值">一文不值</option><option value="暫無">暫無</option></select></div></td>
                                     <td><input type="number" v-model.number="item.shares" @change="updateShares(item.originalIndex, item.shares)" class="input-inline !w-24 !text-center" min="0"></td>
                                     <td class="font-mono" :class="getUnrealizedClass(item)">{{ formatPrice(calculateUnrealized(item)) }}</td>
                                 </tr>
@@ -333,15 +342,20 @@
                 onFundInput(e){ let num=parseInt(e.target.value.replace(/,/g,''))||0; this.fund=Math.max(0,num); this.displayFund=num.toString(); this.saveAllData(); },
                 getPriceChangePercent(item){ if(item?.lastPrice && item?.price) return ((item.price-item.lastPrice)/item.lastPrice*100).toFixed(1)+'%'; return '-'; },
                 getPriceChangeClass(item){ let chg = item?.lastPrice ? (item.price-item.lastPrice)/item.lastPrice : 0; return chg>0 ? 'text-gain' : chg<0 ? 'text-loss' : ''; },
-                getRiskClass(r){ return r==='險'?'risk-red':r==='均'?'risk-blue':r==='穩'?'risk-green':'risk-missing'; },
-                getTagClass(t){ 
+                getRiskClass(r){ 
+                    if(r==='險') return 'risk-red';
+                    if(r==='均') return 'risk-blue';
+                    if(r==='穩') return 'risk-green';
+                    return 'risk-missing';
+                },
+                getTagClass(t){
                     if(t==='迅速崛起') return 'tag-rapid';
                     if(t==='穩中向好') return 'tag-good';
                     if(t==='坊中傳聞') return 'tag-neutral';
                     if(t==='或有風險') return 'tag-risk';
                     if(t==='一文不值') return 'tag-worthless';
                     if(t==='暫無') return 'tag-none';
-                    return 'tag-none';
+                    return 'risk-missing'; // 請選擇
                 },
                 getStopLossTriggered(item){ if(item?.shares && item?.avgCost && item?.price && item?.risk){ let loss=(item.price-item.avgCost)/item.avgCost*100, thr=item.risk==='險'?25:item.risk==='均'?20:15; return loss<-thr; } return false; },
                 calculateUnrealized(item){ return item?.shares && item?.avgCost && item?.price ? (item.price-item.avgCost)*item.shares : 0; },
@@ -391,7 +405,6 @@
                     let margin={top:40, right:30, bottom:30, left:40};
                     let gw=w-margin.left-margin.right, gh=h-margin.top-margin.bottom;
                     
-                    // 畫折線
                     let points = [];
                     ctx.beginPath(); ctx.strokeStyle='#6D8F9F'; ctx.lineWidth=2;
                     let first=true;
@@ -406,12 +419,10 @@
                     }
                     ctx.stroke();
                     
-                    // 畫點與標籤
                     for(let p of points){
                         ctx.beginPath(); ctx.fillStyle='#E88D67'; ctx.arc(p.x,p.y,5,0,2*Math.PI); ctx.fill();
                         ctx.fillStyle = '#2C3E50'; ctx.font = 'bold 12px sans-serif';
                         let yOffset = -15;
-                        // 判斷是否為區域高點來決定標籤上下
                         let isPeak = true;
                         let prev = points.find(p2=>p2.idx===p.idx-1);
                         let next = points.find(p2=>p2.idx===p.idx+1);
@@ -421,7 +432,6 @@
                         if(!isPeak) yOffset = 12;
                         ctx.fillText(this.formatPrice(p.price), p.x-20, p.y+yOffset);
                         
-                        // 固定 X 軸期數標籤
                         ctx.fillStyle = '#9CA3AF'; ctx.font = '10px sans-serif';
                         ctx.fillText(`P${p.idx+1}`, p.x-8, margin.top+gh+15);
                     }
