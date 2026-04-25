@@ -21,6 +21,10 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
         
+        /* 確認窗高層級 */
+        .modal-overlay.confirm-overlay { z-index: 200; }
+        .custom-modal.confirm-modal { z-index: 201; }
+        
         .text-gain { color: #E53935 !important; }
         .text-loss { color: #00897B !important; }
         .row-label { font-size: 12px; color: #8E9AAF; font-weight: 900; margin-bottom: 2px; display: block; }
@@ -40,7 +44,7 @@
         .risk-green { color: #43A047 !important; border-left: 3px solid #43A047; padding-left: 6px; }
         .risk-missing { color: #6B7280 !important; border-left: 3px solid #6B7280; padding-left: 6px; }
         
-        /* 小道消息：純文字變色，無邊條 */
+        /* 小道消息：純文字變色 */
         .tag-rapid { color: #E53935 !important; }
         .tag-good { color: #FB8C00 !important; }
         .tag-neutral { color: #1E88E5 !important; }
@@ -48,15 +52,32 @@
         .tag-worthless { color: #4E5C35 !important; }
         .tag-none { color: #6B7280 !important; }
         
-        /* 下拉選單內選項統一灰色 */
-        select, select option { color: #6B7280 !important; background-color: #F4F2EE !important; }
-        td select { color: #6B7280 !important; }
+        /* 透明 select 樣式 */
+        .transparent-select { position: relative; width: 100%; min-width: 100px; }
+        .transparent-select select {
+            color: transparent !important;
+            background-color: transparent !important;
+            caret-color: transparent;
+            padding: 4px 4px 4px 8px;
+            width: 100%;
+            border: none;
+            outline: none;
+            cursor: pointer;
+        }
+        .select-overlay-text {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            white-space: nowrap;
+            font-weight: 700;
+        }
         
         .sort-btn { cursor: pointer; user-select: none; }
         .sort-btn:hover { opacity: 0.7; }
         .stop-loss-row { background-color: rgba(229, 57, 53, 0.1); }
         
-        /* 匯入設定按鈕樣式 */
         .preset-link-btn, .preset-action-btn { border-radius: 0.75rem; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 900; text-align: center; transition: all 0.2s; cursor: pointer; }
         .preset-link-btn { background-color: #E5E7EB; color: #4B5563; border: 1px solid #D1D5DB; }
         .preset-link-btn:hover { background-color: #D1D5DB; color: #1F2937; }
@@ -68,8 +89,8 @@
     <div id="app" v-cloak class="max-w-[1600px] mx-auto">
         
         <!-- 通用確認 Modal -->
-        <div v-if="modalVisible" class="modal-overlay" @click="closeModal"></div>
-        <div v-if="modalVisible" class="custom-modal export-modal">
+        <div v-if="modalVisible" class="modal-overlay confirm-overlay" @click="closeModal"></div>
+        <div v-if="modalVisible" class="custom-modal confirm-modal export-modal">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">{{ modalTitle }}</h3>
             <p class="text-gray-600 mb-8 font-bold text-lg whitespace-pre-wrap">{{ modalMsg }}</p>
             <div class="flex gap-4">
@@ -148,7 +169,7 @@
                         <label class="row-label">價格（元）</label>
                         <input type="number" step="0.01" v-model.number="modalPrice" class="input-inline !text-xl">
                         <button @click="savePricePeriod" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存此期</button>
-                        <button @click="clearAllPrices" class="mt-2 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除所有價格</button>
+                        <button @click="clearAllPricesPrompt" class="mt-2 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除所有價格</button>
                     </div>
                 </div>
                 <div>
@@ -158,23 +179,21 @@
             </div>
         </div>
 
-        <!-- 持倉歷史彈窗 -->
+        <!-- 持倉歷史彈窗：表格內直接編輯 -->
         <div v-if="showSharesHistoryModal" class="modal-overlay" @click="closeSharesHistoryModal"></div>
         <div v-if="showSharesHistoryModal" class="custom-modal history-modal">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-black text-[#5E548E]">{{ currentProduct?.name || '標的' }}｜持倉記錄</h3>
                 <button @click="closeSharesHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
             </div>
-            <div class="grid grid-cols-1 gap-4">
-                <div class="grid grid-cols-4 gap-2 mb-4">
-                    <button v-for="n in 12" :key="n" @click="selectedSharesPeriod = n" class="period-btn-small" :class="{ active: selectedSharesPeriod === n }">第 {{ n }} 期</button>
-                </div>
-                <div class="mt-2">
-                    <label class="row-label">持倉張數</label>
-                    <input type="number" step="1" v-model.number="modalShares" class="input-inline !text-xl">
-                    <button @click="saveSharesPeriod" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存此期</button>
-                    <button @click="clearAllShares" class="mt-2 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除所有持倉</button>
-                </div>
+            <button @click="clearAllSharesPrompt" class="mb-4 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除所有持倉</button>
+            <div class="overflow-y-auto max-h-96">
+                <table class="w-full text-sm">
+                    <thead class="sticky top-0 bg-white"><tr class="border-b-2"><th class="p-2">期數</th><th class="p-2">持倉（張）</th></tr></thead>
+                    <tbody>
+                        <tr v-for="n in 12" :key="n" class="border-b"><td class="p-2">第 {{ n }} 期</td><td class="p-2"><input type="number" v-model.number="sharesModalData[n]" @change="updateSharesModalData" class="input-inline !w-24 !text-center" min="0"></td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -226,11 +245,36 @@
                             <tbody>
                                 <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
                                     <td class="p-2 clickable-name" @click="openPriceHistoryModal(item)">{{ item.name }}</td>
-                                    <td class="p-2"><div :class="getRiskClass(item.risk)"><select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)" class="bg-transparent"><option value="">請選擇</option><option value="險">險</option><option value="均">均</option><option value="穩">穩</option></select></div></td>
+                                    <!-- 風險：透明 select -->
+                                    <td class="p-2">
+                                        <div :class="getRiskClass(item.risk)" class="transparent-select">
+                                            <span class="select-overlay-text" :class="getRiskClass(item.risk)">{{ item.risk || '請選擇' }}</span>
+                                            <select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)">
+                                                <option value="">請選擇</option>
+                                                <option value="險">險</option>
+                                                <option value="均">均</option>
+                                                <option value="穩">穩</option>
+                                            </select>
+                                        </div>
+                                    </td>
                                     <td class="font-mono">{{ formatPrice(item.price) }}</td>
                                     <td class="font-mono text-slate-500">{{ formatPrice(item.lastPrice) }}</td>
                                     <td class="font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
-                                    <td class="p-2"><div :class="getTagClass(item.tag)"><select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)" class="bg-transparent"><option value="">請選擇</option><option value="迅速崛起">迅速崛起</option><option value="穩中向好">穩中向好</option><option value="坊中傳聞">坊中傳聞</option><option value="或有風險">或有風險</option><option value="一文不值">一文不值</option><option value="暫無">暫無</option></select></div></td>
+                                    <!-- 小道消息：透明 select -->
+                                    <td class="p-2">
+                                        <div :class="getTagClass(item.tag)" class="transparent-select">
+                                            <span class="select-overlay-text" :class="getTagClass(item.tag)">{{ item.tag || '請選擇' }}</span>
+                                            <select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)">
+                                                <option value="">請選擇</option>
+                                                <option value="迅速崛起">迅速崛起</option>
+                                                <option value="穩中向好">穩中向好</option>
+                                                <option value="坊中傳聞">坊中傳聞</option>
+                                                <option value="或有風險">或有風險</option>
+                                                <option value="一文不值">一文不值</option>
+                                                <option value="暫無">暫無</option>
+                                            </select>
+                                        </div>
+                                    </td>
                                     <td class="p-2 clickable-shares" @click="openSharesHistoryModal(item)">{{ item.shares }}</td>
                                     <td class="font-mono" :class="getUnrealizedClass(item)">{{ formatPrice(calculateUnrealized(item)) }}</td>
                                 </tr>
@@ -277,7 +321,7 @@
                 fund: 0, displayFund: '0', periodMode: 'auto', manualPeriod: 1,
                 showPriceHistoryModal: false, currentProduct: null, currentProductIdx: -1,
                 selectedPricePeriod: 1, modalPrice: 0, priceModalData: Array(13).fill(0),
-                showSharesHistoryModal: false, selectedSharesPeriod: 1, modalShares: 0, sharesModalData: Array(13).fill(0),
+                showSharesHistoryModal: false, sharesModalData: Array(13).fill(0),
                 sortKey: null, sortOrder: 'asc',
                 showImportModal: false, showExportModal: false,
                 importOptions: { price: false, risk: false, tag: false, shares: false, fund: false },
@@ -299,13 +343,20 @@
                 effectiveProductList() {
                     const period = this.currentPeriod;
                     return this.productList.map((p,idx) => {
-                        let lastPeriod=0;
-                        for(let i=period-1;i>=1;i--) if(p.prices[i]>0) { lastPeriod=i; break; }
+                        let lastPeriod=0, last2Period=0;
+                        for(let i=period-1;i>=1;i--) { if(p.prices[i]>0 && lastPeriod===0) lastPeriod=i;
+                        else if(p.prices[i]>0 && last2Period===0) last2Period=i; }
+                        let last2Price = last2Period ? p.prices[last2Period] : 0;
+                        let price = p.prices[period]||0;
+                        let lastPrice = lastPeriod?p.prices[lastPeriod]:0;
+                        let basicTrendUp = (price > lastPrice && lastPrice > last2Price);
+                        let isValidRecovery = basicTrendUp && price > p.avgCost;
+                        let profitPercent = p.avgCost ? (price - p.avgCost) / p.avgCost * 100 : 0;
                         return { 
                             ...p, 
                             originalIndex: idx, 
-                            price: p.prices[period]||0, 
-                            lastPrice: lastPeriod?p.prices[lastPeriod]:0,
+                            price, lastPrice,
+                            profitPercent, basicTrendUp, isValidRecovery,
                             shares: p.sharesHistory[period]||0
                         };
                     }).filter(p => p && typeof p === 'object');
@@ -337,47 +388,151 @@
                 stopLossList() {
                     let res=[];
                     for(let p of this.effectiveProductList) if(p.shares && p.avgCost && p.price && p.risk) {
-                        let loss = (p.price-p.avgCost)/p.avgCost*100, thr = p.risk==='險'?25 : p.risk==='均'?20 : 15;
-                        if(loss < -thr) res.push({name:p.name, lossPercent:loss});
+                        let thr = p.risk==='險'?25 : p.risk==='均'?20 : 15;
+                        if(p.profitPercent < -thr) res.push({name:p.name, lossPercent: p.profitPercent});
                     }
                     return res;
                 },
                 recommendations() {
-                    let period = this.currentPeriod, candidates=[];
+                    const period = this.currentPeriod;
+                    const stopLossNames = new Set(this.stopLossList.map(s => s.name));
+                    
+                    // Step 1: 計算所有候選標的的分數
+                    let allCandidates = [];
                     for(let p of this.productList) {
                         let price = p.prices[period]||0;
-                        if(price<=0 || !p.risk) continue;
+                        if(price<=0) continue;
                         let tag = p.tag||'暫無';
-                        if(['一文不值','或有風險','暫無'].includes(tag)) continue;
-                        let score = tag==='迅速崛起'?100 : tag==='穩中向好'?70 : tag==='坊中傳聞'?40 : 0;
+                        if(tag === '一文不值' || tag === '或有風險') continue;
+                        if(stopLossNames.has(p.name)) continue;
+                        let riskScore = { '險':1.2, '均':1.0, '穩':0.8 }[p.risk] || 1.0;
+                        let tagScore = { '迅速崛起':100, '穩中向好':70, '坊中傳聞':40, '暫無':10 }[tag] || 0;
+                        let score = tagScore * riskScore;
                         if(price<5) score*=1.8;
                         else if(price<10) score*=1.2;
-                        candidates.push({ ...p, price, tag, score, amount:0, shares:0, tagMsg:tag });
+                        allCandidates.push({ ...p, price, tag, score, tagMsg:tag, shares: p.sharesHistory[period]||0 });
                     }
-                    candidates.sort((a,b)=>b.score-a.score);
-                    if(!candidates.length) return [];
-                    let top = (candidates[1] && candidates[0].score > candidates[1].score*2) ? [candidates[0]] : candidates.slice(0,3);
+                    
+                    // Step 2: 分離 holdCandidates 和 newCandidates
+                    let holdCandidates = allCandidates.filter(p => p.shares > 0);
+                    let newCandidates = allCandidates.filter(p => p.shares === 0);
+                    
+                    // Step 3: 檢查 score 門檻（分池判斷）
+                    let canAdd = holdCandidates.length > 0 && holdCandidates[0].score >= 50;
+                    let canNew = newCandidates.length > 0 && newCandidates[0].score >= 50;
+                    if (!canAdd && !canNew) return [];
+                    
+                    // Step 4: ALL IN 檢查（優先）
+                    let allInTarget = null;
+                    if (holdCandidates.length > 0 && newCandidates.length > 0) {
+                        let top1 = holdCandidates[0];
+                        let top2 = newCandidates[0];
+                        if (top1.score > top2.score * 2 && top1.profitPercent >= 0 && top1.isValidRecovery) {
+                            allInTarget = top1;
+                        } else if (newCandidates[0].score > (holdCandidates[0]?.score || 0) * 2) {
+                            let topNew = newCandidates[0];
+                            if (topNew.profitPercent === undefined || topNew.profitPercent >= 0) {
+                                allInTarget = topNew;
+                            }
+                        }
+                    } else if (holdCandidates.length > 0 && holdCandidates[0].score >= 100 && holdCandidates[0].profitPercent >= 0 && holdCandidates[0].isValidRecovery) {
+                        allInTarget = holdCandidates[0];
+                    } else if (newCandidates.length > 0 && newCandidates[0].score >= 100) {
+                        allInTarget = newCandidates[0];
+                    }
+                    
+                    if (allInTarget) {
+                        let shares = Math.floor(this.fund / allInTarget.price);
+                        let amount = shares * allInTarget.price;
+                        return [{
+                            name: allInTarget.name, risk: allInTarget.risk, price: allInTarget.price,
+                            tag: allInTarget.tag, amount, shares, tagMsg: allInTarget.tagMsg + '（ALL IN）',
+                            borderColor: 'border-orange-400', badgeClass: allInTarget.risk==='險'?'bg-red-500/30':(allInTarget.risk==='均'?'bg-yellow-500/30':'bg-green-500/30')
+                        }];
+                    }
+                    
+                    // Step 5: 資金分配（分池）
+                    let addPool = 0.6, newPool = 0.4;
+                    // 強勢覆蓋
+                    if (holdCandidates.length > 0 && newCandidates.length > 0 && holdCandidates[0].score > newCandidates[0].score * 1.5) {
+                        addPool = 0.8; newPool = 0.2;
+                    }
+                    // 調整池比例（根據可用性）
+                    if (canAdd && !canNew) { addPool = 1.0; newPool = 0.0; }
+                    else if (!canAdd && canNew) { addPool = 0.0; newPool = 1.0; }
+                    
+                    let result = [];
                     let remain = this.fund;
-                    for(let t of top) {
-                        let ratio = top.length===1 ? 1 : top.length===2 ? (t===top[0]?0.6:0.4) : (t===top[0]?0.5 : t===top[1]?0.3 : 0.2);
-                        let alloc = Math.min(Math.floor(this.fund*ratio), remain);
-                        let shares = Math.floor(alloc/t.price);
-                        t.amount = shares*t.price;
-                        t.shares = shares;
-                        remain -= t.amount;
-                        t.borderColor = t===top[0] ? 'border-orange-400' : 'border-purple-400';
-                        t.badgeClass = t.risk==='險'? 'bg-red-500/30' : (t.risk==='均'?'bg-yellow-500/30':'bg-green-500/30');
+                    let totalAsset = this.fund + this.effectiveProductList.reduce((sum, p) => sum + (p.price * p.shares), 0);
+                    if (totalAsset <= 0) totalAsset = this.fund;
+                    let maxPositionRatio = 0.5;
+                    
+                    // 加碼池
+                    if (addPool > 0 && holdCandidates.length > 0) {
+                        let topHeld = holdCandidates.sort((a,b)=>b.score - a.score).slice(0, 2);
+                        let addAmount = Math.floor(this.fund * addPool);
+                        for (let t of topHeld) {
+                            let shares = Math.floor(addAmount / t.price);
+                            let currentValue = t.shares * t.price;
+                            let newValue = currentValue + shares * t.price;
+                            let ratio = newValue / totalAsset;
+                            if (ratio > maxPositionRatio) {
+                                let maxAdd = Math.floor((maxPositionRatio * totalAsset - currentValue) / t.price);
+                                if (maxAdd > 0) shares = maxAdd;
+                                else shares = 0;
+                            }
+                            let actual = shares * t.price;
+                            t.amount = actual;
+                            t.shares = shares;
+                            remain -= actual;
+                            t.borderColor = 'border-blue-400';
+                            t.badgeClass = t.risk==='險'? 'bg-red-500/30' : (t.risk==='均'?'bg-yellow-500/30':'bg-green-500/30');
+                            result.push(t);
+                            if (remain <= 0) break;
+                        }
                     }
-                    return top;
+                    
+                    // 新標的池（Top 3）
+                    if (newPool > 0 && newCandidates.length > 0 && remain > 0) {
+                        let topNew = newCandidates.sort((a,b)=>b.score - a.score).slice(0, 3);
+                        let newAmount = Math.floor(this.fund * newPool);
+                        for (let t of topNew) {
+                            let shares = Math.floor(newAmount / t.price);
+                            if (shares * t.price > remain) shares = Math.floor(remain / t.price);
+                            let actual = shares * t.price;
+                            t.amount = actual;
+                            t.shares = shares;
+                            remain -= actual;
+                            t.borderColor = t === topNew[0] ? 'border-green-400' : 'border-purple-400';
+                            t.badgeClass = t.risk==='險'? 'bg-red-500/30' : (t.risk==='均'?'bg-yellow-500/30':'bg-green-500/30');
+                            result.push(t);
+                            if (remain <= 0) break;
+                        }
+                    }
+                    
+                    return result;
                 },
-                suggestedAmount() { return this.recommendations.reduce((s,r)=>s+r.amount,0); },
+                suggestedAmount() { 
+                    if (this.recommendations.length === 1 && this.recommendations[0].tagMsg.includes('ALL IN')) return this.recommendations[0].amount;
+                    return this.recommendations.reduce((s,r)=>s+r.amount,0); 
+                },
                 decisionMsg() {
-                    if(!this.recommendations.length) return '⚠️ 無有效標的';
+                    if(!this.recommendations.length) return '⚠️ 市場訊號不足，建議保留現金';
                     let r=this.recommendations[0];
-                    if(r.score>=100) return this.recommendations.length===1 ? '🔥 ALL IN：'+r.name : '🔥 強買：'+r.name;
-                    return r.score>=70 ? '📈 建議買入：'+r.name : '📊 保守配置';
+                    if(r.tagMsg.includes('ALL IN')) return '🔥 ALL IN：' + r.name;
+                    if(r.score>=100) return '🔥 強烈買入：' + r.name;
+                    return r.score>=70 ? '📈 建議買入：' + r.name : '📊 保守配置';
                 },
-                decisionDetail() { return this.recommendations.length ? '<ul><li>'+this.recommendations.map(r=>`${r.name}(${r.risk}/${r.tagMsg}) 單價${this.formatPrice(r.price)}`).join('</li><li>')+'</li></ul>' : '無'; }
+                decisionDetail() {
+                    if(!this.recommendations.length) return '無符合條件的標的（價格為0、風險未選、消息負面、或分數低於門檻）';
+                    let html = '<ul class="list-disc pl-4 space-y-1">';
+                    for (let r of this.recommendations) {
+                        let type = r.shares > 0 ? '加碼' : '新買';
+                        html += `<li>${r.name}（${r.risk}）｜${r.tagMsg} ${type}｜單價 ${this.formatPrice(r.price)} 元</li>`;
+                    }
+                    html += '</ul>';
+                    return html;
+                }
             },
             methods: {
                 formatPrice(v){ return (Math.floor((v||0)*100)/100).toFixed(2); },
@@ -403,18 +558,11 @@
                     if(t==='暫無') return 'tag-none';
                     return 'risk-missing';
                 },
-                getStopLossTriggered(item){ if(item?.shares && item?.avgCost && item?.price && item?.risk){ let loss=(item.price-item.avgCost)/item.avgCost*100, thr=item.risk==='險'?25:item.risk==='均'?20:15; return loss<-thr; } return false; },
-                calculateUnrealized(item){ 
-                    let period = this.currentPeriod;
-                    let buyPrice = this.productList[item.originalIndex]?.prices[period];
-                    if(item.shares && buyPrice && buyPrice > 0 && item.price) {
-                        return (item.price - buyPrice) * item.shares;
-                    }
-                    return 0;
-                },
+                getStopLossTriggered(item){ if(item?.shares && item?.avgCost && item?.price && item?.risk){ return item.profitPercent < (item.risk==='險'?-25:item.risk==='均'?-20:-15); } return false; },
+                calculateUnrealized(item){ return item?.shares && item?.avgCost && item?.price ? (item.price-item.avgCost)*item.shares : 0; },
                 getUnrealizedClass(item){ let v=this.calculateUnrealized(item); return v>0?'text-gain':v<0?'text-loss':''; },
-                updateRisk(i,v){ if(this.productList[i]) this.productList[i].risk=v; this.saveAllData(); },
-                updateTag(i,v){ if(this.productList[i]) this.productList[i].tag=v; this.saveAllData(); },
+                updateRisk(i,v){ if(this.productList[i]) { this.productList[i].risk=v; this.saveAllData(); } },
+                updateTag(i,v){ if(this.productList[i]) { this.productList[i].tag=v; this.saveAllData(); } },
                 sortByRisk(){ this.setSort('risk'); },
                 sortByTag(){ this.setSort('tag'); },
                 sortByShares(){ this.setSort('shares'); },
@@ -422,7 +570,23 @@
                     if(this.sortKey === key) this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
                     else { this.sortKey = key; this.sortOrder = 'asc'; }
                 },
-                // 價格歷史彈窗
+                calculateAvgCost(prices, sharesHistory) {
+                    let totalCost = 0, totalShares = 0;
+                    for (let i = 1; i <= 12; i++) {
+                        let shares = sharesHistory[i] || 0;
+                        let price = prices[i] || 0;
+                        if (shares > totalShares) {
+                            let added = shares - totalShares;
+                            totalCost += added * price;
+                            totalShares = shares;
+                        } else if (shares < totalShares) {
+                            let ratio = shares / totalShares;
+                            totalCost *= ratio;
+                            totalShares = shares;
+                        }
+                    }
+                    return totalShares > 0 ? totalCost / totalShares : 0;
+                },
                 openPriceHistoryModal(p){ 
                     if(!p) return; 
                     this.currentProduct=p; 
@@ -437,13 +601,17 @@
                 savePricePeriod(){ 
                     this.priceModalData[this.selectedPricePeriod] = this.modalPrice; 
                     this.productList[this.currentProductIdx].prices = [...this.priceModalData];
+                    this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.priceModalData, this.productList[this.currentProductIdx].sharesHistory);
                     this.saveAllData(); 
                     this.drawPriceChart();
                 },
-                clearAllPrices(){ 
+                clearAllPricesPrompt(){ 
                     this.showModalMessage('🗑️ 清除所有價格', `確定要清除 ${this.currentProduct.name} 的所有歷史價格嗎？`, 'confirm', () => {
                         this.priceModalData.fill(0); 
                         this.modalPrice=0; 
+                        this.productList[this.currentProductIdx].prices = [...this.priceModalData];
+                        this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.priceModalData, this.productList[this.currentProductIdx].sharesHistory);
+                        this.saveAllData();
                         this.drawPriceChart();
                     });
                 },
@@ -458,7 +626,6 @@
                     let max=Math.max(...validPrices,10), min=Math.min(...validPrices,0), range=max-min||1;
                     let margin={top:40, right:30, bottom:30, left:40};
                     let gw=w-margin.left-margin.right, gh=h-margin.top-margin.bottom;
-                    
                     let points = [];
                     ctx.beginPath(); ctx.strokeStyle='#6D8F9F'; ctx.lineWidth=2;
                     let first=true;
@@ -472,7 +639,6 @@
                         }
                     }
                     ctx.stroke();
-                    
                     for(let p of points){
                         ctx.beginPath(); ctx.fillStyle='#E88D67'; ctx.arc(p.x,p.y,5,0,2*Math.PI); ctx.fill();
                         ctx.fillStyle = '#2C3E50'; ctx.font = 'bold 12px sans-serif';
@@ -485,39 +651,40 @@
                         else if(next) isPeak = (p.price >= next.price);
                         if(!isPeak) yOffset = 12;
                         ctx.fillText(this.formatPrice(p.price), p.x-20, p.y+yOffset);
-                        
                         ctx.fillStyle = '#9CA3AF'; ctx.font = '10px sans-serif';
                         ctx.fillText(`P${p.idx+1}`, p.x-8, margin.top+gh+15);
                     }
                 },
-                // 持倉歷史彈窗
                 openSharesHistoryModal(p){ 
                     if(!p) return; 
                     this.currentProduct=p; 
                     this.currentProductIdx=p.originalIndex; 
                     this.sharesModalData = [...p.sharesHistory]; 
-                    this.selectedSharesPeriod = this.getLatestPeriod(this.sharesModalData); 
-                    this.modalShares = this.sharesModalData[this.selectedSharesPeriod]||0; 
                     this.showSharesHistoryModal=true; 
                 },
                 closeSharesHistoryModal(){ this.showSharesHistoryModal=false; },
-                saveSharesPeriod(){ 
-                    this.sharesModalData[this.selectedSharesPeriod] = this.modalShares; 
+                updateSharesModalData(){ 
                     this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData];
+                    this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData);
                     this.saveAllData(); 
                 },
-                clearAllShares(){ 
+                clearAllSharesPrompt(){ 
                     this.showModalMessage('🗑️ 清除所有持倉', `確定要清除 ${this.currentProduct.name} 的所有歷史持倉嗎？`, 'confirm', () => {
                         this.sharesModalData.fill(0); 
-                        this.modalShares=0;
+                        this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData];
+                        this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData);
+                        this.saveAllData();
                     });
                 },
                 copyCSV(){ 
                     let headers=['標的名稱','本期風險','本期價格','上期價格','小道消息','持倉張數']; 
-                    let rows=this.effectiveProductList.map(p=>[p.name,p.risk||'未選',this.formatPrice(p.price),this.formatPrice(p.lastPrice),p.tag||'暫無',p.shares]); 
+                    let rows=this.displayList.map(p=>[p.name,p.risk||'未選',this.formatPrice(p.price),this.formatPrice(p.lastPrice),p.tag||'暫無',p.shares]); 
                     navigator.clipboard.writeText([headers,...rows].map(r=>r.join(',')).join('\n')).then(()=>this.showModalMessage('✅ 複製成功', '數據已複製到剪貼簿', 'alert')); 
                 },
-                openImportModal(){ this.loadLastUsedPreset(); this.showImportModal=true; },
+                openImportModal(){ 
+                    this.loadLastUsedPreset(); 
+                    this.showImportModal=true; 
+                },
                 closeImportModal(){ this.showImportModal=false; },
                 openExportModal(){ this.exportVersion=new Date().toISOString().slice(0,10); this.showExportModal=true; },
                 closeExportModal(){ this.showExportModal=false; },
@@ -526,10 +693,46 @@
                 loadPreset(n){ let preset=this.presets[n]||JSON.parse(localStorage.getItem('exchange_preset_'+n)); if(preset){ this.importOptions={...preset}; this.importAll=Object.values(preset).every(v=>v===true); this.currentPresetName=`配置${n}`; this.lastUsedPreset=n; localStorage.setItem('exchange_last_preset',n); } },
                 resetToDefault(){ this.importOptions={price:true,risk:true,tag:true,shares:true,fund:true}; this.importAll=true; this.currentPresetName='全選（預設）'; this.lastUsedPreset=null; localStorage.removeItem('exchange_last_preset'); },
                 loadLastUsedPreset(){ let last=localStorage.getItem('exchange_last_preset'); if(last==='1') this.loadPreset(1); else if(last==='2') this.loadPreset(2); else this.resetToDefault(); },
-                confirmImport(){ this.closeImportModal(); let data=this.importDataBuffer; if(!data) return; if(this.importOptions.price) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.prices) this.productList[i].prices=data.productList[i].prices.slice(); if(this.importOptions.risk) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.risk) this.productList[i].risk=data.productList[i].risk; if(this.importOptions.tag) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.tag) this.productList[i].tag=data.productList[i].tag; if(this.importOptions.shares) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.sharesHistory) this.productList[i].sharesHistory=data.productList[i].sharesHistory.slice(); if(this.importOptions.fund && data.fund) this.fund=data.fund; this.saveAllData(); this.showModalMessage('✅ 匯入完成', '設定已更新', 'alert'); },
-                doExport(){ let exportData={version:this.exportVersion, activityStart:this.activityStart, activityEnd:this.activityEnd, fund:this.fund, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,sharesHistory:p.sharesHistory,avgCost:p.avgCost}))}; let blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='exchange_preset.json'; a.click(); URL.revokeObjectURL(a.href); this.closeExportModal(); },
-                async loadFromGitHub(){ try{ let res=await fetch(GITHUB_RAW_URL); if(!res.ok) throw new Error(); let data=await res.json(); this.importDataBuffer=data; this.openImportModal(); } catch(e){ this.showModalMessage('❌ 載入失敗', '無法讀取共用設定，請確認 GitHub 檔案是否存在', 'alert'); } },
-                saveAllData(){ localStorage.setItem('exchange_tool_data',JSON.stringify({fund:this.fund, periodMode:this.periodMode, manualPeriod:this.manualPeriod, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,sharesHistory:p.sharesHistory,avgCost:p.avgCost}))})); },
+                confirmImport(){ 
+                    this.closeImportModal(); 
+                    let data=this.importDataBuffer; 
+                    if(!data) return; 
+                    if(this.importOptions.price) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.prices) this.productList[i].prices=data.productList[i].prices.slice(); 
+                    if(this.importOptions.risk) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.risk) this.productList[i].risk=data.productList[i].risk; 
+                    if(this.importOptions.tag) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.tag) this.productList[i].tag=data.productList[i].tag; 
+                    if(this.importOptions.shares) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.sharesHistory) this.productList[i].sharesHistory=data.productList[i].sharesHistory.slice(); 
+                    if(this.importOptions.fund && data.fund) this.fund=data.fund; 
+                    this.productList.forEach(p => { p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory); });
+                    this.saveAllData(); 
+                    this.showModalMessage('✅ 匯入完成', '設定已更新', 'alert'); 
+                },
+                doExport(){ 
+                    let exportData={version:this.exportVersion, activityStart:this.activityStart, activityEnd:this.activityEnd, fund:this.fund, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,sharesHistory:p.sharesHistory,avgCost:p.avgCost}))}; 
+                    let blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}); 
+                    let a=document.createElement('a'); 
+                    a.href=URL.createObjectURL(blob); 
+                    a.download='exchange_preset.json'; 
+                    a.click(); 
+                    URL.revokeObjectURL(a.href); 
+                    this.closeExportModal(); 
+                },
+                async loadFromGitHub(){ 
+                    try{ 
+                        let res=await fetch(GITHUB_RAW_URL); 
+                        if(!res.ok) throw new Error(); 
+                        let data=await res.json(); 
+                        let msg = `版本：${data.version || '未知'}\n活動區間：${data.activityStart || '?'} ～ ${data.activityEnd || '?'}\n\n確定要載入這份共用設定嗎？`;
+                        this.showModalMessage('📥 載入共用設定', msg, 'confirm', () => {
+                            this.importDataBuffer=data; 
+                            this.openImportModal(); 
+                        });
+                    } catch(e){ 
+                        this.showModalMessage('❌ 載入失敗', '無法讀取共用設定，請確認 GitHub 檔案是否存在', 'alert'); 
+                    } 
+                },
+                saveAllData(){ 
+                    localStorage.setItem('exchange_tool_data',JSON.stringify({fund:this.fund, periodMode:this.periodMode, manualPeriod:this.manualPeriod, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,sharesHistory:p.sharesHistory,avgCost:p.avgCost}))})); 
+                },
                 loadAllData(){
                     let saved=localStorage.getItem('exchange_tool_data');
                     if(saved) try{
@@ -547,6 +750,7 @@
                                 }
                             }
                         }
+                        this.productList.forEach(p => { p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory); });
                     }catch(e){ console.log('讀取失敗',e); }
                 },
                 clearAllDataConfirm(){ this.showModalMessage('⚠️ 清除所有資料', '所有價格、風險、持倉將會清空，無法復原。確定嗎？', 'confirm', ()=>{ localStorage.removeItem('exchange_tool_data'); location.reload(); }); },
