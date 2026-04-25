@@ -54,15 +54,15 @@
         .tag-missing { color: #6B7280 !important; }
         
         /* 透明 select 樣式 - 徹底解決反藍底白字 */
-        .transparent-select { position: relative; width: 100%; min-width: 85px; }
+        .transparent-select { position: relative; width: 100%; min-width: 70px; }
         .transparent-select select {
             color: transparent !important;
             background-color: transparent !important;
             caret-color: transparent;
             padding: 4px 4px 4px 8px;
             width: 100%;
-            border: none;
-            outline: none;
+            border: none !important;
+            outline: none !important;
             cursor: pointer;
         }
         /* 強制覆蓋 focus 時的所有樣式 */
@@ -73,10 +73,11 @@
             background-color: transparent !important;
             color: transparent !important;
             box-shadow: none !important;
+            border: none !important;
         }
-        /* 確保下拉選項文字正常顯示 */
+        /* 確保下拉選項文字正常顯示（適中灰色） */
         .transparent-select select option {
-            color: #4B5563 !important;
+            color: #6B7280 !important;
             background-color: white !important;
         }
         .select-overlay-text {
@@ -100,6 +101,24 @@
         .preset-action-btn:hover { background-color: #7D8A9E; }
         
         .compact-table td, .compact-table th { padding: 6px 4px; }
+        
+        /* RWD：手機版控制列垂直排列 */
+        @media (max-width: 768px) {
+            .toolbar-row {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+            .toolbar-left, .toolbar-right {
+                width: 100% !important;
+                justify-content: space-between !important;
+            }
+            .fund-input-area {
+                width: 100% !important;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+            }
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -237,30 +256,33 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-8 space-y-6">
                 <div class="card-std">
-                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                        <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black">📋 標的一覽（點名稱編輯價格/點張數編輯持倉）</span>
-                        <div class="flex items-center gap-4">
+                    <!-- 控制列：RWD 垂直排列 -->
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6 toolbar-row">
+                        <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black toolbar-left">📋 標的一覽（點名稱編輯價格/點張數編輯持倉）</span>
+                        <div class="flex items-center gap-4 toolbar-right">
                             <select v-model="periodMode" class="border border-[#D7D3CC] rounded-xl p-2 text-sm font-bold bg-white text-[#4A4655]">
                                 <option value="auto">自動（最新期數）</option>
                                 <option value="manual">手動鎖定</option>
                             </select>
                             <input v-if="periodMode === 'manual'" type="number" v-model.number="manualPeriod" min="1" max="12" class="input-inline !w-20">
-                            <input type="text" v-model="displayFund" @focus="onFundFocus" @blur="onFundBlur" @input="onFundInput" class="input-inline !w-48 !text-xl !text-orange-600 border-2 border-orange-200" placeholder="總資金(元)">
-                            <div class="bg-slate-100 px-4 py-2 rounded-xl"><span class="font-black text-indigo-600">{{ formatWan(fund) }}</span></div>
+                            <div class="flex items-center gap-2 fund-input-area">
+                                <input type="text" v-model="displayFund" @focus="onFundFocus" @blur="onFundBlur" @input="onFundInput" class="input-inline !w-32 !text-xl !text-orange-600 border-2 border-orange-200" placeholder="總資金(元)">
+                                <div class="bg-slate-100 px-3 py-2 rounded-xl whitespace-nowrap"><span class="font-black text-indigo-600">{{ formatWan(fund) }}</span></div>
+                            </div>
                         </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead><tr class="border-b-2">
                                 <th class="p-2">標的名稱</th>
-                                <th class="p-2 sort-btn" style="min-width: 60px;" @click="sortByRisk">風險 ⬍</th>
+                                <th class="p-2 sort-btn" style="min-width: 50px;" @click="sortByRisk">風險 ⬍</th>
                                 <th class="p-2">當前價格</th>
                                 <th class="p-2">上期價格</th>
                                 <th class="p-2" style="min-width: 65px;">漲跌幅</th>
                                 <th class="p-2 sort-btn" style="min-width: 90px;" @click="sortByTag">小道消息 ⬍</th>
                                 <th class="p-2 sort-btn" style="min-width: 85px;" @click="sortByShares">持倉張數 ⬍</th>
                                 <th class="p-2">未實現損益</th>
-                            </tr></thead>
+                            </table></thead>
                             <tbody>
                                 <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
                                     <td class="p-2 clickable-name" @click="openPriceHistoryModal(item)">{{ item.name }}</td>
@@ -574,12 +596,29 @@
                 getUnrealizedClass(item){ let v=this.calculateUnrealized(item); return v>0?'text-gain':v<0?'text-loss':''; },
                 updateRisk(i,v){ if(this.productList[i]) { this.productList[i].risk=v; this.saveAllData(); } },
                 updateTag(i,v){ if(this.productList[i]) { this.productList[i].tag=v; this.saveAllData(); } },
-                sortByRisk(){ this.setSort('risk'); },
-                sortByTag(){ this.setSort('tag'); },
-                sortByShares(){ this.setSort('shares'); },
-                setSort(key) {
-                    if(this.sortKey === key) this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
-                    else { this.sortKey = key; this.sortOrder = 'asc'; }
+                sortByRisk(){ 
+                    if (this.sortKey === 'risk') {
+                        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        this.sortKey = 'risk';
+                        this.sortOrder = 'asc';
+                    }
+                },
+                sortByTag(){ 
+                    if (this.sortKey === 'tag') {
+                        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        this.sortKey = 'tag';
+                        this.sortOrder = 'asc';
+                    }
+                },
+                sortByShares(){ 
+                    if (this.sortKey === 'shares') {
+                        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        this.sortKey = 'shares';
+                        this.sortOrder = 'asc';
+                    }
                 },
                 calculateAvgCost(prices, sharesHistory) {
                     let totalCost = 0, totalShares = 0;
@@ -683,7 +722,7 @@
                     this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData];
                     this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData);
                     this.saveAllData(); 
-                    this.showModalMessage('✅ 儲存成功', `${this.currentProduct.name} 的持倉記錄已更新`, 'alert');
+                    this.closeSharesHistoryModal();
                 },
                 clearAllSharesPrompt(){ 
                     this.showModalMessage('🗑️ 清除所有持倉', `確定要清除 ${this.currentProduct.name} 的所有歷史持倉嗎？`, 'confirm', () => {
@@ -700,7 +739,6 @@
                 },
                 openImportModal(){ 
                     this.loadLastUsedPreset(); 
-                    // 每次都建立全新的 file input，確保能再次選擇檔案
                     if (this.tempFileInput) {
                         this.tempFileInput.remove();
                     }
@@ -715,13 +753,14 @@
                         reader.onload = (ev) => {
                             try {
                                 this.importDataBuffer = JSON.parse(ev.target.result);
-                                this.openImportModal(); // 重新開啟匯入設定視窗
+                                this.showImportModal = true;
                             } catch (err) {
                                 this.showModalMessage('❌ 讀取失敗', '檔案格式錯誤，請選擇正確的 JSON 檔案', 'alert');
                             }
                         };
                         reader.readAsText(file);
                         input.remove();
+                        this.tempFileInput = null;
                     });
                     document.body.appendChild(input);
                     input.click();
@@ -765,8 +804,16 @@
                         let data=await res.json(); 
                         let msg = `版本：${data.version || '未知'}\n活動區間：${data.activityStart || '?'} ～ ${data.activityEnd || '?'}\n\n確定要載入這份共用設定嗎？`;
                         this.showModalMessage('📥 載入共用設定', msg, 'confirm', () => {
-                            this.importDataBuffer=data; 
-                            this.openImportModal(); 
+                            this.importDataBuffer = data;
+                            // 直接匯入，不開啟匯入設定視窗
+                            if(this.importOptions.price) for(let i=0;i<this.productList.length;i++) if(this.importDataBuffer.productList[i]?.prices) this.productList[i].prices=this.importDataBuffer.productList[i].prices.slice(); 
+                            if(this.importOptions.risk) for(let i=0;i<this.productList.length;i++) if(this.importDataBuffer.productList[i]?.risk) this.productList[i].risk=this.importDataBuffer.productList[i].risk; 
+                            if(this.importOptions.tag) for(let i=0;i<this.productList.length;i++) if(this.importDataBuffer.productList[i]?.tag) this.productList[i].tag=this.importDataBuffer.productList[i].tag; 
+                            if(this.importOptions.shares) for(let i=0;i<this.productList.length;i++) if(this.importDataBuffer.productList[i]?.sharesHistory) this.productList[i].sharesHistory=this.importDataBuffer.productList[i].sharesHistory.slice(); 
+                            if(this.importOptions.fund && this.importDataBuffer.fund) this.fund=this.importDataBuffer.fund; 
+                            this.productList.forEach(p => { p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory); });
+                            this.saveAllData(); 
+                            this.showModalMessage('✅ 載入完成', '共用設定已更新', 'alert');
                         });
                     } catch(e){ 
                         this.showModalMessage('❌ 載入失敗', '無法讀取共用設定，請確認 GitHub 檔案是否存在', 'alert'); 
