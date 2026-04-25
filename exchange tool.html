@@ -166,7 +166,7 @@
                         <table class="w-full text-sm">
                             <thead><tr class="border-b-2">
                                 <th class="p-2">標的名稱</th><th class="p-2 sort-btn" @click="sortByRisk">本期風險 ⬍</th><th class="p-2">當前價格</th><th class="p-2">上期價格</th><th class="p-2">漲跌幅</th><th class="p-2 sort-btn" @click="sortByTag">小道消息 ⬍</th><th class="p-2">持倉張數</th><th class="p-2">未實現損益</th>
-                            </table></thead>
+                            <tr></thead>
                             <tbody>
                                 <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
                                     <td class="p-2 clickable-name" @click="openHistoryModal(item)">{{ item.name }}</td>
@@ -317,7 +317,14 @@
                 getPriceChangePercent(item){ if(item?.lastPrice && item?.price) return ((item.price-item.lastPrice)/item.lastPrice*100).toFixed(1)+'%'; return '-'; },
                 getPriceChangeClass(item){ let chg = item?.lastPrice ? (item.price-item.lastPrice)/item.lastPrice : 0; return chg>0 ? 'text-gain' : chg<0 ? 'text-loss' : ''; },
                 getRiskClass(r){ return r==='險'?'risk-red':r==='均'?'risk-blue':r==='穩'?'risk-green':'risk-missing'; },
-                getTagClass(t){ return t==='迅速崛起'?'tag-rapid':t==='穩中向好'?'tag-good':t==='坊中傳聞'?'tag-neutral':t==='或有風險'?'tag-risk':t==='一文不值'?'tag-worthless':'tag-none'; },
+                getTagClass(t){ 
+                    if(t==='迅速崛起') return 'tag-rapid';
+                    if(t==='穩中向好') return 'tag-good';
+                    if(t==='坊中傳聞') return 'tag-neutral';
+                    if(t==='或有風險') return 'tag-risk';
+                    if(t==='一文不值') return 'tag-worthless';
+                    return 'tag-none';
+                },
                 getStopLossTriggered(item){ if(item?.shares && item?.avgCost && item?.price && item?.risk){ let loss=(item.price-item.avgCost)/item.avgCost*100, thr=item.risk==='險'?25:item.risk==='均'?20:15; return loss<-thr; } return false; },
                 calculateUnrealized(item){ return item?.shares && item?.avgCost && item?.price ? (item.price-item.avgCost)*item.shares : 0; },
                 getUnrealizedClass(item){ let v=this.calculateUnrealized(item); return v>0?'text-gain':v<0?'text-loss':''; },
@@ -364,7 +371,14 @@
                 confirmImport(){ this.closeImportModal(); let data=this.importDataBuffer; if(!data) return; if(this.importOptions.price) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.prices) this.productList[i].prices=data.productList[i].prices.slice(); if(this.importOptions.risk) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.risk) this.productList[i].risk=data.productList[i].risk; if(this.importOptions.tag) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.tag) this.productList[i].tag=data.productList[i].tag; if(this.importOptions.shares) for(let i=0;i<this.productList.length;i++) if(data.productList[i]?.shares) this.productList[i].shares=data.productList[i].shares; if(this.importOptions.fund && data.fund) this.fund=data.fund; this.saveAllData(); this.updateProductData(); this.showModalMessage('✅ 匯入完成', '設定已更新', 'alert'); },
                 doExport(){ let exportData={version:this.exportVersion, activityStart:this.activityStart, activityEnd:this.activityEnd, fund:this.fund, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,shares:p.shares,avgCost:p.avgCost}))}; let blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='exchange_preset.json'; a.click(); URL.revokeObjectURL(a.href); this.closeExportModal(); },
                 async loadFromGitHub(){ try{ let res=await fetch(GITHUB_RAW_URL); if(!res.ok) throw new Error(); let data=await res.json(); this.importDataBuffer=data; this.openImportModal(); } catch(e){ this.showModalMessage('❌ 載入失敗', '無法讀取共用設定，請確認 GitHub 檔案是否存在', 'alert'); } },
-                updateProductData(){ this.effectiveProductList.forEach(p=>{ let idx=p.originalIndex; if(p.shares&&p.price&&!this.productList[idx].avgCost) this.productList[idx].avgCost=p.price; }); this.saveAllData(); },
+                updateProductData(){ 
+                    this.effectiveProductList.forEach(p=>{ 
+                        let idx=p.originalIndex; 
+                        if(p.shares && p.price && !this.productList[idx].avgCost) 
+                            this.productList[idx].avgCost=p.price; 
+                    }); 
+                    this.saveAllData(); 
+                },
                 saveAllData(){ localStorage.setItem('exchange_tool_data',JSON.stringify({fund:this.fund, periodMode:this.periodMode, manualPeriod:this.manualPeriod, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,shares:p.shares,avgCost:p.avgCost}))})); },
                 loadAllData(){
                     let saved=localStorage.getItem('exchange_tool_data');
@@ -372,14 +386,18 @@
                         let d=JSON.parse(saved);
                         this.fund=d.fund||0; this.displayFund=this.formatWithComma(this.fund);
                         this.periodMode=d.periodMode||'auto'; this.manualPeriod=d.manualPeriod||1;
-                        if(d.productList && d.productList.length) for(let i=0;i<this.productList.length;i++) if(d.productList[i]){
-                            this.productList[i].risk=d.productList[i].risk||'';
-                            this.productList[i].tag=d.productList[i].tag||'';
-                            this.productList[i].prices=d.productList[i].prices||Array(13).fill(0);
-                            this.productList[i].shares=d.productList[i].shares||0;
-                            this.productList[i].avgCost=d.productList[i].avgCost||0;
+                        if(d.productList && d.productList.length) {
+                            for(let i=0;i<this.productList.length;i++) {
+                                if(d.productList[i]) {
+                                    this.productList[i].risk=d.productList[i].risk||'';
+                                    this.productList[i].tag=d.productList[i].tag||'';
+                                    this.productList[i].prices=d.productList[i].prices||Array(13).fill(0);
+                                    this.productList[i].shares=d.productList[i].shares||0;
+                                    this.productList[i].avgCost=d.productList[i].avgCost||0;
+                                }
+                            }
                         }
-                    }catch(e){}
+                    }catch(e){ console.log('讀取失敗',e); }
                 },
                 clearAllDataConfirm(){ this.showModalMessage('⚠️ 清除所有資料', '所有價格、風險、持倉將會清空，無法復原。確定嗎？', 'confirm', ()=>{ localStorage.removeItem('exchange_tool_data'); location.reload(); }); },
                 showModalMessage(title,msg,type,callback=null){ this.modalTitle=title; this.modalMsg=msg; this.modalType=type; this.modalCallback=callback; this.modalVisible=true; },
