@@ -159,14 +159,14 @@
             <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg mb-3 text-center">💡 當期清倉請輸入 0，不必刪除歷史期數</div>
         </div>
             <div class="overflow-y-auto max-h-80">
-            <div class="mt-4">
-                <button @click="clearAllSharesPrompt" class="w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm mb-2">🗑️ 清除所有持倉</button>
-                <button @click="saveSharesHistory" class="w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存</button>
-            </div>
                 <table class="shares-table">
                     <thead>
                         <tr><th>期數</th><th>持倉（張）</th></tr>
                     </thead>
+             <div class="mt-4">
+                <button @click="clearAllSharesPrompt" class="w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm mb-2">🗑️ 清除所有持倉</button>
+                <button @click="saveSharesHistory" class="w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存</button>
+            </div>
                     <tbody>
                         <tr v-for="n in 12" :key="n"><td class="font-bold">第 {{ n }} 期</td><td><input type="number" v-model.number="sharesModalData[n]" class="input-inline !w-28 !text-center" min="0"></td></tr>
                     </tbody>
