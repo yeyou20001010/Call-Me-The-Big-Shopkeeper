@@ -13,7 +13,11 @@
         [v-cloak] { display: none; }
         .card-std { background: #FBFBF9; border: 2px solid #D7D3CC; border-radius: 1.5rem; padding: 1.5rem; }
         .input-inline { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; padding: 6px 10px; text-align: right; font-weight: 900; color: #5E548E; outline: none; font-size: 14px; width: 100%; }
-        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; max-width: 800px; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
+        /* 彈窗寬度 - 窄版 */
+        .modal-narrow { max-width: 500px; }
+        /* 彈窗寬度 - 寬版（價格彈窗專用，有折線圖） */
+        .modal-wide { max-width: 850px; }
+        .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         .modal-overlay.confirm-overlay { z-index: 200; }
         .custom-modal.confirm-modal { z-index: 201; }
@@ -39,7 +43,7 @@
         .tag-worthless { color: #4E5C35 !important; }
         .tag-none { color: #6B7280 !important; }
         .transparent-select { position: relative; width: 100%; min-width: 70px; display: inline-block; }
-        .transparent-select select { color: transparent !important; background-color: transparent !important; padding: 4px 4px 4px 8px; width: 100%; border: none !important; outline: none !important; cursor: pointer; text-align: center !important; text-align-last: center; }
+        .transparent-select select { color: transparent !important; background-color: transparent !important; padding: 4px; width: 100%; border: none !important; outline: none !important; cursor: pointer; text-align: center !important; text-align-last: center; }
         .transparent-select select:focus { outline: none !important; background-color: transparent !important; color: transparent !important; }
         .transparent-select select option { color: #6B7280 !important; background-color: white !important; text-align: center !important; }
         .select-overlay-text { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); pointer-events: none; white-space: nowrap; font-weight: 700; text-align: center; width: 100%; }
@@ -48,7 +52,15 @@
         .stop-loss-row { background-color: rgba(229, 57, 53, 0.1); }
         .shares-table { width: 100%; border-collapse: collapse; }
         .shares-table th, .shares-table td { padding: 8px 4px; border-bottom: 1px solid #e5e7eb; text-align: center; }
-        .shares-table th { background-color: #f9fafb; position: sticky; top: 0; }
+        .shares-table th { background-color: #f9fafb; }
+        .btn-preset { background-color: #E5E7EB; color: #4B5563; border: 1px solid #D1D5DB; padding: 8px 12px; border-radius: 0.5rem; font-weight: 700; text-align: center; transition: all 0.2s; cursor: pointer; }
+        .btn-preset:hover { background-color: #D1D5DB; color: #1F2937; }
+        .btn-action { background-color: #8E9AAF; color: white; border: none; padding: 8px 12px; border-radius: 0.5rem; font-weight: 700; text-align: center; transition: all 0.2s; cursor: pointer; }
+        .btn-action:hover { background-color: #7D8A9E; }
+        .btn-danger { background-color: #AF7A7D; color: white; border: none; padding: 8px 12px; border-radius: 0.5rem; font-weight: 700; text-align: center; transition: all 0.2s; cursor: pointer; }
+        .btn-danger:hover { background-color: #9B6B6E; }
+        .btn-primary { background-color: #5E548E; color: white; border: none; padding: 8px 12px; border-radius: 0.5rem; font-weight: 700; text-align: center; transition: all 0.2s; cursor: pointer; }
+        .btn-primary:hover { background-color: #4A3F6E; }
         @media (max-width: 768px) {
             .toolbar-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
             .fund-input-area { width: 100% !important; flex-direction: row !important; justify-content: space-between !important; }
@@ -58,9 +70,9 @@
 <body class="p-4 md:p-8">
     <div id="app" v-cloak class="max-w-[1600px] mx-auto">
         
-        <!-- 通用確認 Modal -->
+        <!-- 通用確認 Modal (窄版) -->
         <div v-if="modalVisible" class="modal-overlay confirm-overlay" @click="closeModal"></div>
-        <div v-if="modalVisible" class="custom-modal confirm-modal">
+        <div v-if="modalVisible" class="custom-modal modal-narrow confirm-modal">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">{{ modalTitle }}</h3>
             <p class="text-gray-600 mb-8 font-bold text-lg whitespace-pre-wrap">{{ modalMsg }}</p>
             <div class="flex gap-4">
@@ -70,47 +82,44 @@
             <button v-if="modalType === 'alert'" @click="closeModal" class="w-full mt-4 bg-[#5E548E] text-white py-3 rounded-xl font-black">確定</button>
         </div>
 
-        <!-- 匯入設定 Modal -->
+        <!-- 匯入設定 Modal (窄版) -->
         <div v-if="showImportModal" class="modal-overlay" @click="closeImportModal"></div>
-        <div v-if="showImportModal" class="custom-modal">
+        <div v-if="showImportModal" class="custom-modal modal-narrow">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">📥 匯入設定</h3>
             <p class="text-sm text-gray-500 mb-4 border-b pb-2">目前使用：{{ currentPresetName }}</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                    <label class="flex items-center gap-2 mb-3"><input type="checkbox" v-model="importAll" @change="onImportAllChange"> 全選</label>
-                    <div class="grid grid-cols-1 gap-2">
-                        <label><input type="checkbox" v-model="importOptions.price"> 價格</label>
-                        <label><input type="checkbox" v-model="importOptions.risk"> 風險</label>
-                        <label><input type="checkbox" v-model="importOptions.tag"> 小道消息</label>
-                        <label><input type="checkbox" v-model="importOptions.shares"> 持倉張數</label>
-                        <label><input type="checkbox" v-model="importOptions.fund"> 總資金</label>
-                    </div>
-                </div>
-                <div>
-                    <div class="grid grid-cols-2 gap-3 mb-4">
-                        <button @click="savePreset(1)" class="bg-[#8E9AAF] text-white px-3 py-2 rounded-lg text-sm font-black">💾 儲存為配置1</button>
-                        <button @click="savePreset(2)" class="bg-[#8E9AAF] text-white px-3 py-2 rounded-lg text-sm font-black">💾 儲存為配置2</button>
-                    </div>
-                    <div class="flex flex-wrap items-center justify-center gap-3 mt-4">
-                        <button @click="loadPreset(1)" class="text-blue-600 underline font-bold">配置1</button>
-                        <button @click="loadPreset(2)" class="text-blue-600 underline font-bold">配置2</button>
-                        <button @click="resetToDefault" class="text-blue-600 underline font-bold">恢復預設（全選）</button>
-                    </div>
+            <div class="mb-4">
+                <label class="flex items-center gap-2 mb-3"><input type="checkbox" v-model="importAll" @change="onImportAllChange"> 全選</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label><input type="checkbox" v-model="importOptions.price"> 價格</label>
+                    <label><input type="checkbox" v-model="importOptions.risk"> 風險</label>
+                    <label><input type="checkbox" v-model="importOptions.tag"> 小道消息</label>
+                    <label><input type="checkbox" v-model="importOptions.shares"> 持倉張數</label>
+                    <label><input type="checkbox" v-model="importOptions.fund"> 總資金</label>
                 </div>
             </div>
+            <div class="mb-6">
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button @click="savePreset(1)" class="btn-action">💾 儲存配置1</button>
+                    <button @click="savePreset(2)" class="btn-action">💾 儲存配置2</button>
+                </div>
+                <button @click="loadPreset(1)" class="btn-preset w-full mb-2">配置1</button>
+                <button @click="loadPreset(2)" class="btn-preset w-full mb-2">配置2</button>
+                <button @click="resetToDefault" class="btn-preset w-full">恢復預設（全選）</button>
+            </div>
+
             <div class="flex gap-4">
                 <button @click="closeImportModal" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
-                <button @click="confirmImport" class="flex-1 bg-[#5E548E] text-white py-3 rounded-xl font-black">確認匯入</button>
+                <button @click="confirmImport" class="flex-1 btn-primary py-3 rounded-xl font-black">確認匯入</button>
             </div>
         </div>
 
-        <!-- 匯出設定 Modal -->
+        <!-- 匯出設定 Modal (窄版) -->
         <div v-if="showExportModal" class="modal-overlay" @click="closeExportModal"></div>
-        <div v-if="showExportModal" class="custom-modal">
+        <div v-if="showExportModal" class="custom-modal modal-narrow">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">📤 匯出設定</h3>
             <div class="mb-4">
-                <label class="block text-sm font-bold">版本標籤</label>
-                <input type="text" v-model="exportVersion" class="input-inline mb-2">
+                <label class="block text-sm font-bold mb-1">版本標籤</label>
+                <input type="text" v-model="exportVersion" class="input-inline mb-3">
                 <div class="flex gap-2">
                     <input type="date" v-model="activityStart" class="input-inline">
                     <span>～</span>
@@ -119,13 +128,13 @@
             </div>
             <div class="flex gap-4">
                 <button @click="closeExportModal" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
-                <button @click="doExport" class="flex-1 bg-[#5E548E] text-white py-3 rounded-xl font-black">確認匯出</button>
+                <button @click="doExport" class="flex-1 btn-primary py-3 rounded-xl font-black">確認匯出</button>
             </div>
         </div>
 
-        <!-- 價格歷史彈窗 -->
+        <!-- 價格歷史彈窗 (寬版，有折線圖) -->
         <div v-if="showPriceHistoryModal" class="modal-overlay" @click="closePriceHistoryModal"></div>
-        <div v-if="showPriceHistoryModal" class="custom-modal">
+        <div v-if="showPriceHistoryModal" class="custom-modal modal-wide">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-black text-[#5E548E]">{{ currentProduct?.name || '標的' }}｜價格走勢</h3>
                 <button @click="closePriceHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
@@ -138,8 +147,8 @@
                     <div class="mt-4">
                         <label class="row-label">價格（元）</label>
                         <input type="number" step="0.01" v-model.number="modalPrice" class="input-inline !text-xl">
-                        <button @click="savePricePeriod" class="mt-3 w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存</button>
-                        <button @click="clearAllPricesPrompt" class="mt-2 w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm">🗑️ 清除所有價格</button>
+                        <button @click="savePricePeriod" class="mt-3 w-full btn-primary py-2 rounded-xl font-black">💾 儲存</button>
+                        <button @click="clearAllPricesPrompt" class="mt-2 w-full btn-danger py-2 rounded-xl font-black text-sm">🗑️ 清除所有價格</button>
                     </div>
                 </div>
                 <div>
@@ -149,30 +158,27 @@
             </div>
         </div>
 
-        <!-- 持倉歷史彈窗：表格形式，清楚按鈕在上方，儲存按鈕在下方 -->
+        <!-- 持倉歷史彈窗 (窄版，垂直按鈕) -->
         <div v-if="showSharesHistoryModal" class="modal-overlay" @click="closeSharesHistoryModal"></div>
-        <div v-if="showSharesHistoryModal" class="custom-modal">
+        <div v-if="showSharesHistoryModal" class="custom-modal modal-narrow">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-black text-[#5E548E]">{{ currentProduct?.name || '標的' }}｜持倉記錄</h3>
                 <button @click="closeSharesHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
             </div>
             <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg mb-3 text-center">💡 當期清倉請輸入 0，不必刪除歷史期數</div>
-        </div>
+            <button @click="clearAllSharesPrompt" class="w-full btn-danger py-2 rounded-xl font-black text-sm mb-3">🗑️ 清除所有持倉</button>
+            <button @click="saveSharesHistory" class="w-full btn-primary py-2 rounded-xl font-black mb-4">💾 儲存</button>
             <div class="overflow-y-auto max-h-80">
-                <table class="shares-table">
-                    <thead>
-                        <tr><th>期數</th><th>持倉（張）</th></tr>
+                <table class="shares-table w-full">
+                    <thead class="sticky top-0 bg-white">
+                        <tr class="border-b-2"><th class="p-2">期數</th><th class="p-2">持倉（張）</th></tr>
                     </thead>
-             <div class="mt-4">
-                <button @click="clearAllSharesPrompt" class="w-full bg-red-400 text-white py-2 rounded-xl font-black text-sm mb-2">🗑️ 清除所有持倉</button>
-                <button @click="saveSharesHistory" class="w-full bg-[#5E548E] text-white py-2 rounded-xl font-black">💾 儲存</button>
-            </div>
                     <tbody>
-                        <tr v-for="n in 12" :key="n"><td class="font-bold">第 {{ n }} 期</td><td><input type="number" v-model.number="sharesModalData[n]" class="input-inline !w-28 !text-center" min="0"></td></tr>
+                        <tr v-for="n in 12" :key="n"><td class="p-2 font-bold">第 {{ n }} 期</td><td class="p-2"><input type="number" v-model.number="sharesModalData[n]" class="input-inline !w-28 !text-center" min="0"></td></tr>
                     </tbody>
                 </table>
             </div>
-
+        </div>
 
         <!-- 主內容 -->
         <div class="bg-white rounded-[2rem] shadow-md border-2 border-[#D7D3CC] p-6 mb-6">
@@ -349,12 +355,10 @@
                     }
                     return res;
                 },
-                // ========== 增強版決策引擎 ==========
                 recommendations() {
                     const period = this.currentPeriod;
                     const stopLossNames = new Set(this.stopLossList.map(s => s.name));
                     let allCandidates = [];
-                    
                     for(let p of this.productList) {
                         let price = p.prices[period]||0;
                         if(price<=0) continue;
@@ -373,23 +377,17 @@
                             profitPercent, isValidRecovery: (p.prices[period-1] && price > p.prices[period-1] && price > p.avgCost)
                         });
                     }
-                    
-                    // 分離持倉與新標的
                     let holdCandidates = allCandidates.filter(p => p.shares > 0 && p.profitPercent >= -20);
                     let newCandidates = allCandidates.filter(p => p.shares === 0);
-                    
                     let canAdd = holdCandidates.length > 0 && holdCandidates[0].score >= 50;
                     let canNew = newCandidates.length > 0 && newCandidates[0].score >= 50;
                     if (!canAdd && !canNew) return [];
-                    
-                    // ALL IN 判斷（安全條件）
                     let allInTarget = null;
                     if (holdCandidates.length > 0 && holdCandidates[0].score >= 100 && holdCandidates[0].profitPercent >= 0 && holdCandidates[0].isValidRecovery) {
                         allInTarget = holdCandidates[0];
                     } else if (newCandidates.length > 0 && newCandidates[0].score >= 100) {
                         allInTarget = newCandidates[0];
                     }
-                    
                     if (allInTarget) {
                         let shares = Math.floor(this.fund / allInTarget.price);
                         let amount = shares * allInTarget.price;
@@ -399,21 +397,16 @@
                             borderColor: 'border-orange-400', badgeClass: allInTarget.risk==='險'?'bg-red-500/30':(allInTarget.risk==='均'?'bg-yellow-500/30':'bg-green-500/30')
                         }];
                     }
-                    
-                    // 資金分池配置
                     let addPoolRatio = 0.6, newPoolRatio = 0.4;
                     if (holdCandidates.length > 0 && newCandidates.length > 0 && holdCandidates[0].score > newCandidates[0].score * 1.5) {
                         addPoolRatio = 0.8; newPoolRatio = 0.2;
                     }
                     if (canAdd && !canNew) { addPoolRatio = 1.0; newPoolRatio = 0.0; }
                     else if (!canAdd && canNew) { addPoolRatio = 0.0; newPoolRatio = 1.0; }
-                    
                     let result = [];
                     let remain = this.fund;
-                    
-                    // 加碼池（最多取前2名）
                     if (addPoolRatio > 0 && holdCandidates.length > 0) {
-                        let topHeld = holdCandidates.sort((a,b)=>b.score - a.score).slice(0, 2);
+                        let topHeld = [...holdCandidates].sort((a,b)=>b.score - a.score).slice(0, 2);
                         let addAmount = Math.floor(this.fund * addPoolRatio);
                         for (let t of topHeld) {
                             let shares = Math.floor(addAmount / t.price);
@@ -429,10 +422,8 @@
                             if (remain <= 0) break;
                         }
                     }
-                    
-                    // 新標的池（Top3）
                     if (newPoolRatio > 0 && newCandidates.length > 0 && remain > 0) {
-                        let topNew = newCandidates.sort((a,b)=>b.score - a.score).slice(0, 3);
+                        let topNew = [...newCandidates].sort((a,b)=>b.score - a.score).slice(0, 3);
                         let newAmount = Math.floor(this.fund * newPoolRatio);
                         for (let t of topNew) {
                             let shares = Math.floor(newAmount / t.price);
@@ -448,7 +439,6 @@
                             if (remain <= 0) break;
                         }
                     }
-                    
                     return result;
                 },
                 suggestedAmount() { 
@@ -463,13 +453,8 @@
                     return r.score>=70 ? '📈 建議買入：' + r.name : '📊 保守配置';
                 },
                 decisionDetail() {
-                    if(!this.recommendations.length) return '無符合條件的標的（價格為0、風險未選、消息負面、或已停損）';
-                    let html = '<ul class="list-disc pl-4 space-y-1">';
-                    for (let r of this.recommendations) {
-                        html += `<li>${r.name}（${r.risk}）｜${r.tagMsg}｜單價 ${this.formatPrice(r.price)} 元</li>`;
-                    }
-                    html += '</ul>';
-                    return html;
+                    if(!this.recommendations.length) return '無符合條件的標的';
+                    return '<ul><li>' + this.recommendations.map(r=>`${r.name}(${r.risk}/${r.tagMsg}) 單價${this.formatPrice(r.price)}`).join('</li><li>') + '</li></ul>';
                 }
             },
             methods: {
@@ -599,16 +584,9 @@
                         let msg = `版本：${data.version || '未知'}\n活動區間：${data.activityStart || '?'} ～ ${data.activityEnd || '?'}\n\n確定要載入這份共用設定嗎？`;
                         this.showModalMessage('📥 載入共用設定', msg, 'confirm', () => {
                             this.importDataBuffer = data;
-                            if(this.importOptions.price) for(let i=0;i<this.productList.length && i<data.productList.length;i++) if(data.productList[i]?.prices) this.productList[i].prices=data.productList[i].prices.slice(); 
-                            if(this.importOptions.risk) for(let i=0;i<this.productList.length && i<data.productList.length;i++) if(data.productList[i]?.risk) this.productList[i].risk=data.productList[i].risk; 
-                            if(this.importOptions.tag) for(let i=0;i<this.productList.length && i<data.productList.length;i++) if(data.productList[i]?.tag) this.productList[i].tag=data.productList[i].tag; 
-                            if(this.importOptions.shares) for(let i=0;i<this.productList.length && i<data.productList.length;i++) if(data.productList[i]?.sharesHistory) this.productList[i].sharesHistory=data.productList[i].sharesHistory.slice(); 
-                            if(this.importOptions.fund && data.fund) this.fund=data.fund; 
-                            this.productList.forEach(p => { p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory); });
-                            this.saveAllData(); 
-                            this.showModalMessage('✅ 載入完成', '共用設定已更新', 'alert');
+                            this.showImportModal = true;
                         });
-                    } catch(e){ this.showModalMessage('❌ 載入失敗', '無法讀取共用設定', 'alert'); } 
+                    } catch(e){ this.showModalMessage('❌ 載入失敗', '無法讀取共用設定，請確認 GitHub 檔案是否存在', 'alert'); } 
                 },
                 saveAllData(){ localStorage.setItem('exchange_tool_data',JSON.stringify({fund:this.fund, periodMode:this.periodMode, manualPeriod:this.manualPeriod, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,sharesHistory:p.sharesHistory,avgCost:p.avgCost}))})); },
                 loadAllData(){
