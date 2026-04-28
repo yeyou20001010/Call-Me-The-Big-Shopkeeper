@@ -13,9 +13,7 @@
         [v-cloak] { display: none; }
         .card-std { background: #FBFBF9; border: 2px solid #D7D3CC; border-radius: 1.5rem; padding: 1.5rem; }
         .input-inline { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; padding: 6px 10px; text-align: right; font-weight: 900; color: #5E548E; outline: none; font-size: 14px; width: 100%; }
-        /* 彈窗寬度 - 窄版 */
         .modal-narrow { max-width: 500px; }
-        /* 彈窗寬度 - 寬版（價格彈窗專用，有折線圖） */
         .modal-wide { max-width: 850px; }
         .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
@@ -70,7 +68,7 @@
 <body class="p-4 md:p-8">
     <div id="app" v-cloak class="max-w-[1600px] mx-auto">
         
-        <!-- 通用確認 Modal (窄版) -->
+        <!-- 通用確認 Modal -->
         <div v-if="modalVisible" class="modal-overlay confirm-overlay" @click="closeModal"></div>
         <div v-if="modalVisible" class="custom-modal modal-narrow confirm-modal">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">{{ modalTitle }}</h3>
@@ -82,7 +80,7 @@
             <button v-if="modalType === 'alert'" @click="closeModal" class="w-full mt-4 bg-[#5E548E] text-white py-3 rounded-xl font-black">確定</button>
         </div>
 
-        <!-- 匯入設定 Modal (窄版) -->
+        <!-- 匯入設定 Modal -->
         <div v-if="showImportModal" class="modal-overlay" @click="closeImportModal"></div>
         <div v-if="showImportModal" class="custom-modal modal-narrow">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">📥 匯入設定</h3>
@@ -97,7 +95,7 @@
                     <label><input type="checkbox" v-model="importOptions.fund"> 總資金</label>
                 </div>
             </div>
-            <div class="mb-6">
+            <div class="mb-4">
                 <div class="grid grid-cols-2 gap-2 mb-4">
                     <button @click="savePreset(1)" class="btn-action">💾 儲存配置1</button>
                     <button @click="savePreset(2)" class="btn-action">💾 儲存配置2</button>
@@ -106,14 +104,13 @@
                 <button @click="loadPreset(2)" class="btn-preset w-full mb-2">配置2</button>
                 <button @click="resetToDefault" class="btn-preset w-full">恢復預設（全選）</button>
             </div>
-
             <div class="flex gap-4">
                 <button @click="closeImportModal" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
                 <button @click="confirmImport" class="flex-1 btn-primary py-3 rounded-xl font-black">確認匯入</button>
             </div>
         </div>
 
-        <!-- 匯出設定 Modal (窄版) -->
+        <!-- 匯出設定 Modal -->
         <div v-if="showExportModal" class="modal-overlay" @click="closeExportModal"></div>
         <div v-if="showExportModal" class="custom-modal modal-narrow">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">📤 匯出設定</h3>
@@ -132,7 +129,7 @@
             </div>
         </div>
 
-        <!-- 價格歷史彈窗 (寬版，有折線圖) -->
+        <!-- 價格歷史彈窗 -->
         <div v-if="showPriceHistoryModal" class="modal-overlay" @click="closePriceHistoryModal"></div>
         <div v-if="showPriceHistoryModal" class="custom-modal modal-wide">
             <div class="flex justify-between items-center mb-4">
@@ -158,7 +155,7 @@
             </div>
         </div>
 
-        <!-- 持倉歷史彈窗 (窄版，垂直按鈕) -->
+        <!-- 持倉歷史彈窗：儲存後不關閉、不彈提示 -->
         <div v-if="showSharesHistoryModal" class="modal-overlay" @click="closeSharesHistoryModal"></div>
         <div v-if="showSharesHistoryModal" class="custom-modal modal-narrow">
             <div class="flex justify-between items-center mb-4">
@@ -227,7 +224,7 @@
                                     <th class="p-2 sort-btn" style="min-width: 90px;" @click="sortByTag">小道消息 ⬍</th>
                                     <th class="p-2 sort-btn" style="min-width: 85px;" @click="sortByShares">持倉張數 ⬍</th>
                                     <th class="p-2">未實現損益</th>
-                                </tr>
+                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
@@ -312,7 +309,7 @@
                         let last2Price = last2Period ? p.prices[last2Period] : 0;
                         let price = p.prices[period]||0;
                         let lastPrice = lastPeriod?p.prices[lastPeriod]:0;
-                        let trendUp = price > lastPrice && lastPrice > last2Price;
+                        let trendUp = lastPrice > 0 && last2Price > 0 && price > lastPrice && lastPrice > last2Price;
                         let profitPercent = p.avgCost ? (price - p.avgCost) / p.avgCost * 100 : 0;
                         let isValidRecovery = trendUp && price > p.avgCost;
                         return { 
@@ -337,8 +334,8 @@
                                 const order = { '迅速崛起':1, '穩中向好':2, '坊中傳聞':3, '或有風險':4, '一文不值':5, '暫無':6, '':7 };
                                 aVal = order[aVal] || 7; bVal = order[bVal] || 7;
                             }
-                            if(this.sortOrder === 'asc') return aVal > bVal ? 1 : -1;
-                            else return aVal < bVal ? 1 : -1;
+                            if (aVal === bVal) return 0;
+                            return aVal > bVal ? 1 : -1;
                         });
                     }
                     return list;
@@ -369,19 +366,23 @@
                         let riskScore = { '險':1.2, '均':1.0, '穩':0.8 }[p.risk] || 1.0;
                         let tagScore = { '迅速崛起':100, '穩中向好':70, '坊中傳聞':40, '暫無':10 }[tag] || 0;
                         let score = tagScore * riskScore;
-                        if(price<5) score*=1.8;
-                        else if(price<10) score*=1.2;
+                        let priceFactor = price < 5 ? 1.3 : price < 10 ? 1.1 : 1.0;
+                        score *= priceFactor;
                         allCandidates.push({ 
                             name:p.name, risk:p.risk, price, tag, score, tagMsg:tag, 
                             shares: p.sharesHistory[period]||0, avgCost: p.avgCost,
                             profitPercent, isValidRecovery: (p.prices[period-1] && price > p.prices[period-1] && price > p.avgCost)
                         });
                     }
+                    allCandidates.sort((a,b) => b.score - a.score);
+                    
                     let holdCandidates = allCandidates.filter(p => p.shares > 0 && p.profitPercent >= -20);
                     let newCandidates = allCandidates.filter(p => p.shares === 0);
-                    let canAdd = holdCandidates.length > 0 && holdCandidates[0].score >= 50;
-                    let canNew = newCandidates.length > 0 && newCandidates[0].score >= 50;
+                    
+                    let canAdd = holdCandidates.some(p => p.score >= 50);
+                    let canNew = newCandidates.some(p => p.score >= 50);
                     if (!canAdd && !canNew) return [];
+                    
                     let allInTarget = null;
                     if (holdCandidates.length > 0 && holdCandidates[0].score >= 100 && holdCandidates[0].profitPercent >= 0 && holdCandidates[0].isValidRecovery) {
                         allInTarget = holdCandidates[0];
@@ -406,7 +407,7 @@
                     let result = [];
                     let remain = this.fund;
                     if (addPoolRatio > 0 && holdCandidates.length > 0) {
-                        let topHeld = [...holdCandidates].sort((a,b)=>b.score - a.score).slice(0, 2);
+                        let topHeld = [...holdCandidates].slice(0, 2);
                         let addAmount = Math.floor(this.fund * addPoolRatio);
                         for (let t of topHeld) {
                             let shares = Math.floor(addAmount / t.price);
@@ -423,7 +424,7 @@
                         }
                     }
                     if (newPoolRatio > 0 && newCandidates.length > 0 && remain > 0) {
-                        let topNew = [...newCandidates].sort((a,b)=>b.score - a.score).slice(0, 3);
+                        let topNew = [...newCandidates].slice(0, 3);
                         let newAmount = Math.floor(this.fund * newPoolRatio);
                         for (let t of topNew) {
                             let shares = Math.floor(newAmount / t.price);
@@ -530,7 +531,13 @@
                 },
                 openSharesHistoryModal(p){ if(!p) return; this.currentProduct=p; this.currentProductIdx=p.originalIndex; this.sharesModalData = [...p.sharesHistory]; this.showSharesHistoryModal=true; },
                 closeSharesHistoryModal(){ this.showSharesHistoryModal=false; },
-                saveSharesHistory(){ this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData]; this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData); this.saveAllData(); this.closeSharesHistoryModal(); },
+                // 儲存後不關閉視窗、不彈提示
+                saveSharesHistory(){ 
+                    this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData];
+                    this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData);
+                    this.saveAllData();
+                    // 不關閉視窗，不彈提示
+                },
                 clearAllSharesPrompt(){ this.showModalMessage('🗑️ 清除所有持倉', `確定要清除 ${this.currentProduct.name} 的所有歷史持倉嗎？`, 'confirm', () => { this.sharesModalData.fill(0); this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData]; this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData); this.saveAllData(); }); },
                 copyCSV(){ let headers=['標的名稱','風險','本期價格','上期價格','小道消息','持倉張數']; let rows=this.displayList.map(p=>[p.name,p.risk||'未選',this.formatPrice(p.price),this.formatPrice(p.lastPrice),p.tag||'暫無',p.shares]); navigator.clipboard.writeText([headers,...rows].map(r=>r.join(',')).join('\n')).then(()=>this.showModalMessage('✅ 複製成功', '數據已複製到剪貼簿', 'alert')); },
                 openImportModal(){ 
