@@ -61,8 +61,9 @@
         .btn-primary:hover { background-color: #4A3F6E; }
         @media (max-width: 768px) {
             .toolbar-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
-            .fund-input-area { flex-direction: column !important; align-items: stretch !important; gap: 6px !important; width: 100% !important; }
-            .fund-input-area .input-inline { width: 100% !important; }
+            .toolbar-right { flex-direction: column !important; align-items: stretch !important; width: 100% !important; gap: 8px !important; }
+            .fund-input-area { width: 100% !important; flex-direction: row !important; justify-content: space-between !important; gap: 8px !important; }
+            .fund-input-area .input-inline { width: 60% !important; }
         }
     </style>
 </head>
@@ -167,12 +168,18 @@
             <button @click="clearAllSharesPrompt" class="w-full btn-danger py-2 rounded-xl font-black text-sm mb-3">🗑️ 清除所有持倉</button>
             <button @click="saveSharesHistory" class="w-full btn-primary py-2 rounded-xl font-black mb-4">💾 儲存</button>
             <div class="overflow-y-auto max-h-80">
-                <table class="shares-table w-full">
+                <table class="w-full text-sm">
                     <thead class="sticky top-0 bg-white">
-                        <tr class="border-b-2"><th class="p-2">期數</th><th class="p-2">持倉（張）</th></table>
+                        <tr class="border-b-2">
+                            <th class="p-2">期數</th>
+                            <th class="p-2">持倉（張）</th>
+                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="n in 12" :key="n"><td class="p-2 font-bold">第 {{ n }} 期</td><td class="p-2"><input type="number" v-model.number="sharesModalData[n]" class="input-inline !w-28 !text-center" min="0"></td></tr>
+                        <tr v-for="n in 12" :key="n">
+                            <td class="p-2 font-bold">第 {{ n }} 期</td>
+                            <td class="p-2"><input type="number" v-model.number="sharesModalData[n]" class="input-inline !w-28 !text-center" min="0"></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -201,7 +208,7 @@
                 <div class="card-std">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6 toolbar-row">
                         <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black block md:inline-block break-words max-w-full">📋 標的一覽（點名稱編輯價格/點張數編輯持倉）</span>
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-4 toolbar-right">
                             <select v-model="periodMode" class="border border-[#D7D3CC] rounded-xl p-2 text-sm font-bold bg-white text-[#4A4655]">
                                 <option value="auto">自動（最新期數）</option>
                                 <option value="manual">手動鎖定</option>
@@ -275,6 +282,9 @@
             return JSON.parse(JSON.stringify(obj));
         }
 
+        // 當前資料結構版本號（用於 localStorage 升級）
+        const DATA_VERSION = 1;
+
         const defaultProducts = [
             '千刻地政','米和油店','朵朵縫紉','安行鞋業','宋城閃送','凝禮織造','東南園林','朧湖水築','豬豬戲院','衡動建築',
             '神鹿茶坊','藍海製衣','雪人甜水','禧上茶樓','榮邸閣','畢禮戲院','二八劇場','嗨嗨邊爐','馬上成衣','旭樂坊'
@@ -319,29 +329,30 @@
                         let trendUp = hasTrendData && price > lastPrice && lastPrice > last2Price;
                         let profitPercent = p.avgCost ? (price - p.avgCost) / p.avgCost * 100 : 0;
                         let isValidRecovery = hasTrendData && trendUp && price > p.avgCost;
-                        // 連續上漲期數
+                        // 連續上漲期數（過濾無效價格）
                         let streak = 0;
                         for (let i = period; i > 1; i--) {
-                            if (p.prices[i] > p.prices[i-1]) streak++;
+                            if (p.prices[i] > 0 && p.prices[i-1] > 0 && p.prices[i] > p.prices[i-1]) streak++;
                             else break;
                         }
-                        // 價格位置（防 NaN + 資料量保護）
-                        let prices12 = p.prices.slice(1).filter(v => v > 0);
+                        // 價格位置（使用 6期 window + 自動 fallback）
+                        let start = Math.max(1, period - 6);
+                        let pricesWindow = p.prices.slice(start, period + 1).filter(v => v > 0);
                         let pricePosition = 0.5;
-                        if (prices12.length >= 3) {
-                            let minPrice = Math.min(...prices12);
-                            let maxPrice = Math.max(...prices12);
+                        if (pricesWindow.length >= 2) {
+                            let minPrice = Math.min(...pricesWindow);
+                            let maxPrice = Math.max(...pricesWindow);
                             let range = maxPrice - minPrice;
                             pricePosition = range > 0 ? (price - minPrice) / range : 0.5;
                         }
-                        // 5期漲幅（邊界修正：period > 5 才計算）
+                        // 5期漲幅（邊界修正：確保有有效資料）
                         let period5Price = period > 5 ? p.prices[period-5] : null;
-                        let rally5 = period5Price ? (price - period5Price) / period5Price : 0;
-                        // 3期漲幅（邊界修正：period > 3 才計算）
+                        let rally5 = (period5Price !== null && period5Price > 0) ? (price - period5Price) / period5Price : 0;
+                        // 3期漲幅（邊界修正：確保有有效資料）
                         let period3Price = period > 3 ? p.prices[period-3] : null;
-                        let rally3 = period3Price ? (price - period3Price) / period3Price : null;
+                        let rally3 = (period3Price !== null && period3Price > 0) ? (price - period3Price) / period3Price : null;
                         // 距離高點（超跌反彈用）
-                        let maxPrice = prices12.length > 0 ? Math.max(...prices12) : price;
+                        let maxPrice = pricesWindow.length > 0 ? Math.max(...pricesWindow) : price;
                         let distanceToPeak = maxPrice > 0 ? (maxPrice - price) / maxPrice : 0;
                         return { 
                             ...p, 
@@ -445,7 +456,8 @@
                     if (!canAdd && !canNew) return [];
                     
                     let allInTarget = null;
-                    if (holdCandidates.length > 0 && holdCandidates[0].score >= 100 && holdCandidates[0].profitPercent >= -5 && holdCandidates[0].isValidRecovery) {
+                    // ALL IN 條件：增加 pricePosition < 0.7 避免高位追高
+                    if (holdCandidates.length > 0 && holdCandidates[0].score >= 100 && holdCandidates[0].profitPercent >= -5 && holdCandidates[0].isValidRecovery && holdCandidates[0].pricePosition < 0.7) {
                         allInTarget = holdCandidates[0];
                     } else if (newCandidates.length > 0 && newCandidates[0].score >= 100) {
                         allInTarget = newCandidates[0];
@@ -607,7 +619,6 @@
                     let w = canvas.clientWidth;
                     let h = canvas.clientHeight;
                     if (w === 0 || h === 0) return;
-                    // 支援高解析度螢幕 (Retina)
                     let dpr = window.devicePixelRatio || 1;
                     canvas.width = w * dpr;
                     canvas.height = h * dpr;
@@ -680,7 +691,6 @@
                         p.tag||'暫無',
                         p.shares
                     ]);
-                    // CSV escape：欄位內容加雙引號，避免逗號破壞格式
                     let csv = [headers, ...rows]
                         .map(r => r.map(v => `"${v}"`).join(','))
                         .join('\n');
@@ -762,26 +772,52 @@
                         });
                     } catch(e){ this.showModalMessage('❌ 載入失敗', '無法讀取共用設定，請確認 GitHub 檔案是否存在', 'alert'); }
                 },
-                saveAllData(){ localStorage.setItem('exchange_tool_data',JSON.stringify({fund:this.fund, periodMode:this.periodMode, manualPeriod:this.manualPeriod, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,sharesHistory:p.sharesHistory,avgCost:p.avgCost}))})); },
+                // 儲存時加入版本號
+                saveAllData(){ 
+                    const dataToSave = {
+                        version: DATA_VERSION,
+                        fund: this.fund,
+                        periodMode: this.periodMode,
+                        manualPeriod: this.manualPeriod,
+                        productList: this.productList.map(p => ({
+                            name: p.name,
+                            risk: p.risk,
+                            tag: p.tag,
+                            prices: p.prices,
+                            sharesHistory: p.sharesHistory,
+                            avgCost: p.avgCost
+                        }))
+                    };
+                    localStorage.setItem('exchange_tool_data', JSON.stringify(dataToSave));
+                },
+                // 載入時檢查版本號
                 loadAllData(){
-                    let saved=localStorage.getItem('exchange_tool_data');
-                    if(saved) try{
-                        let d=JSON.parse(saved);
-                        this.fund=d.fund||0; this.displayFund=this.formatWithComma(this.fund);
-                        this.periodMode=d.periodMode||'auto'; this.manualPeriod=d.manualPeriod||1;
-                        if(d.productList && d.productList.length) {
-                            for(let i=0;i<this.productList.length;i++) {
-                                if(d.productList[i]) {
-                                    this.productList[i].risk=d.productList[i].risk||'';
-                                    this.productList[i].tag=d.productList[i].tag||'';
-                                    this.productList[i].prices=d.productList[i].prices||Array(13).fill(0);
-                                    this.productList[i].sharesHistory=d.productList[i].sharesHistory||Array(13).fill(0);
-                                    this.productList[i].avgCost=d.productList[i].avgCost||0;
+                    let saved = localStorage.getItem('exchange_tool_data');
+                    if(saved) {
+                        try {
+                            let data = JSON.parse(saved);
+                            // 相容舊版（無 version 欄位）
+                            let version = data.version || 0;
+                            if (version <= DATA_VERSION) {
+                                this.fund = data.fund || 0;
+                                this.displayFund = this.formatWithComma(this.fund);
+                                this.periodMode = data.periodMode || 'auto';
+                                this.manualPeriod = data.manualPeriod || 1;
+                                if(data.productList && data.productList.length) {
+                                    for(let i = 0; i < this.productList.length; i++) {
+                                        if(data.productList[i]) {
+                                            this.productList[i].risk = data.productList[i].risk || '';
+                                            this.productList[i].tag = data.productList[i].tag || '';
+                                            this.productList[i].prices = data.productList[i].prices || Array(13).fill(0);
+                                            this.productList[i].sharesHistory = data.productList[i].sharesHistory || Array(13).fill(0);
+                                            this.productList[i].avgCost = data.productList[i].avgCost || 0;
+                                        }
+                                    }
                                 }
+                                this.productList.forEach(p => { p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory); });
                             }
-                        }
-                        this.productList.forEach(p => { p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory); });
-                    }catch(e){ console.log('讀取失敗',e); }
+                        } catch(e) { console.log('讀取失敗', e); }
+                    }
                 },
                 clearAllDataConfirm(){ this.showModalMessage('⚠️ 清除所有資料', '所有價格、風險、持倉將會清空，無法復原。確定嗎？', 'confirm', ()=>{ localStorage.removeItem('exchange_tool_data'); location.reload(); }); },
                 showModalMessage(title,msg,type,callback=null){ this.modalTitle=title; this.modalMsg=msg; this.modalType=type; this.modalCallback=callback; this.modalVisible=true; },
