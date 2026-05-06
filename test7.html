@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>陽泉酒家｜決策模型</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; }
+        body { background-color: #EAE8E4; color: #4A4655; font-weight: 700; }
+        [v-cloak] { display: none; }
+        .card-std { background: #FBFBF9; border: 2px solid #D7D3CC; border-radius: 1.5rem; padding: 1.5rem; }
+        .input-inline { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; padding: 6px 10px; text-align: center; font-weight: 900; color: #5E548E; outline: none; font-size: 14px; width: 100%; }
+        .upgrade-btn { background: #8E9AAF; color: white; border-radius: 2rem; padding: 4px 12px; font-size: 12px; font-weight: 900; cursor: pointer; transition: all 0.2s; border: none; white-space: nowrap; }
+        .upgrade-btn:hover { background: #6D6875; transform: scale(1.02); }
+        .upgrade-btn.disabled { background: #D7D3CC; cursor: not-allowed; opacity: 0.6; }
+        .badge-warning { background: #FF9D6F; color: white; border-radius: 1rem; padding: 2px 10px; font-size: 11px; font-weight: 900; }
+        .badge-loss { background: #E53935; color: white; border-radius: 1rem; padding: 2px 10px; font-size: 11px; font-weight: 900; }
+        .badge-safe { background: #02C874; color: white; border-radius: 1rem; padding: 2px 10px; font-size: 11px; font-weight: 900; }
+        .tab-btn { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 2rem; padding: 6px 16px; font-weight: 900; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: #5E548E; color: white; border-color: #5E548E; }
+        .achievement-card { background: #F0EFEB; border-radius: 1rem; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .achievement-card.selected { border-color: #FF9D6F; background: #FFF5F0; }
+        .achievement-card.achievable { background: #E8F5E9; }
+        .timeline-item { border-left: 3px solid #FF9D6F; padding-left: 12px; margin-bottom: 12px; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    <div id="app" v-cloak class="max-w-[1600px] mx-auto">
+        
+        <!-- 標題區 -->
+        <div class="bg-white rounded-[2rem] shadow-md border-2 border-[#D7D3CC] p-6 mb-6">
+            <div class="flex flex-wrap justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-[#5E548E] rounded-2xl flex items-center justify-center text-white text-2xl">🍳</div>
+                    <h1 class="text-2xl font-black text-[#5E548E]">陽泉酒家｜決策模型</h1>
+                </div>
+                <div class="flex gap-3">
+                    <button @click="clearAllData" class="bg-[#AF7A7D] text-white px-4 py-2 rounded-xl text-sm font-black">🗑️ 重置全部</button>
+                    <button @click="saveData" class="bg-[#6D6875] text-white px-4 py-2 rounded-xl text-sm font-black">💾 儲存進度</button>
+                    <button onclick="location.href='portal.html'" class="bg-slate-400 text-white px-4 py-2 rounded-xl text-sm font-black">🏠 返回</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 左側 + 中間：處室狀態 -->
+            <div class="lg:col-span-8 space-y-6">
+                <!-- 資金與收入區 -->
+                <div class="card-std">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-sm font-black text-[#8E9AAF]">💰 當前錢包（幣）</label>
+                            <input type="number" v-model.number="userCoin" class="input-inline !text-2xl !text-orange-600 border-2 border-orange-200 mt-1">
+                            <div class="text-xs text-gray-400 mt-1">※ 不包含儲值與任務，手動輸入當前持有</div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-black text-[#8E9AAF]">🏆 當前成就點數</label>
+                            <input type="number" v-model.number="userAchievement" class="input-inline !text-2xl mt-1">
+                        </div>
+                    </div>
+
+                    <!-- 固定收入（每日任務＋元寶） -->
+                    <div class="mt-4 p-4 bg-[#F4F2EE] rounded-2xl">
+                        <div class="font-black mb-2">📋 固定收入（可複選，活動期間僅可領一次）</div>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center gap-2"><input type="checkbox" v-model="extraIncome.dailyTasks"> 📅 每日任務（15項×5300 = 79,500幣/日）</label>
+                            <label class="flex items-center gap-2"><input type="checkbox" v-model="extraIncome.yuanbao"> 💎 元寶拉滿（80,000幣）</label>
+                        </div>
+                        <div class="text-sm text-orange-600 mt-2">✅ 已勾選總額外收入：{{ formatNumber(calculatedExtraIncome) }} 幣</div>
+                    </div>
+
+                    <!-- 每日獨立儲值（三日分開） -->
+                    <div class="mt-4 p-4 bg-[#F4F2EE] rounded-2xl">
+                        <div class="font-black mb-2">💎 每日儲值（累計制，達到即給，無課預設）</div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div v-for="day in ['Day1', 'Day2', 'Day3']" :key="day">
+                                <label class="text-sm font-black">{{ day }}</label>
+                                <select v-model="dailyRecharge[day]" class="input-inline">
+                                    <option value="none">無課</option>
+                                    <option value="6v">6v (5,000幣)</option>
+                                    <option value="30v">30v (10,000幣)</option>
+                                    <option value="98v">98v (15,000幣)</option>
+                                    <option value="198v">198v (30,000幣)</option>
+                                    <option value="324v">324v (30,000幣)</option>
+                                    <option value="540v">540v (80,000幣)</option>
+                                    <option value="1000v">1000v (180,000幣)</option>
+                                    <option value="2000v">2000v (180,000幣)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-sm text-green-600 mt-2">💰 儲值總獲得：{{ formatNumber(totalRechargeBonus) }} 幣</div>
+                    </div>
+
+                    <!-- 有效總資金 -->
+                    <div class="mt-4 p-4 bg-[#5E548E] rounded-2xl text-white">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black">💵 有效總資金（錢包+儲值+固定收入）</span>
+                            <span class="text-2xl font-black">{{ formatNumber(effectiveFund) }} 幣</span>
+                        </div>
+                        <div class="text-xs opacity-80 mt-1">※ 此為可投入升級的總資金</div>
+                    </div>
+                </div>
+
+                <!-- 七個處室表格 -->
+                <div class="card-std overflow-x-auto">
+                    <div class="font-black text-lg mb-4">🏪 各處室狀態（點擊 ➕ 單獨升級）</div>
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b-2 text-[#8E9AAF]">
+                                <th class="p-2 text-left">處室</th>
+                                <th>上排等級</th>
+                                <th>下排位置</th>
+                                <th>當前效益</th>
+                                <th>升級</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="room in rooms" :key="room.id" class="border-b">
+                                <td class="p-2 font-black">{{ room.name }}</td>
+                                <td class="p-2 text-center">
+                                    <span class="font-mono">{{ room.upLevel }}</span>
+                                    <button v-if="canUpgradeUp(room)" @click="upgradeUp(room)" class="upgrade-btn ml-2">➕上</button>
+                                </td>
+                                <td class="p-2 text-center">
+                                    <span class="font-mono">{{ room.downPos }}</span>
+                                    <button v-if="canUpgradeDown(room)" @click="upgradeDown(room)" class="upgrade-btn ml-2">➕下</button>
+                                </td>
+                                <td class="p-2 text-left text-xs">
+                                    <div v-html="getRoomEffect(room)"></div>
+                                </td>
+                                <td class="p-2 text-center">
+                                    <div v-if="nextUpCost(room)" class="text-[10px] text-gray-500">{{ formatNumber(nextUpCost(room)) }}幣</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 瓶頸分析與流失預警 -->
+                <div class="card-std" :class="hasFlowRisk ? 'border-red-300 bg-red-50' : 'border-green-300'">
+                    <div class="font-black mb-2">⚠️ 產線分析（招募→辦理→考察→5教室）</div>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs mb-3">
+                        <div>招募：{{ recruitSec }}秒/人</div>
+                        <div>辦理：{{ handleSec }}秒/人</div>
+                        <div>考察：{{ inspectSec }}秒/人</div>
+                        <div>單間教室：{{ singleClassSec }}秒/人</div>
+                        <div>整體出師：{{ bottleneckSec }}秒/人</div>
+                    </div>
+                    <div v-if="hasFlowRisk" class="text-red-600 font-black text-sm">
+                        🚨 流失風險！{{ flowRiskMsg }} 建議優先升級對應下排。
+                    </div>
+                    <div v-else class="text-green-600 font-black text-sm">
+                        ✅ 目前產線平衡，無學徒流失。
+                    </div>
+                    <div class="mt-2 text-sm">⏱️ 時收益：{{ formatNumber(hourlyIncome) }} 幣/小時</div>
+                </div>
+            </div>
+
+            <!-- 右側：分頁區（基礎/成就/時間軸） -->
+            <div class="lg:col-span-4">
+                <div class="card-std bg-slate-800 text-white sticky top-4 shadow-2xl border-none">
+                    <div class="flex gap-2 mb-4">
+                        <div v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key" class="tab-btn" :class="{'active': activeTab === tab.key}">{{ tab.label }}</div>
+                    </div>
+
+                    <!-- 頁籤1：基礎產能 -->
+                    <div v-if="activeTab === 'base'" class="space-y-4">
+                        <div class="bg-white/10 rounded-2xl p-4">
+                            <div class="text-yellow-300 font-black">📊 當前產能</div>
+                            <div class="grid grid-cols-2 gap-2 mt-2 text-sm">
+                                <div>瓶頸秒數：</div><div class="font-mono">{{ bottleneckSec }}秒/人</div>
+                                <div>每小時人數：</div><div>{{ peoplePerHour }}人</div>
+                                <div>平均幣/人：</div><div>{{ avgCoinPerPerson.toFixed(1) }}幣</div>
+                                <div>時收益：</div><div class="text-orange-300">{{ formatNumber(hourlyIncome) }}幣</div>
+                            </div>
+                        </div>
+                        <div class="bg-white/10 rounded-2xl p-4">
+                            <div class="text-yellow-300 font-black">🎯 到活動結束（Day3 22:00）</div>
+                            <div>剩餘時間：{{ remainHours }} 小時</div>
+                            <div>若不升級可賺：{{ formatNumber(hourlyIncome * remainHours) }} 幣</div>
+                            <div>有效資金 + 未來收益 = {{ formatNumber(effectiveFund + hourlyIncome * remainHours) }} 幣</div>
+                        </div>
+                    </div>
+
+                    <!-- 頁籤2：成就目標 -->
+                    <div v-if="activeTab === 'achievement'">
+                        <div class="text-yellow-300 font-black mb-3">🏆 選擇成就目標</div>
+                        <div class="space-y-2 max-h-[400px] overflow-y-auto">
+                            <div v-for="target in achievementTargets" :key="target" @click="selectTarget(target)" class="achievement-card" :class="{'selected': selectedTarget === target, 'achievable': isAchievable(target)}">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-black">成就 {{ target }}</span>
+                                    <span v-if="isAchievable(target)" class="badge-safe">✅ 可達成</span>
+                                    <span v-else class="badge-loss">❌ 不可達成</span>
+                                </div>
+                                <div v-if="isAchievable(target)" class="text-xs text-gray-600 mt-1">
+                                    需 {{ target - userAchievement }} 點成就，約 {{ formatNumber(requiredCoinForTarget(target)) }} 幣
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="selectedTarget" class="mt-4 p-3 bg-white/10 rounded-2xl">
+                            <div class="font-black text-orange-300">📌 目標 {{ selectedTarget }} 建議升級順序</div>
+                            <div class="text-xs mt-2 space-y-1">
+                                <div v-for="(step, idx) in getUpgradePath(selectedTarget)" :key="idx">
+                                    {{ idx+1 }}. {{ step.name }} 上排{{ step.up }} / 下排{{ step.down }} ➕ 花費 {{ formatNumber(step.cost) }} 幣
+                                </div>
+                                <div v-if="getUpgradePath(selectedTarget).length === 0" class="text-gray-400">已達標或無法規劃</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 頁籤3：時間軸模擬 -->
+                    <div v-if="activeTab === 'timeline'">
+                        <div class="text-yellow-300 font-black mb-3">⏱️ 預估升級時間軸（依當前時收益）</div>
+                        <div class="max-h-[450px] overflow-y-auto space-y-2">
+                            <div v-for="item in timeline" :key="item.name" class="timeline-item text-xs">
+                                <div class="font-black">{{ item.timeLabel }}</div>
+                                <div>升級：{{ item.name }} → 上{{ item.newUp }} / 下{{ item.newDown }}</div>
+                                <div>花費 {{ formatNumber(item.cost) }} 幣</div>
+                            </div>
+                            <div v-if="timeline.length === 0" class="text-gray-400">尚無升級規劃，請先放寬目標或增加資金。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        // ======================= 數據庫（可擴充） =======================
+        const UPGRADE_DB = {
+            regist: {   // 登記處（招募/辦理共用上排）
+                up: { 1: { sec:45, cost:0 }, 2: { sec:40, cost:1000 }, 3: { sec:35, cost:8250 }, 4: { sec:30, cost:14700 }, 5: { sec:25, cost:19900 }, 6: { sec:20, cost:27600 }, 7: { sec:15, cost:40000 } },
+                down: { 1: { pos:1, secPerPerson:30, cost:0 }, 2: { pos:2, secPerPerson:15, cost:17250 }, 3: { pos:3, secPerPerson:10, cost:44650 } }
+            },
+            inspect: {  // 考察處
+                up: { 1: { range:[2,8], doubleChance:0.15, cost:0 }, 2: { range:[7,13], doubleChance:0.20, cost:1000 }, 3: { range:[12,18], doubleChance:0.25, cost:8250 }, 4: { range:[15,25], doubleChance:0.30, cost:14700 }, 5: { range:[22,38], doubleChance:0.35, cost:19900 }, 6: { range:[37,53], doubleChance:0.40, cost:27600 }, 7: { range:[52,68], doubleChance:0.45, cost:40000 }, 8: { range:[65,85], doubleChance:0.50, cost:50750 } },
+                down: { 1: { pos:1, secPerPerson:30, cost:0 }, 2: { pos:2, secPerPerson:15, cost:17250 }, 3: { pos:3, secPerPerson:10, cost:44650 } }
+            },
+            classroom: { // 教室（5間獨立，共用數據庫）
+                up: { 1: { range:[7,13], cost:0 }, 2: { range:[10,20], cost:1000 }, 3: { range:[17,33], cost:8250 }, 4: { range:[30,50], cost:14700 }, 5: { range:[47,73], cost:19900 }, 6: { range:[70,100], cost:27600 }, 7: { range:[97,133], cost:40000 } },
+                down: { 1: { pos:1, secPerPerson:60, cost:0 }, 2: { pos:2, secPerPerson:30, cost:6800 }, 3: { pos:3, secPerPerson:20, cost:11500 }, 4: { pos:4, secPerPerson:15, cost:23000 }, 5: { pos:5, secPerPerson:12, cost:31850 }, 6: { pos:6, secPerPerson:10, cost:null } } // null表示未知
+            }
+        };
+
+        // 廚師幣值表
+        const CHEF_TABLE = [
+            { min:0, max:79, coin:2 }, { min:80, max:139, coin:5 }, { min:140, max:219, coin:10 }, { min:220, max:339, coin:15 },
+            { min:340, max:459, coin:20 }, { min:460, max:479, coin:25 }, { min:480, max:619, coin:35 }, { min:620, max:819, coin:40 },
+            { min:820, max:1039, coin:50 }, { min:1040, max:99999, coin:60 }
+        ];
+
+        // 儲值對照
+        const RECHARGE_MAP = { '6v':5000, '30v':10000, '98v':15000, '198v':30000, '324v':30000, '540v':80000, '1000v':180000, '2000v':180000 };
+
+        createApp({
+            data() {
+                return {
+                    userCoin: 18327,
+                    userAchievement: 48,
+                    extraIncome: { dailyTasks: true, yuanbao: true },
+                    dailyRecharge: { Day1: 'none', Day2: 'none', Day3: 'none' },
+                    // 7個處室
+                    rooms: [
+                        { id: 'regist', name: '①登記處', upLevel: 6, downPos: 2, type: 'regist' },
+                        { id: 'inspect', name: '②考察處', upLevel: 7, downPos: 2, type: 'inspect' },
+                        { id: 'class1', name: '③教室', upLevel: 6, downPos: 3, type: 'classroom' },
+                        { id: 'class2', name: '④教室', upLevel: 6, downPos: 3, type: 'classroom' },
+                        { id: 'class3', name: '⑤教室', upLevel: 6, downPos: 3, type: 'classroom' },
+                        { id: 'class4', name: '⑥教室', upLevel: 6, downPos: 3, type: 'classroom' },
+                        { id: 'class5', name: '⑦教室', upLevel: 6, downPos: 3, type: 'classroom' }
+                    ],
+                    activeTab: 'base',
+                    tabs: [{ key:'base', label:'📈 基礎產能' }, { key:'achievement', label:'🏆 成就目標' }, { key:'timeline', label:'⏱️ 時間軸' }],
+                    achievementTargets: [50,56,61,65,70,76,87,92],
+                    selectedTarget: 56
+                };
+            },
+            computed: {
+                // 每日儲值總額
+                totalRechargeBonus() {
+                    let total = 0;
+                    for (let day of ['Day1','Day2','Day3']) {
+                        let val = this.dailyRecharge[day];
+                        if (val !== 'none') total += RECHARGE_MAP[val];
+                    }
+                    return total;
+                },
+                // 額外收入（任務+元寶）
+                calculatedExtraIncome() {
+                    let total = 0;
+                    if (this.extraIncome.dailyTasks) total += 79500;
+                    if (this.extraIncome.yuanbao) total += 80000;
+                    return total;
+                },
+                // 有效總資金
+                effectiveFund() {
+                    return this.userCoin + this.totalRechargeBonus + this.calculatedExtraIncome;
+                },
+                // 各處室數據動態取得
+                registUpSec() { return UPGRADE_DB.regist.up[this.getRoom('regist').upLevel]?.sec || 999; },
+                registDownSec() { return UPGRADE_DB.regist.down[this.getRoom('regist').downPos]?.secPerPerson || 999; },
+                inspectDownSec() { return UPGRADE_DB.inspect.down[this.getRoom('inspect').downPos]?.secPerPerson || 999; },
+                classDownSec() {
+                    let speeds = this.rooms.filter(r => r.type === 'classroom').map(r => UPGRADE_DB.classroom.down[r.downPos]?.secPerPerson || 999);
+                    return Math.max(...speeds);
+                },
+                recruitSec() { return this.registUpSec; },  // 招募看登記上排
+                handleSec() { return this.registDownSec; },
+                inspectSec() { return this.inspectDownSec; },
+                singleClassSec() { return this.classDownSec; },
+                bottleneckSec() { return Math.max(this.recruitSec, this.handleSec, this.inspectSec, this.classDownSec); },
+                peoplePerHour() { return 3600 / this.bottleneckSec; },
+                // 平均幣值（動態）
+                avgCoinPerPerson() {
+                    let inspectRoom = this.getRoom('inspect');
+                    let inspectUp = UPGRADE_DB.inspect.up[inspectRoom.upLevel];
+                    let inspectRange = inspectUp.range;
+                    let doubleChance = inspectUp.doubleChance;
+                    let classBonus = 0;
+                    for (let r of this.rooms.filter(r=>r.type==='classroom')) {
+                        let upData = UPGRADE_DB.classroom.up[r.upLevel];
+                        if (upData) classBonus += (upData.range[0] + upData.range[1])/2;
+                    }
+                    let finalMin = inspectRange[0] + classBonus;
+                    let finalMax = inspectRange[1] + classBonus;
+                    let singleCoin = this.integrateCoin(finalMin, finalMax);
+                    let doubleCoin = singleCoin * 2;
+                    return singleCoin * (1-doubleChance) + doubleCoin * doubleChance;
+                },
+                hourlyIncome() { return this.peoplePerHour * this.avgCoinPerPerson; },
+                remainHours() {
+                    let now = new Date();
+                    let end = new Date();
+                    end.setDate(now.getDate() + (now.getHours() >= 22 ? 1 : 0));
+                    end.setHours(22,0,0,0);
+                    let diff = (end - now) / (1000*3600);
+                    return Math.max(0, diff);
+                },
+                hasFlowRisk() {
+                    if (this.recruitSec > this.handleSec) return true;
+                    if (this.handleSec > this.inspectSec) return true;
+                    if (this.inspectSec > this.classDownSec) return true;
+                    return false;
+                },
+                flowRiskMsg() {
+                    if (this.recruitSec > this.handleSec) return `招募(${this.recruitSec}s) > 辦理(${this.handleSec}s)`;
+                    if (this.handleSec > this.inspectSec) return `辦理(${this.handleSec}s) > 考察(${this.inspectSec}s)`;
+                    if (this.inspectSec > this.classDownSec) return `考察(${this.inspectSec}s) > 教室(${this.classDownSec}s)`;
+                    return '';
+                },
+                timeline() {
+                    // 簡易貪婪，只列出前5個最便宜的可行升級（根據有效資金）
+                    let upgrades = [];
+                    for (let room of this.rooms) {
+                        let upNext = this.nextUpCost(room, true);
+                        if (upNext && upNext.cost <= this.effectiveFund) upgrades.push({ ...upNext, room, type:'up' });
+                        let downNext = this.nextDownCost(room, true);
+                        if (downNext && downNext.cost <= this.effectiveFund) upgrades.push({ ...downNext, room, type:'down' });
+                    }
+                    upgrades.sort((a,b) => a.cost - b.cost);
+                    let timelineItems = [];
+                    let tempCoin = this.effectiveFund;
+                    let hours = 0;
+                    for (let up of upgrades.slice(0,5)) {
+                        if (tempCoin >= up.cost) {
+                            hours += up.cost / this.hourlyIncome;
+                            let day = Math.floor(hours / 24);
+                            let hourOfDay = Math.floor(hours % 24);
+                            timelineItems.push({
+                                name: up.room.name,
+                                newUp: up.type==='up' ? up.target : up.room.upLevel,
+                                newDown: up.type==='down' ? up.target : up.room.downPos,
+                                cost: up.cost,
+                                timeLabel: `Day${day+1} ${hourOfDay+10}:00`
+                            });
+                            tempCoin -= up.cost;
+                        }
+                    }
+                    return timelineItems;
+                }
+            },
+            methods: {
+                getRoom(id) { return this.rooms.find(r => r.id === id); },
+                formatNumber(n) { return Math.floor(n).toLocaleString(); },
+                canUpgradeUp(room) {
+                    let db = room.type === 'regist' ? UPGRADE_DB.regist.up : (room.type==='inspect' ? UPGRADE_DB.inspect.up : UPGRADE_DB.classroom.up);
+                    return db[room.upLevel+1] && this.effectiveFund >= db[room.upLevel+1].cost;
+                },
+                canUpgradeDown(room) {
+                    let db = room.type === 'regist' ? UPGRADE_DB.regist.down : (room.type==='inspect' ? UPGRADE_DB.inspect.down : UPGRADE_DB.classroom.down);
+                    return db[room.downPos+1] && db[room.downPos+1].cost !== null && this.effectiveFund >= db[room.downPos+1].cost;
+                },
+                nextUpCost(room, returnObj=false) {
+                    let db = room.type === 'regist' ? UPGRADE_DB.regist.up : (room.type==='inspect' ? UPGRADE_DB.inspect.up : UPGRADE_DB.classroom.up);
+                    let next = db[room.upLevel+1];
+                    if (!next) return null;
+                    return returnObj ? { cost:next.cost, target:room.upLevel+1 } : next.cost;
+                },
+                nextDownCost(room, returnObj=false) {
+                    let db = room.type === 'regist' ? UPGRADE_DB.regist.down : (room.type==='inspect' ? UPGRADE_DB.inspect.down : UPGRADE_DB.classroom.down);
+                    let next = db[room.downPos+1];
+                    if (!next || next.cost === null) return null;
+                    return returnObj ? { cost:next.cost, target:room.downPos+1 } : next.cost;
+                },
+                upgradeUp(room) {
+                    let cost = this.nextUpCost(room);
+                    if (cost && this.effectiveFund >= cost) {
+                        this.userCoin -= cost;
+                        room.upLevel++;
+                        this.userAchievement++;
+                        this.saveData();
+                    }
+                },
+                upgradeDown(room) {
+                    let cost = this.nextDownCost(room);
+                    if (cost && this.effectiveFund >= cost) {
+                        this.userCoin -= cost;
+                        room.downPos++;
+                        this.userAchievement++;
+                        this.saveData();
+                    }
+                },
+                getRoomEffect(room) {
+                    if (room.type === 'regist') {
+                        return `招募: ${this.registUpSec}秒/人<br>辦理: ${this.registDownSec}秒/人`;
+                    } else if (room.type === 'inspect') {
+                        let up = UPGRADE_DB.inspect.up[room.upLevel];
+                        return `考察: ${this.inspectDownSec}秒/人<br>烹調${up.range[0]}~${up.range[1]} 雙生${up.doubleChance*100}%`;
+                    } else {
+                        let up = UPGRADE_DB.classroom.up[room.upLevel];
+                        let down = UPGRADE_DB.classroom.down[room.downPos];
+                        return `教學: ${down.secPerPerson}秒/人<br>加成${up.range[0]}~${up.range[1]}`;
+                    }
+                },
+                integrateCoin(minVal, maxVal) {
+                    let total = 0, count = 0;
+                    for (let val = Math.floor(minVal); val <= Math.ceil(maxVal); val++) {
+                        let chef = CHEF_TABLE.find(c => val >= c.min && val <= c.max);
+                        if (chef) total += chef.coin;
+                        count++;
+                    }
+                    return count ? total / count : 0;
+                },
+                isAchievable(target) {
+                    let need = target - this.userAchievement;
+                    if (need <= 0) return true;
+                    let cheapestUpgrades = [];
+                    for (let room of this.rooms) {
+                        let up = this.nextUpCost(room);
+                        if (up) cheapestUpgrades.push(up);
+                        let down = this.nextDownCost(room);
+                        if (down) cheapestUpgrades.push(down);
+                    }
+                    cheapestUpgrades.sort((a,b)=>a-b);
+                    let totalCost = cheapestUpgrades.slice(0, need).reduce((s,v)=>s+v,0);
+                    return (this.effectiveFund + this.hourlyIncome * this.remainHours) >= totalCost;
+                },
+                requiredCoinForTarget(target) {
+                    let need = target - this.userAchievement;
+                    if (need <= 0) return 0;
+                    let cheapest = [];
+                    for (let room of this.rooms) {
+                        let up = this.nextUpCost(room);
+                        if (up) cheapest.push(up);
+                        let down = this.nextDownCost(room);
+                        if (down) cheapest.push(down);
+                    }
+                    cheapest.sort((a,b)=>a-b);
+                    return cheapest.slice(0, need).reduce((s,v)=>s+v,0);
+                },
+                getUpgradePath(target) {
+                    let need = target - this.userAchievement;
+                    if (need <= 0) return [];
+                    let upgrades = [];
+                    for (let room of this.rooms) {
+                        let up = this.nextUpCost(room, true);
+                        if (up) upgrades.push({ ...up, room, type:'up', name:room.name, up:room.upLevel+1, down:room.downPos });
+                        let down = this.nextDownCost(room, true);
+                        if (down) upgrades.push({ ...down, room, type:'down', name:room.name, up:room.upLevel, down:room.downPos+1 });
+                    }
+                    upgrades.sort((a,b)=>a.cost - b.cost);
+                    return upgrades.slice(0, need);
+                },
+                selectTarget(t) { this.selectedTarget = t; },
+                saveData() {
+                    let data = {
+                        userCoin: this.userCoin,
+                        userAchievement: this.userAchievement,
+                        extraIncome: this.extraIncome,
+                        dailyRecharge: this.dailyRecharge,
+                        rooms: this.rooms
+                    };
+                    localStorage.setItem('yqjg_model', JSON.stringify(data));
+                    alert('資料已儲存');
+                },
+                clearAllData() {
+                    if (confirm('確定重置所有資料？')) {
+                        localStorage.removeItem('yqjg_model');
+                        location.reload();
+                    }
+                },
+                loadData() {
+                    let saved = localStorage.getItem('yqjg_model');
+                    if (saved) {
+                        let d = JSON.parse(saved);
+                        this.userCoin = d.userCoin;
+                        this.userAchievement = d.userAchievement;
+                        this.extraIncome = d.extraIncome;
+                        this.dailyRecharge = d.dailyRecharge;
+                        this.rooms = d.rooms;
+                    }
+                }
+            },
+            mounted() {
+                this.loadData();
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
