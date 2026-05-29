@@ -13,23 +13,37 @@
         [v-cloak] { display: none; }
         .card-std { background: #FBFBF9; border: 2px solid #D7D3CC; border-radius: 1.5rem; padding: 1.5rem; transition: all 0.2s; }
         .badge-cp { background: #02C87420; color: #02C874; border-radius: 1rem; padding: 2px 10px; font-size: 11px; font-weight: 900; display: inline-block; }
+        .badge-cp-max { background: #FF9D6F20; color: #FF9D6F; }
+        .badge-cp-tie { background: #3B82F620; color: #3B82F6; }
         .level-btn { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 900; transition: all 0.2s; user-select: none; }
         .level-btn:hover { background: #FF9D6F; color: white; border-color: #FF9D6F; }
         .level-number { cursor: pointer; padding: 0 8px; font-weight: 900; min-width: 40px; text-align: center; display: inline-block; }
         .level-number:hover { color: #FF9D6F; text-decoration: underline; }
-        .highlight-row { background: #FF9D6F20; border-left: 4px solid #FF9D6F; }
         
         .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #FBFBF9; border-radius: 2rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; max-width: 380px; padding: 1.8rem; border: 2px solid #5E548E; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         
-        @media (max-width: 1024px) {
-            .desktop-row { flex-direction: column; }
-            .desktop-col-left, .desktop-col-right { width: 100% !important; }
+        /* 桌機：左右並排（表格左，推薦右） */
+        @media (min-width: 1024px) {
+            .desktop-container { display: flex; flex-direction: row; gap: 1.5rem; }
+            .table-area { width: 66.666%; flex-shrink: 0; }
+            .decision-area { width: 33.333%; flex-shrink: 0; }
         }
+        /* 手機：上下堆疊（表格在上，推薦在下） */
+        @media (max-width: 1023px) {
+            .desktop-container { display: flex; flex-direction: column; gap: 1.5rem; }
+            .table-area { order: 1; width: 100%; }
+            .decision-area { order: 2; width: 100%; }
+        }
+        
         .table-wrapper { overflow-x: auto; }
         table { min-width: 550px; width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #E5E7EB; }
         th:first-child, td:first-child { text-align: left; }
+        
+        .sort-btn { cursor: pointer; user-select: none; transition: all 0.2s; }
+        .sort-btn:hover { opacity: 0.7; text-decoration: underline; }
+        .sort-active { color: #FF9D6F; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -56,23 +70,38 @@
                 <div class="w-12 h-12 bg-[#5E548E] rounded-2xl flex items-center justify-center text-white text-2xl">🏥</div>
                 <h1 class="text-2xl font-black text-[#5E548E]">醫館升級決策工具</h1>
             </div>
-            <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-5 py-2 rounded-xl text-sm font-black hover:bg-[#5A5562] transition">🔙 返回主選單</button>
+            <div class="flex gap-3">
+                <button @click="resetToDefaultSort" class="bg-[#8E9AAF] text-white px-4 py-2 rounded-xl text-sm font-black hover:bg-[#7D7684] transition">
+                    🔄 恢復預設排序
+                </button>
+                <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-5 py-2 rounded-xl text-sm font-black hover:bg-[#5A5562] transition">🔙 返回主選單</button>
+            </div>
         </div>
 
-        <div class="desktop-row flex gap-6">
-            <!-- 左側表格區 -->
-            <div class="desktop-col-left w-2/3 flex-shrink-0">
+        <!-- 主要內容：桌機左右並排，手機表格在上推薦在下 -->
+        <div class="desktop-container">
+            <!-- 表格區（手機版會在上方） -->
+            <div class="table-area">
                 <div class="card-std">
-                    <div class="font-black text-lg mb-4 text-[#5E548E]">📊 各科室 CP 值排行榜</div>
+                    <div class="font-black text-lg mb-4 text-[#5E548E]">📊 各科室 CP 值一覽</div>
                     <div class="table-wrapper">
                         <table>
                             <thead>
                                 <tr class="text-[#8E9AAF] border-b-2">
-                                    <th class="text-left">科室</th><th>等級</th><th>下一級消耗</th><th>獲得❤️</th><th>CP值</th>
+                                    <th class="text-left">科室</th>
+                                    <th>等級</th>
+                                    <th>下一級消耗</th>
+                                    <th>獲得❤️</th>
+                                    <th class="sort-btn" :class="{'sort-active': cpSortOrder !== null}" @click="toggleCpSort">
+                                        CP值 
+                                        <span v-if="cpSortOrder === 'desc'">▼</span>
+                                        <span v-else-if="cpSortOrder === 'asc'">▲</span>
+                                        <span v-else>⬍</span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="item in sortedRooms" :key="item.id" :class="{'highlight-row': item.id === bestUpgrade.id}">
+                                <tr v-for="item in displayRooms" :key="item.id">
                                     <td class="text-left font-black">{{ item.name }}</td>
                                     <td>
                                         <div class="flex items-center justify-center gap-1">
@@ -83,19 +112,24 @@
                                     </td>
                                     <td class="font-mono">{{ item.nextCost || '-' }}</td>
                                     <td class="font-mono">+{{ item.nextGain || '-' }}</td>
-                                    <td><span class="badge-cp">{{ item.cp || '-' }}</span></td>
+                                    <td>
+                                        <span class="badge-cp" :class="getCpBadgeClass(item)">
+                                            {{ item.cp || '-' }}
+                                        </span>
+                                    </td>
                                 </tr>
                             </tbody>
-                        </table>
-                    </div>
+                        </div>
                     <div class="text-[10px] text-gray-400 mt-4 text-center border-t pt-3">
-                        💡 點擊「等級數字」可手動輸入｜點「+ / -」直接升級
+                        💡 點擊「等級數字」可手動輸入｜點「+ / -」直接升級<br>
+                        🎨 CP值標示：<span class="text-orange-500">橘色</span>=最高、<span class="text-blue-500">藍色</span>=並列最高、<span class="text-green-500">綠色</span>=一般<br>
+                        📌 點擊「CP值」可排序｜點「恢復預設排序」回到遊戲順序
                     </div>
                 </div>
             </div>
 
-            <!-- 右側決策區 -->
-            <div class="desktop-col-right w-1/3 flex-shrink-0">
+            <!-- 決策推薦區（手機版會在下方） -->
+            <div class="decision-area">
                 <div class="card-std bg-gradient-to-r from-[#5E548E] to-[#7D6B9E] text-white sticky top-4">
                     <div class="text-center mb-4">
                         <span class="bg-white/20 px-4 py-1 rounded-full text-xs font-black tracking-wider">⚡ 即時決策</span>
@@ -129,23 +163,22 @@
     </div>
 
     <script>
-        // ======================= 科室配置 =======================
+        // ======================= 科室配置（固定順序，按照遊戲內順序） =======================
         const ROOMS_CONFIG = [
-            { id: 'pharmacy', name: '藥房', cost20to21: 220, gainAfter21: 2 },
-            { id: 'tuina', name: '推拿', cost20to21: 275, gainAfter21: 3 },
-            { id: 'liandan', name: '煉丹', cost20to21: 550, gainAfter21: 3 },
-            { id: 'guasha', name: '刮痧', cost20to21: 440, gainAfter21: 3 },
-            { id: 'yaoyu', name: '藥浴', cost20to21: 605, gainAfter21: 4 },
-            { id: 'huoguan', name: '火罐', cost20to21: 330, gainAfter21: 2 },
-            { id: 'aijiu', name: '艾灸', cost20to21: 495, gainAfter21: 3 },
-            { id: 'buqi', name: '布氣', cost20to21: 660, gainAfter21: 4 },
-            { id: 'hanzheng', name: '汗蒸', cost20to21: 715, gainAfter21: 4 },
-            { id: 'zhenjiu', name: '針灸', cost20to21: 385, gainAfter21: 2 }
+            { id: 'pharmacy', name: '藥房', cost20to21: 220, gainAfter21: 2, order: 1 },
+            { id: 'tuina', name: '推拿', cost20to21: 275, gainAfter21: 3, order: 2 },
+            { id: 'huoguan', name: '火罐', cost20to21: 330, gainAfter21: 2, order: 3 },
+            { id: 'zhenjiu', name: '針灸', cost20to21: 385, gainAfter21: 2, order: 4 },
+            { id: 'guasha', name: '刮痧', cost20to21: 440, gainAfter21: 3, order: 5 },
+            { id: 'aijiu', name: '艾灸', cost20to21: 495, gainAfter21: 3, order: 6 },
+            { id: 'liandan', name: '煉丹', cost20to21: 550, gainAfter21: 3, order: 7 },
+            { id: 'yaoyu', name: '藥浴', cost20to21: 605, gainAfter21: 4, order: 8 },
+            { id: 'buqi', name: '布氣', cost20to21: 660, gainAfter21: 4, order: 9 },
+            { id: 'hanzheng', name: '汗蒸', cost20to21: 715, gainAfter21: 4, order: 10 }
         ];
 
         const COST_GROWTH_RATE = 1.26;
 
-        // 計算從某等級升到下一級的消耗
         function getCostToNextLevel(config, currentLevel) {
             if (currentLevel < 20) return 999;
             let times = currentLevel - 20;
@@ -156,7 +189,6 @@
             return cost;
         }
 
-        // 計算從某等級升到下一級的愛心增量
         function getGainToNextLevel(config, currentLevel) {
             if (currentLevel < 20) return 0;
             if (currentLevel === 20 && config.id === 'tuina') return 2;
@@ -173,11 +205,12 @@
                     editRoomId: null,
                     editRoomName: '',
                     editRoomLevel: 20,
-                    editLevel: 20
+                    editLevel: 20,
+                    cpSortOrder: null // 'asc' 低到高, 'desc' 高到低, null 表示預設順序
                 };
             },
             computed: {
-                // 計算每個科室的下一級資訊（從真正的 roomsData 讀取）
+                // 計算每個科室的下一級資訊
                 roomsWithNext() {
                     if (!this.roomsData.length) return [];
                     return this.roomsData.map(room => {
@@ -191,19 +224,40 @@
                             nextCost: nextCost,
                             nextGain: nextGain,
                             cp: parseFloat(cp),
-                            rawCp: rawCp
+                            rawCp: rawCp,
+                            order: room.config.order
                         };
                     });
                 },
-                // 排序後的科室
-                sortedRooms() {
-                    return [...this.roomsWithNext].sort((a, b) => b.rawCp - a.rawCp);
+                // 根據 cpSortOrder 決定顯示順序
+                displayRooms() {
+                    if (this.cpSortOrder === 'desc') {
+                        // 按 CP 值從高到低
+                        return [...this.roomsWithNext].sort((a, b) => b.rawCp - a.rawCp);
+                    } else if (this.cpSortOrder === 'asc') {
+                        // 按 CP 值從低到高
+                        return [...this.roomsWithNext].sort((a, b) => a.rawCp - b.rawCp);
+                    } else {
+                        // 預設：按照 ROOMS_CONFIG 的 order 順序（藥房第一）
+                        return [...this.roomsWithNext].sort((a, b) => a.order - b.order);
+                    }
+                },
+                // 找出最高 CP 值（用於標色）
+                maxRawCp() {
+                    if (!this.roomsWithNext.length) return -1;
+                    return Math.max(...this.roomsWithNext.map(r => r.rawCp));
+                },
+                // 找出所有具有最高 CP 值的科室 ID
+                maxCpRoomIds() {
+                    const max = this.maxRawCp;
+                    if (max <= 0) return [];
+                    return this.roomsWithNext.filter(r => r.rawCp === max).map(r => r.id);
                 },
                 // 最佳升級
                 bestUpgrade() {
-                    if (!this.sortedRooms.length) return { name: '請輸入等級', action: '--', cost: '?', gain: '?', cp: '?' };
-                    const best = this.sortedRooms[0];
-                    if (best.rawCp <= 0) return { name: '請輸入等級', action: '--', cost: '?', gain: '?', cp: '?' };
+                    if (!this.roomsWithNext.length) return { name: '請輸入等級', action: '--', cost: '?', gain: '?', cp: '?' };
+                    const best = [...this.roomsWithNext].sort((a, b) => b.rawCp - a.rawCp)[0];
+                    if (!best || best.rawCp <= 0) return { name: '請輸入等級', action: '--', cost: '?', gain: '?', cp: '?' };
                     return {
                         id: best.id,
                         name: best.name,
@@ -215,7 +269,8 @@
                 },
                 // 下幾步推薦
                 nextUpgrades() {
-                    const list = this.sortedRooms.filter(r => r.id !== this.bestUpgrade.id);
+                    const sorted = [...this.roomsWithNext].sort((a, b) => b.rawCp - a.rawCp);
+                    const list = sorted.filter(r => r.id !== this.bestUpgrade.id);
                     return list.slice(0, 4).map(r => ({
                         name: r.name,
                         action: `${r.level} → ${r.level + 1}`,
@@ -224,8 +279,33 @@
                 }
             },
             methods: {
+                // 根據 CP 值判斷 badge 樣式
+                getCpBadgeClass(item) {
+                    const maxRoomIds = this.maxCpRoomIds;
+                    if (maxRoomIds.includes(item.id)) {
+                        if (maxRoomIds.length > 1) {
+                            return 'badge-cp-tie';  // 藍色（並列最高）
+                        }
+                        return 'badge-cp-max';  // 橘色（唯一最高）
+                    }
+                    return '';  // 綠色（預設）
+                },
+                // 切換 CP 值排序（高到低 ↔ 低到高）
+                toggleCpSort() {
+                    if (this.cpSortOrder === null) {
+                        this.cpSortOrder = 'desc';
+                    } else if (this.cpSortOrder === 'desc') {
+                        this.cpSortOrder = 'asc';
+                    } else {
+                        this.cpSortOrder = 'desc';
+                    }
+                },
+                // 恢復預設排序（回到遊戲固定順序：藥房第一）
+                resetToDefaultSort() {
+                    this.cpSortOrder = null;
+                },
                 initData() {
-                    const saved = localStorage.getItem('medical_clinic_v7');
+                    const saved = localStorage.getItem('medical_clinic_v11');
                     if (saved) {
                         const parsed = JSON.parse(saved);
                         this.roomsData = parsed.map(item => {
@@ -243,22 +323,18 @@
                 },
                 saveData() {
                     const toSave = this.roomsData.map(({ config, ...rest }) => rest);
-                    localStorage.setItem('medical_clinic_v7', JSON.stringify(toSave));
+                    localStorage.setItem('medical_clinic_v11', JSON.stringify(toSave));
                 },
-                // 重要：透過 roomId 找到真正的 reactive 物件再修改
                 changeLevel(roomId, delta) {
                     const room = this.roomsData.find(r => r.id === roomId);
                     if (!room) return;
-                    
                     let newLevel = room.level + delta;
                     if (newLevel < 20) newLevel = 20;
                     if (newLevel > 50) newLevel = 50;
                     if (newLevel === room.level) return;
-                    
                     room.level = newLevel;
                     this.saveData();
                 },
-                // 開啟編輯 Modal：只儲存 ID，不儲存物件
                 openEditModal(roomId, roomName, currentLevel) {
                     this.editRoomId = roomId;
                     this.editRoomName = roomName;
@@ -266,12 +342,10 @@
                     this.editLevel = currentLevel;
                     this.modalVisible = true;
                 },
-                // 確認編輯：透過 ID 找到真正的 reactive 物件再修改
                 confirmEdit() {
                     if (!this.editRoomId) return;
                     const room = this.roomsData.find(r => r.id === this.editRoomId);
                     if (!room) return;
-                    
                     if (this.editLevel >= 20 && this.editLevel <= 50) {
                         room.level = this.editLevel;
                         this.saveData();
