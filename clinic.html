@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; }
-        body { background-color: #EAE8E4; color: #4A4655; font-weight: 700; margin: 0; padding: 0; }
+        body { background-color: #EAE8E4; color: #4A4655; font-weight: 700; }
         [v-cloak] { display: none; }
         .card-std { background: #FBFBF9; border: 2px solid #D7D3CC; border-radius: 1.5rem; padding: 1.5rem; transition: all 0.2s; }
         .badge-cp { background: #02C87420; color: #02C874; border-radius: 1rem; padding: 2px 10px; font-size: 11px; font-weight: 900; display: inline-block; }
@@ -23,17 +23,17 @@
         .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #FBFBF9; border-radius: 2rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; max-width: 380px; padding: 1.8rem; border: 2px solid #5E548E; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         
-        /* 桌機：左右並排（表格左60%，推薦右40%） */
+        /* 桌機：左右並排（表格左，推薦右） */
         @media (min-width: 1024px) {
-            .desktop-container { display: flex; flex-direction: row; gap: 1.5rem; }
-            .table-area { width: 60%; flex-shrink: 0; }
-            .decision-area { width: 40%; flex-shrink: 0; }
+            .desktop-row { display: flex; flex-direction: row; gap: 1.5rem; }
+            .desktop-col-left { width: 60%; flex-shrink: 0; }
+            .desktop-col-right { width: 40%; flex-shrink: 0; }
         }
         /* 手機：上下堆疊（表格在上，推薦在下） */
         @media (max-width: 1023px) {
-            .desktop-container { display: flex; flex-direction: column; gap: 1.5rem; }
-            .table-area { order: 1; width: 100%; }
-            .decision-area { order: 2; width: 100%; }
+            .desktop-row { display: flex; flex-direction: column; gap: 1.5rem; }
+            .desktop-col-left { width: 100%; }
+            .desktop-col-right { width: 100%; }
         }
         
         .table-wrapper { overflow-x: auto; }
@@ -44,16 +44,10 @@
         .sort-btn { cursor: pointer; user-select: none; transition: all 0.2s; }
         .sort-btn:hover { opacity: 0.7; text-decoration: underline; }
         .sort-active { color: #FF9D6F; }
-        
-        /* 滿寬容器 */
-        .full-width-container { width: 100%; padding: 1.5rem 2rem; }
-        @media (max-width: 768px) {
-            .full-width-container { padding: 1rem; }
-        }
     </style>
 </head>
-<body>
-    <div id="app" v-cloak class="full-width-container">
+<body class="p-4 md:p-8">
+    <div id="app" v-cloak class="max-w-[1600px] mx-auto">
         
         <!-- Modal 彈窗 -->
         <div v-if="modalVisible" class="modal-overlay" @click="closeModal"></div>
@@ -71,23 +65,25 @@
         </div>
 
         <!-- 標題區 -->
-        <div class="card-std mb-6 flex flex-wrap justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-[#5E548E] rounded-2xl flex items-center justify-center text-white text-2xl">🏥</div>
-                <h1 class="text-2xl font-black text-[#5E548E]">醫館升級決策工具</h1>
-            </div>
-            <div class="flex gap-3">
-                <button @click="resetToDefaultSort" class="bg-[#8E9AAF] text-white px-4 py-2 rounded-xl text-sm font-black hover:bg-[#7D7684] transition">
-                    🔄 恢復預設排序
-                </button>
-                <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-5 py-2 rounded-xl text-sm font-black hover:bg-[#5A5562] transition">🔙 返回主選單</button>
+        <div class="bg-white rounded-[2rem] shadow-md border-2 border-[#D7D3CC] p-6 mb-6">
+            <div class="flex flex-wrap justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-[#5E548E] rounded-2xl flex items-center justify-center text-white text-2xl">🏥</div>
+                    <h1 class="text-2xl font-black text-[#5E548E]">醫館升級決策工具</h1>
+                </div>
+                <div class="flex gap-3">
+                    <button @click="resetToDefaultSort" class="bg-[#8E9AAF] text-white px-4 py-2 rounded-xl text-sm font-black hover:bg-[#7D7684] transition">
+                        🔄 恢復預設排序
+                    </button>
+                    <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-5 py-2 rounded-xl text-sm font-black hover:bg-[#5A5562] transition">🔙 返回主選單</button>
+                </div>
             </div>
         </div>
 
-        <!-- 主要內容：桌機左右並排，手機表格在上推薦在下 -->
-        <div class="desktop-container">
-            <!-- 表格區（手機版會在上方） -->
-            <div class="table-area">
+        <!-- 主要內容：桌機左右並排，手機上下堆疊 -->
+        <div class="desktop-row">
+            <!-- 左側 / 表格區（手機版在上方） -->
+            <div class="desktop-col-left">
                 <div class="card-std">
                     <div class="font-black text-lg mb-4 text-[#5E548E]">📊 各科室 CP 值一覽</div>
                     <div class="table-wrapper">
@@ -125,7 +121,8 @@
                                     </td>
                                 </tr>
                             </tbody>
-                        </div>
+                        </table>
+                    </div>
                     <div class="text-[10px] text-gray-400 mt-4 text-center border-t pt-3">
                         💡 點擊「等級數字」可手動輸入｜點「+ / -」直接升級<br>
                         🎨 CP值標示：<span class="text-orange-500">橘色</span>=最高、<span class="text-blue-500">藍色</span>=並列最高、<span class="text-green-500">綠色</span>=一般<br>
@@ -134,8 +131,8 @@
                 </div>
             </div>
 
-            <!-- 決策推薦區（手機版會在下方） -->
-            <div class="decision-area">
+            <!-- 右側 / 決策推薦區（手機版在下方） -->
+            <div class="desktop-col-right">
                 <div class="card-std bg-gradient-to-r from-[#5E548E] to-[#7D6B9E] text-white sticky top-4">
                     <div class="text-center mb-4">
                         <span class="bg-white/20 px-4 py-1 rounded-full text-xs font-black tracking-wider">⚡ 即時決策</span>
@@ -169,7 +166,7 @@
     </div>
 
     <script>
-        // ======================= 科室配置（固定順序，按照遊戲內順序） =======================
+        // ======================= 科室配置（固定順序） =======================
         const ROOMS_CONFIG = [
             { id: 'pharmacy', name: '藥房', cost20to21: 220, gainAfter21: 2, order: 1 },
             { id: 'tuina', name: '推拿', cost20to21: 275, gainAfter21: 3, order: 2 },
@@ -212,7 +209,7 @@
                     editRoomName: '',
                     editRoomLevel: 20,
                     editLevel: 20,
-                    cpSortOrder: null // 'asc' 低到高, 'desc' 高到低, null 表示預設順序
+                    cpSortOrder: null
                 };
             },
             computed: {
@@ -299,7 +296,7 @@
                     this.cpSortOrder = null;
                 },
                 initData() {
-                    const saved = localStorage.getItem('medical_clinic_v12');
+                    const saved = localStorage.getItem('medical_clinic_v14');
                     if (saved) {
                         const parsed = JSON.parse(saved);
                         this.roomsData = parsed.map(item => {
@@ -317,7 +314,7 @@
                 },
                 saveData() {
                     const toSave = this.roomsData.map(({ config, ...rest }) => rest);
-                    localStorage.setItem('medical_clinic_v12', JSON.stringify(toSave));
+                    localStorage.setItem('medical_clinic_v14', JSON.stringify(toSave));
                 },
                 changeLevel(roomId, delta) {
                     const room = this.roomsData.find(r => r.id === roomId);
