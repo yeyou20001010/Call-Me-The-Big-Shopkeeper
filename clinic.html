@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; }
-        body { background-color: #EAE8E4; color: #4A4655; font-weight: 700; }
+        body { background-color: #EAE8E4; color: #4A4655; font-weight: 700; margin: 0; padding: 0; }
         [v-cloak] { display: none; }
         .card-std { background: #FBFBF9; border: 2px solid #D7D3CC; border-radius: 1.5rem; padding: 1.5rem; transition: all 0.2s; }
         .badge-cp { background: #02C87420; color: #02C874; border-radius: 1rem; padding: 2px 10px; font-size: 11px; font-weight: 900; display: inline-block; }
@@ -23,11 +23,11 @@
         .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #FBFBF9; border-radius: 2rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; max-width: 380px; padding: 1.8rem; border: 2px solid #5E548E; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         
-        /* 桌機：左右並排（表格左，推薦右） */
+        /* 桌機：左右並排（表格左60%，推薦右40%） */
         @media (min-width: 1024px) {
             .desktop-container { display: flex; flex-direction: row; gap: 1.5rem; }
-            .table-area { width: 66.666%; flex-shrink: 0; }
-            .decision-area { width: 33.333%; flex-shrink: 0; }
+            .table-area { width: 60%; flex-shrink: 0; }
+            .decision-area { width: 40%; flex-shrink: 0; }
         }
         /* 手機：上下堆疊（表格在上，推薦在下） */
         @media (max-width: 1023px) {
@@ -37,17 +37,23 @@
         }
         
         .table-wrapper { overflow-x: auto; }
-        table { min-width: 550px; width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #E5E7EB; }
         th:first-child, td:first-child { text-align: left; }
         
         .sort-btn { cursor: pointer; user-select: none; transition: all 0.2s; }
         .sort-btn:hover { opacity: 0.7; text-decoration: underline; }
         .sort-active { color: #FF9D6F; }
+        
+        /* 滿寬容器 */
+        .full-width-container { width: 100%; padding: 1.5rem 2rem; }
+        @media (max-width: 768px) {
+            .full-width-container { padding: 1rem; }
+        }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8">
-    <div id="app" v-cloak class="max-w-7xl mx-auto">
+<body>
+    <div id="app" v-cloak class="full-width-container">
         
         <!-- Modal 彈窗 -->
         <div v-if="modalVisible" class="modal-overlay" @click="closeModal"></div>
@@ -210,7 +216,6 @@
                 };
             },
             computed: {
-                // 計算每個科室的下一級資訊
                 roomsWithNext() {
                     if (!this.roomsData.length) return [];
                     return this.roomsData.map(room => {
@@ -229,31 +234,24 @@
                         };
                     });
                 },
-                // 根據 cpSortOrder 決定顯示順序
                 displayRooms() {
                     if (this.cpSortOrder === 'desc') {
-                        // 按 CP 值從高到低
                         return [...this.roomsWithNext].sort((a, b) => b.rawCp - a.rawCp);
                     } else if (this.cpSortOrder === 'asc') {
-                        // 按 CP 值從低到高
                         return [...this.roomsWithNext].sort((a, b) => a.rawCp - b.rawCp);
                     } else {
-                        // 預設：按照 ROOMS_CONFIG 的 order 順序（藥房第一）
                         return [...this.roomsWithNext].sort((a, b) => a.order - b.order);
                     }
                 },
-                // 找出最高 CP 值（用於標色）
                 maxRawCp() {
                     if (!this.roomsWithNext.length) return -1;
                     return Math.max(...this.roomsWithNext.map(r => r.rawCp));
                 },
-                // 找出所有具有最高 CP 值的科室 ID
                 maxCpRoomIds() {
                     const max = this.maxRawCp;
                     if (max <= 0) return [];
                     return this.roomsWithNext.filter(r => r.rawCp === max).map(r => r.id);
                 },
-                // 最佳升級
                 bestUpgrade() {
                     if (!this.roomsWithNext.length) return { name: '請輸入等級', action: '--', cost: '?', gain: '?', cp: '?' };
                     const best = [...this.roomsWithNext].sort((a, b) => b.rawCp - a.rawCp)[0];
@@ -267,7 +265,6 @@
                         cp: best.cp
                     };
                 },
-                // 下幾步推薦
                 nextUpgrades() {
                     const sorted = [...this.roomsWithNext].sort((a, b) => b.rawCp - a.rawCp);
                     const list = sorted.filter(r => r.id !== this.bestUpgrade.id);
@@ -279,18 +276,16 @@
                 }
             },
             methods: {
-                // 根據 CP 值判斷 badge 樣式
                 getCpBadgeClass(item) {
                     const maxRoomIds = this.maxCpRoomIds;
                     if (maxRoomIds.includes(item.id)) {
                         if (maxRoomIds.length > 1) {
-                            return 'badge-cp-tie';  // 藍色（並列最高）
+                            return 'badge-cp-tie';
                         }
-                        return 'badge-cp-max';  // 橘色（唯一最高）
+                        return 'badge-cp-max';
                     }
-                    return '';  // 綠色（預設）
+                    return '';
                 },
-                // 切換 CP 值排序（高到低 ↔ 低到高）
                 toggleCpSort() {
                     if (this.cpSortOrder === null) {
                         this.cpSortOrder = 'desc';
@@ -300,12 +295,11 @@
                         this.cpSortOrder = 'desc';
                     }
                 },
-                // 恢復預設排序（回到遊戲固定順序：藥房第一）
                 resetToDefaultSort() {
                     this.cpSortOrder = null;
                 },
                 initData() {
-                    const saved = localStorage.getItem('medical_clinic_v11');
+                    const saved = localStorage.getItem('medical_clinic_v12');
                     if (saved) {
                         const parsed = JSON.parse(saved);
                         this.roomsData = parsed.map(item => {
@@ -323,7 +317,7 @@
                 },
                 saveData() {
                     const toSave = this.roomsData.map(({ config, ...rest }) => rest);
-                    localStorage.setItem('medical_clinic_v11', JSON.stringify(toSave));
+                    localStorage.setItem('medical_clinic_v12', JSON.stringify(toSave));
                 },
                 changeLevel(roomId, delta) {
                     const room = this.roomsData.find(r => r.id === roomId);
