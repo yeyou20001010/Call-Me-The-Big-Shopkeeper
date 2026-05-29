@@ -13,25 +13,21 @@
         [v-cloak] { display: none; }
         .card-std { background: #FBFBF9; border: 2px solid #D7D3CC; border-radius: 1.5rem; padding: 1.5rem; transition: all 0.2s; }
         .badge-cp { background: #02C87420; color: #02C874; border-radius: 1rem; padding: 2px 10px; font-size: 11px; font-weight: 900; display: inline-block; }
-        .level-btn { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 900; transition: all 0.2s; }
+        .level-btn { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 900; transition: all 0.2s; user-select: none; }
         .level-btn:hover { background: #FF9D6F; color: white; border-color: #FF9D6F; }
         .level-number { cursor: pointer; padding: 0 8px; font-weight: 900; min-width: 40px; text-align: center; display: inline-block; }
         .level-number:hover { color: #FF9D6F; text-decoration: underline; }
         .highlight-row { background: #FF9D6F20; border-left: 4px solid #FF9D6F; }
         
-        /* 自訂 Modal 彈窗 */
         .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #FBFBF9; border-radius: 2rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; max-width: 380px; padding: 1.8rem; border: 2px solid #5E548E; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         
-        /* 響應式：手機版上下排列 */
         @media (max-width: 1024px) {
             .desktop-row { flex-direction: column; }
             .desktop-col-left, .desktop-col-right { width: 100% !important; }
         }
-        
-        /* 表格響應式 */
         .table-wrapper { overflow-x: auto; }
-        table { min-width: 600px; width: 100%; border-collapse: collapse; }
+        table { min-width: 550px; width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #E5E7EB; }
         th:first-child, td:first-child { text-align: left; }
     </style>
@@ -39,14 +35,14 @@
 <body class="min-h-screen p-4 md:p-8">
     <div id="app" v-cloak class="max-w-7xl mx-auto">
         
-        <!-- Modal 彈窗（點擊等級數字時出現） -->
+        <!-- Modal 彈窗 -->
         <div v-if="modalVisible" class="modal-overlay" @click="closeModal"></div>
         <div v-if="modalVisible" class="custom-modal">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">編輯等級</h3>
-            <p class="text-gray-500 mb-4 text-sm font-bold">{{ editRoom?.name }} 當前等級：Lv.{{ editRoom?.level }}</p>
+            <p class="text-gray-500 mb-4 text-sm font-bold">{{ editRoomName }} 當前等級：Lv.{{ editRoomLevel }}</p>
             <div class="mb-6">
                 <label class="text-sm font-black text-[#8E9AAF]">輸入新等級 (20~50)</label>
-                <input type="number" v-model.number="editLevel" min="20" max="50" class="w-full bg-[#F4F2EE] border border-[#D7D3CC] rounded-xl p-3 text-center font-black text-lg outline-none mt-2">
+                <input type="number" v-model.number="editLevel" min="20" max="50" class="w-full bg-[#F4F2EE] border border-[#D7D3CC] rounded-xl p-3 text-center font-black text-lg outline-none">
             </div>
             <div class="flex gap-3">
                 <button @click="confirmEdit" class="flex-1 bg-[#5E548E] text-white py-3 rounded-xl font-black">儲存</button>
@@ -63,9 +59,8 @@
             <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-5 py-2 rounded-xl text-sm font-black hover:bg-[#5A5562] transition">🔙 返回主選單</button>
         </div>
 
-        <!-- 主要內容：桌機左右並排，手機上下堆疊 -->
         <div class="desktop-row flex gap-6">
-            <!-- 左側 / 上方：表格區 -->
+            <!-- 左側表格區 -->
             <div class="desktop-col-left w-2/3 flex-shrink-0">
                 <div class="card-std">
                     <div class="font-black text-lg mb-4 text-[#5E548E]">📊 各科室 CP 值排行榜</div>
@@ -73,35 +68,23 @@
                         <table>
                             <thead>
                                 <tr class="text-[#8E9AAF] border-b-2">
-                                    <th class="text-left">科室</th>
-                                    <th>等級</th>
-                                    <th>下一級消耗</th>
-                                    <th>獲得❤️</th>
-                                    <th>CP值</th>
+                                    <th class="text-left">科室</th><th>等級</th><th>下一級消耗</th><th>獲得❤️</th><th>CP值</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="item in sortedRooms" :key="item.id" :class="{'highlight-row': item.id === bestUpgrade?.id}">
-                                    <!-- 科室名稱 -->
+                                <tr v-for="item in sortedRooms" :key="item.id" :class="{'highlight-row': item.id === bestUpgrade.id}">
                                     <td class="text-left font-black">{{ item.name }}</td>
-                                    
-                                    <!-- 等級區：- 按鈕 + 數字(可點) + 按鈕 -->
                                     <td>
                                         <div class="flex items-center justify-center gap-1">
-                                            <span class="level-btn" @click="changeLevel(item, -1)">−</span>
-                                            <span class="level-number" @click="openEditModal(item)">{{ item.level }}</span>
-                                            <span class="level-btn" @click="changeLevel(item, 1)">+</span>
+                                            <span class="level-btn" @click="changeLevel(item.id, -1)">−</span>
+                                            <span class="level-number" @click="openEditModal(item.id, item.name, item.level)">{{ item.level }}</span>
+                                            <span class="level-btn" @click="changeLevel(item.id, 1)">+</span>
                                         </div>
                                     </td>
-                                    
                                     <td class="font-mono">{{ item.nextCost || '-' }}</td>
                                     <td class="font-mono">+{{ item.nextGain || '-' }}</td>
-                                    <td>
-                                        <span class="badge-cp" :class="{'bg-[#02C874] text-white': item.cp === bestUpgrade?.cp}">
-                                            {{ item.cp || '-' }}
-                                        </span>
-                                    </td>
-                                 </tr>
+                                    <td><span class="badge-cp">{{ item.cp || '-' }}</span></td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -111,36 +94,28 @@
                 </div>
             </div>
 
-            <!-- 右側 / 下方：決策推薦區 -->
+            <!-- 右側決策區 -->
             <div class="desktop-col-right w-1/3 flex-shrink-0">
                 <div class="card-std bg-gradient-to-r from-[#5E548E] to-[#7D6B9E] text-white sticky top-4">
                     <div class="text-center mb-4">
                         <span class="bg-white/20 px-4 py-1 rounded-full text-xs font-black tracking-wider">⚡ 即時決策</span>
                     </div>
-                    
-                    <!-- 優先升級 -->
                     <div class="text-center py-3">
                         <div class="text-sm opacity-80 mb-1">🎯 優先升級</div>
-                        <div class="text-3xl font-black mb-2">{{ bestUpgrade?.name || '請輸入等級' }}</div>
-                        <div class="text-xl font-black text-[#FFD966]">{{ bestUpgrade?.action || '--' }}</div>
+                        <div class="text-3xl font-black mb-2">{{ bestUpgrade.name || '請輸入等級' }}</div>
+                        <div class="text-xl font-black text-[#FFD966]">{{ bestUpgrade.action || '--' }}</div>
                         <div class="flex justify-center gap-4 mt-3 text-sm">
-                            <div>📘 消耗：<span class="font-black">{{ bestUpgrade?.cost || '?' }}</span> 張</div>
-                            <div>❤️ 獲得：+<span class="font-black">{{ bestUpgrade?.gain || '?' }}</span></div>
-                            <div>📊 CP：<span class="font-black">{{ bestUpgrade?.cp || '?' }}</span></div>
+                            <div>📘 消耗：<span class="font-black">{{ bestUpgrade.cost || '?' }}</span> 張</div>
+                            <div>❤️ 獲得：+<span class="font-black">{{ bestUpgrade.gain || '?' }}</span></div>
+                            <div>📊 CP：<span class="font-black">{{ bestUpgrade.cp || '?' }}</span></div>
                         </div>
                     </div>
-
                     <div class="border-t border-white/20 my-3"></div>
-
-                    <!-- 下幾步推薦 -->
                     <div>
                         <div class="text-sm font-black opacity-80 mb-3 text-center">📌 下幾步推薦 (依CP排序)</div>
                         <div class="space-y-2">
                             <div v-for="(rec, idx) in nextUpgrades" :key="idx" class="bg-white/10 rounded-xl p-2 flex justify-between items-center">
-                                <div>
-                                    <span class="font-black">{{ rec.name }}</span>
-                                    <span class="text-xs ml-1 opacity-80">{{ rec.action }}</span>
-                                </div>
+                                <div><span class="font-black">{{ rec.name }}</span><span class="text-xs ml-1 opacity-80">{{ rec.action }}</span></div>
                                 <span class="badge-cp bg-white/20 text-white">CP {{ rec.cp }}</span>
                             </div>
                             <div v-if="nextUpgrades.length === 0" class="text-center text-white/60 py-4 text-sm">
@@ -154,83 +129,81 @@
     </div>
 
     <script>
-        // ======================= 醫館數據庫 =======================
-        // 根據您提供的實測數據建立
-        const ROOMS_DB = {
-            pharmacy: { id: 'pharmacy', name: '藥房', baseLevel: 20,
-                upgrades: { 20: { cost: 220, gain: 2 }, 21: { cost: 278, gain: 2 }, 22: { cost: 340, gain: 2 } } },
-            tuina: { id: 'tuina', name: '推拿', baseLevel: 20,
-                upgrades: { 20: { cost: 275, gain: 2 }, 21: { cost: 347, gain: 3 }, 22: { cost: 420, gain: 3 } } },
-            liandan: { id: 'liandan', name: '煉丹', baseLevel: 20,
-                upgrades: { 20: { cost: 550, gain: 4 }, 21: { cost: 694, gain: 3 }, 22: { cost: 800, gain: 3 } } },
-            guasha: { id: 'guasha', name: '刮痧', baseLevel: 20,
-                upgrades: { 20: { cost: 440, gain: 3 }, 21: { cost: 555, gain: 3 }, 22: { cost: 670, gain: 3 } } },
-            yaoyu: { id: 'yaoyu', name: '藥浴', baseLevel: 20,
-                upgrades: { 20: { cost: 605, gain: 4 }, 21: { cost: 750, gain: 4 } } },
-            huoguan: { id: 'huoguan', name: '火罐', baseLevel: 20,
-                upgrades: { 20: { cost: 330, gain: 2 }, 21: { cost: 410, gain: 2 } } },
-            aijiu: { id: 'aijiu', name: '艾灸', baseLevel: 20,
-                upgrades: { 20: { cost: 495, gain: 3 }, 21: { cost: 600, gain: 3 } } },
-            buqi: { id: 'buqi', name: '布氣', baseLevel: 20,
-                upgrades: { 20: { cost: 660, gain: 4 }, 21: { cost: 790, gain: 4 } } },
-            hanzheng: { id: 'hanzheng', name: '汗蒸', baseLevel: 20,
-                upgrades: { 20: { cost: 715, gain: 4 }, 21: { cost: 850, gain: 4 } } },
-            zhenjiu: { id: 'zhenjiu', name: '針灸', baseLevel: 20,
-                upgrades: { 20: { cost: 385, gain: 2 }, 21: { cost: 470, gain: 2 } } }
-        };
+        // ======================= 科室配置 =======================
+        const ROOMS_CONFIG = [
+            { id: 'pharmacy', name: '藥房', cost20to21: 220, gainAfter21: 2 },
+            { id: 'tuina', name: '推拿', cost20to21: 275, gainAfter21: 3 },
+            { id: 'liandan', name: '煉丹', cost20to21: 550, gainAfter21: 3 },
+            { id: 'guasha', name: '刮痧', cost20to21: 440, gainAfter21: 3 },
+            { id: 'yaoyu', name: '藥浴', cost20to21: 605, gainAfter21: 4 },
+            { id: 'huoguan', name: '火罐', cost20to21: 330, gainAfter21: 2 },
+            { id: 'aijiu', name: '艾灸', cost20to21: 495, gainAfter21: 3 },
+            { id: 'buqi', name: '布氣', cost20to21: 660, gainAfter21: 4 },
+            { id: 'hanzheng', name: '汗蒸', cost20to21: 715, gainAfter21: 4 },
+            { id: 'zhenjiu', name: '針灸', cost20to21: 385, gainAfter21: 2 }
+        ];
 
-        // 確保某等級的升級數據存在（若無則用前一級推算）
-        function ensureUpgradeData(room, level) {
-            if (!room.upgrades[level]) {
-                let prev = room.upgrades[level - 1];
-                if (prev) {
-                    room.upgrades[level] = { cost: Math.floor(prev.cost * 1.2), gain: prev.gain };
-                } else {
-                    room.upgrades[level] = { cost: 999, gain: 2 };
-                }
+        const COST_GROWTH_RATE = 1.26;
+
+        // 計算從某等級升到下一級的消耗
+        function getCostToNextLevel(config, currentLevel) {
+            if (currentLevel < 20) return 999;
+            let times = currentLevel - 20;
+            let cost = config.cost20to21;
+            for (let i = 0; i < times; i++) {
+                cost = Math.ceil(cost * COST_GROWTH_RATE);
             }
-            return room.upgrades[level];
+            return cost;
+        }
+
+        // 計算從某等級升到下一級的愛心增量
+        function getGainToNextLevel(config, currentLevel) {
+            if (currentLevel < 20) return 0;
+            if (currentLevel === 20 && config.id === 'tuina') return 2;
+            if (currentLevel === 20 && config.id === 'liandan') return 4;
+            return config.gainAfter21;
         }
 
         const { createApp } = Vue;
         createApp({
             data() {
                 return {
-                    roomsData: null,
+                    roomsData: [],
                     modalVisible: false,
-                    editRoom: null,
+                    editRoomId: null,
+                    editRoomName: '',
+                    editRoomLevel: 20,
                     editLevel: 20
                 };
             },
             computed: {
-                // 計算每個科室的下一級資訊
+                // 計算每個科室的下一級資訊（從真正的 roomsData 讀取）
                 roomsWithNext() {
-                    if (!this.roomsData) return [];
+                    if (!this.roomsData.length) return [];
                     return this.roomsData.map(room => {
-                        let currentLevel = room.level;
-                        let nextData = room.upgrades[currentLevel];
-                        if (!nextData) {
-                            nextData = ensureUpgradeData(room, currentLevel);
-                        }
-                        let cp = nextData ? ((nextData.gain / nextData.cost) * 100).toFixed(4) : 0;
+                        const currentLevel = room.level;
+                        const nextCost = getCostToNextLevel(room.config, currentLevel);
+                        const nextGain = getGainToNextLevel(room.config, currentLevel);
+                        const rawCp = nextCost > 0 ? (nextGain / nextCost) : 0;
+                        const cp = (rawCp * 100).toFixed(4);
                         return {
                             ...room,
-                            nextCost: nextData?.cost || '?',
-                            nextGain: nextData?.gain || '?',
+                            nextCost: nextCost,
+                            nextGain: nextGain,
                             cp: parseFloat(cp),
-                            rawCp: nextData ? (nextData.gain / nextData.cost) : 0
+                            rawCp: rawCp
                         };
                     });
                 },
-                // 按 CP 值排序
+                // 排序後的科室
                 sortedRooms() {
                     return [...this.roomsWithNext].sort((a, b) => b.rawCp - a.rawCp);
                 },
-                // 最佳升級選擇
+                // 最佳升級
                 bestUpgrade() {
-                    if (!this.sortedRooms.length) return null;
-                    let best = this.sortedRooms[0];
-                    if (best.rawCp <= 0) return null;
+                    if (!this.sortedRooms.length) return { name: '請輸入等級', action: '--', cost: '?', gain: '?', cp: '?' };
+                    const best = this.sortedRooms[0];
+                    if (best.rawCp <= 0) return { name: '請輸入等級', action: '--', cost: '?', gain: '?', cp: '?' };
                     return {
                         id: best.id,
                         name: best.name,
@@ -240,9 +213,9 @@
                         cp: best.cp
                     };
                 },
-                // 下幾步（排除最佳）
+                // 下幾步推薦
                 nextUpgrades() {
-                    let list = this.sortedRooms.filter(r => r.id !== this.bestUpgrade?.id);
+                    const list = this.sortedRooms.filter(r => r.id !== this.bestUpgrade.id);
                     return list.slice(0, 4).map(r => ({
                         name: r.name,
                         action: `${r.level} → ${r.level + 1}`,
@@ -251,58 +224,66 @@
                 }
             },
             methods: {
-                // 初始化資料 (預設全部從 20 等開始)
                 initData() {
-                    let saved = localStorage.getItem('medical_clinic_v2');
+                    const saved = localStorage.getItem('medical_clinic_v7');
                     if (saved) {
-                        this.roomsData = JSON.parse(saved);
+                        const parsed = JSON.parse(saved);
+                        this.roomsData = parsed.map(item => {
+                            const config = ROOMS_CONFIG.find(c => c.id === item.id);
+                            return { ...item, config: config };
+                        });
                     } else {
-                        this.roomsData = Object.values(ROOMS_DB).map(r => ({
-                            id: r.id,
-                            name: r.name,
-                            level: r.baseLevel,
-                            upgrades: { ...r.upgrades }
+                        this.roomsData = ROOMS_CONFIG.map(config => ({
+                            id: config.id,
+                            name: config.name,
+                            level: 20,
+                            config: config
                         }));
                     }
-                    // 補齊升級數據
-                    this.roomsData.forEach(room => {
-                        if (!room.upgrades) room.upgrades = {};
-                        Object.assign(room.upgrades, ROOMS_DB[room.id]?.upgrades || {});
-                        ensureUpgradeData(room, room.level);
-                    });
                 },
-                // 儲存到 localStorage
                 saveData() {
-                    localStorage.setItem('medical_clinic_v2', JSON.stringify(this.roomsData));
+                    const toSave = this.roomsData.map(({ config, ...rest }) => rest);
+                    localStorage.setItem('medical_clinic_v7', JSON.stringify(toSave));
                 },
-                // 改變等級 (+1 / -1)
-                changeLevel(room, delta) {
+                // 重要：透過 roomId 找到真正的 reactive 物件再修改
+                changeLevel(roomId, delta) {
+                    const room = this.roomsData.find(r => r.id === roomId);
+                    if (!room) return;
+                    
                     let newLevel = room.level + delta;
                     if (newLevel < 20) newLevel = 20;
                     if (newLevel > 50) newLevel = 50;
                     if (newLevel === room.level) return;
+                    
                     room.level = newLevel;
-                    ensureUpgradeData(room, room.level);
                     this.saveData();
                 },
-                // 開啟 Modal 手動輸入等級
-                openEditModal(room) {
-                    this.editRoom = room;
-                    this.editLevel = room.level;
+                // 開啟編輯 Modal：只儲存 ID，不儲存物件
+                openEditModal(roomId, roomName, currentLevel) {
+                    this.editRoomId = roomId;
+                    this.editRoomName = roomName;
+                    this.editRoomLevel = currentLevel;
+                    this.editLevel = currentLevel;
                     this.modalVisible = true;
                 },
-                // 確認手動編輯
+                // 確認編輯：透過 ID 找到真正的 reactive 物件再修改
                 confirmEdit() {
-                    if (this.editRoom && this.editLevel >= 20 && this.editLevel <= 50) {
-                        this.editRoom.level = this.editLevel;
-                        ensureUpgradeData(this.editRoom, this.editLevel);
+                    if (!this.editRoomId) return;
+                    const room = this.roomsData.find(r => r.id === this.editRoomId);
+                    if (!room) return;
+                    
+                    if (this.editLevel >= 20 && this.editLevel <= 50) {
+                        room.level = this.editLevel;
                         this.saveData();
                     }
                     this.closeModal();
                 },
                 closeModal() {
                     this.modalVisible = false;
-                    this.editRoom = null;
+                    this.editRoomId = null;
+                    this.editRoomName = '';
+                    this.editRoomLevel = 20;
+                    this.editLevel = 20;
                 }
             },
             mounted() {
