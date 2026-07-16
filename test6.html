@@ -15,14 +15,13 @@
         .input-inline { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; padding: 6px 10px; text-align: right; font-weight: 900; color: #5E548E; outline: none; font-size: 14px; width: 100%; }
         .modal-narrow { max-width: 500px; }
         .modal-wide { max-width: 850px; }
-        .modal-info { max-width: 480px; }
+        .modal-info { max-width: 480px; z-index: 302; }
         .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
-        /* z-index 層級：backdrop 90 → 一般 modal 100 → confirm overlay 200 → confirm modal 201 → info overlay 300 → info modal 301 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         .modal-overlay.confirm-overlay { z-index: 200; }
-        .modal-overlay.info-overlay { z-index: 300; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
+        .modal-overlay.info-overlay { z-index: 301; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
         .custom-modal.confirm-modal { z-index: 201; }
-        .custom-modal.info-modal { z-index: 301; }
+        .custom-modal.info-modal { z-index: 302; }
         .text-gain { color: #E53935 !important; }
         .text-loss { color: #00897B !important; }
         .row-label { font-size: 12px; color: #8E9AAF; font-weight: 900; margin-bottom: 2px; display: block; }
@@ -32,8 +31,8 @@
         th, td { text-align: center !important; vertical-align: middle !important; }
         .clickable-name { cursor: pointer; color: #5E548E; font-weight: 900; }
         .clickable-name:hover { text-decoration: underline; color: #FF9D6F; }
-        .clickable-shares { cursor: pointer; font-weight: 900; }
-        .clickable-shares:hover { text-decoration: underline; color: #FF9D6F; }
+        .clickable-shares { cursor: pointer; font-weight: 900; display: inline-block; padding: 2px 6px; border-radius: 4px; transition: background 0.2s; }
+        .clickable-shares:hover { background: rgba(94, 84, 142, 0.1); text-decoration: underline; color: #5E548E; }
         .risk-red { color: #E53935 !important; }
         .risk-blue { color: #1E88E5 !important; }
         .risk-green { color: #43A047 !important; }
@@ -69,10 +68,10 @@
         .delimiter-btn.active { border-color: #5E548E; background: #5E548E; color: white; }
         .info-icon { color: #9CA3AF; cursor: pointer; font-weight: 900; font-size: 0.9rem; padding: 0 4px; }
         .info-icon:hover { color: #5E548E; }
-        .action-btn { border: 2px solid #D7D3CC; border-radius: 0.75rem; padding: 0.5rem 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; background: white; }
-        .action-btn:hover { background: #F4F2EE; }
-        .action-btn-primary { border-color: #5E548E; background: #5E548E; color: white; }
-        .action-btn-primary:hover { background: #4A3F6E; border-color: #4A3F6E; }
+        .hint-text { font-size: 0.7rem; color: #9CA3AF; font-weight: 400; margin-left: 4px; }
+        .fund-history-btn { cursor: pointer; color: #5E548E; font-weight: 900; font-size: 0.85rem; padding: 4px 8px; border-radius: 6px; border: 1px solid #D7D3CC; background: #F4F2EE; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
+        .fund-history-btn:hover { background: #E8E6E0; border-color: #5E548E; }
+        .edit-hint { font-size: 0.65rem; color: #9CA3AF; font-weight: 400; margin-left: 2px; }
         @media (max-width: 768px) {
             .toolbar-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
             .toolbar-right { flex-direction: column !important; align-items: stretch !important; width: 100% !important; gap: 8px !important; }
@@ -131,51 +130,21 @@
                     </button>
                     <span class="info-icon" @click="showDelimiterInfoModal = true" title="點我看說明">ⓘ</span>
                 </div>
+                <!-- 匯出範圍選擇（完整歷史專用） -->
+                <div v-if="csvExportMode === 'full'" class="mt-4 pt-3 border-t border-gray-200">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-gray-600">📅 期數範圍：</span>
+                        <span class="text-sm">從</span>
+                        <input type="number" v-model.number="exportRangeStart" min="1" max="12" class="input-inline !w-16 !text-center">
+                        <span class="text-sm">到</span>
+                        <input type="number" v-model.number="exportRangeEnd" min="1" max="12" class="input-inline !w-16 !text-center">
+                        <span class="text-sm text-gray-400">（預設 1～12）</span>
+                    </div>
+                </div>
             </div>
             <div class="flex gap-4">
                 <button @click="showDelimiterModal = false" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
                 <button @click="confirmDelimiterExport" class="flex-1 btn-primary py-3 rounded-xl font-black">確認匯出</button>
-            </div>
-        </div>
-
-        <!-- 開始新一期 Modal -->
-        <div v-if="showNewPeriodModal" class="modal-overlay confirm-overlay" @click="showNewPeriodModal = false"></div>
-        <div v-if="showNewPeriodModal" class="custom-modal modal-wide confirm-modal">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-black text-[#5E548E]">🔄 開始新一期</h3>
-                <button @click="showNewPeriodModal = false" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
-            </div>
-            <div class="mb-4">
-                <p class="text-sm text-gray-500 mb-4">請先輸入本期價格與小道消息，系統將分析目前持倉並建議操作：</p>
-                <div class="bg-slate-50 p-4 rounded-xl max-h-60 overflow-y-auto">
-                    <table class="w-full text-sm">
-                        <thead><tr class="border-b-2"><th class="p-2 text-left">標的</th><th class="p-2 text-right">持倉</th><th class="p-2 text-right">價格</th><th class="p-2 text-right">損益%</th><th class="p-2 text-center">建議</th></tr></thead>
-                        <tbody>
-                            <tr v-for="item in portfolioReview" :key="item.name" class="border-b">
-                                <td class="p-2 text-left font-bold">{{ item.name }}</td>
-                                <td class="p-2 text-right">{{ item.shares }}</td>
-                                <td class="p-2 text-right">{{ formatPrice(item.price) }}</td>
-                                <td class="p-2 text-right" :class="item.profitPercent >= 0 ? 'text-gain' : 'text-loss'">{{ item.profitPercent.toFixed(1) }}%</td>
-                                <td class="p-2 text-center">
-                                    <select v-model="item.action" class="input-inline !w-24">
-                                        <option value="hold">持有</option>
-                                        <option value="add">加碼</option>
-                                        <option value="reduce">減碼</option>
-                                        <option value="sell">賣出</option>
-                                    </select>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="mt-4 flex justify-between items-center">
-                    <span class="text-sm text-gray-500">📊 目前現金：<span class="font-black">{{ formatWithComma(fund) }} 元</span></span>
-                    <span class="text-sm text-gray-500">📈 持倉市值：<span class="font-black">{{ formatWithComma(portfolioValue) }} 元</span></span>
-                </div>
-            </div>
-            <div class="flex gap-4">
-                <button @click="showNewPeriodModal = false" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
-                <button @click="executeNewPeriod" class="flex-1 btn-success py-3 rounded-xl font-black">✅ 確認執行</button>
             </div>
         </div>
 
@@ -292,6 +261,75 @@
             </div>
         </div>
 
+        <!-- 歷史資金彈窗 -->
+        <div v-if="showFundHistoryModal" class="modal-overlay" @click="closeFundHistoryModal"></div>
+        <div v-if="showFundHistoryModal" class="custom-modal modal-narrow">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-black text-[#5E548E]">📊 歷史資金記錄</h3>
+                <button @click="closeFundHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+            </div>
+            <div class="text-xs text-gray-500 mb-3">💡 編輯各期資金後，切換期數時會自動載入對應金額</div>
+            <div class="overflow-y-auto max-h-80">
+                <table class="w-full text-sm">
+                    <thead class="sticky top-0 bg-white">
+                        <tr class="border-b-2">
+                            <th class="p-2">期數</th>
+                            <th class="p-2">資金（元）</th>
+                         </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="n in 12" :key="n">
+                            <td class="p-2 font-bold">第 {{ n }} 期</td>
+                            <td class="p-2"><input type="number" step="0.01" v-model.number="fundHistoryModalData[n]" class="input-inline !w-32 !text-center" min="0"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <button @click="saveFundHistory" class="mt-4 w-full btn-primary py-2 rounded-xl font-black">💾 儲存</button>
+        </div>
+
+        <!-- 結算持倉 Modal -->
+        <div v-if="showSettlementModal" class="modal-overlay confirm-overlay" @click="showSettlementModal = false"></div>
+        <div v-if="showSettlementModal" class="custom-modal modal-wide confirm-modal">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-black text-[#5E548E]">📊 結算持倉</h3>
+                <button @click="showSettlementModal = false" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-sm text-gray-500 mb-4">📌 目前正在結算：第 <span class="font-bold text-[#5E548E]">{{ settlementPeriod }}</span> 期的持倉（以第 <span class="font-bold text-[#5E548E]">{{ currentPeriod }}</span> 期價格計算）</p>
+                <p class="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg mb-3">💡 提醒：請先「手動鎖定」切換到「上一期」，再執行結算</p>
+                <div class="bg-slate-50 p-4 rounded-xl max-h-60 overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead><tr class="border-b-2"><th class="p-2 text-left">標的</th><th class="p-2 text-right">持倉</th><th class="p-2 text-right">價格</th><th class="p-2 text-right">損益%</th><th class="p-2 text-center">建議</th></tr></thead>
+                        <tbody>
+                            <tr v-for="item in portfolioReview" :key="item.name" class="border-b">
+                                <td class="p-2 text-left font-bold">{{ item.name }}</td>
+                                <td class="p-2 text-right">{{ item.shares }}</td>
+                                <td class="p-2 text-right">{{ formatPrice(item.price) }}</td>
+                                <td class="p-2 text-right" :class="item.profitPercent >= 0 ? 'text-gain' : 'text-loss'">{{ item.profitPercent.toFixed(1) }}%</td>
+                                <td class="p-2 text-center">
+                                    <select v-model="item.action" class="input-inline !w-24">
+                                        <option value="hold">持有</option>
+                                        <option value="add">加碼</option>
+                                        <option value="reduce">減碼</option>
+                                        <option value="sell">賣出</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 flex justify-between items-center">
+                    <span class="text-sm text-gray-500">📊 目前現金：<span class="font-black">{{ formatWithComma(fund) }} 元</span></span>
+                    <span class="text-sm text-gray-500">📈 持倉市值：<span class="font-black">{{ formatWithComma(portfolioValue) }} 元</span></span>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <button @click="showSettlementModal = false" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
+                <button @click="executeSettlement" class="flex-1 btn-success py-3 rounded-xl font-black">✅ 確認執行</button>
+            </div>
+        </div>
+
         <!-- 主內容 -->
         <div class="bg-white rounded-[2rem] shadow-md border-2 border-[#D7D3CC] p-6 mb-6">
             <div class="flex flex-wrap justify-between items-center gap-4">
@@ -305,7 +343,7 @@
                     <button @click="openExportModal" class="bg-[#8E9AAF] text-white px-4 py-2 rounded-xl text-sm font-black">📤 匯出設定</button>
                     <button @click="openDelimiterModal('current')" class="bg-[#02C874] text-white px-4 py-2 rounded-xl text-sm font-black">📋 複製當期數據(CSV)</button>
                     <button @click="openDelimiterModal('full')" class="bg-[#1E88E5] text-white px-4 py-2 rounded-xl text-sm font-black">📊 匯出完整歷史(CSV)</button>
-                    <button @click="openNewPeriodModal" class="bg-[#8E9AAF] text-white px-4 py-2 rounded-xl text-sm font-black">🔄 開始新一期</button>
+                    <button @click="openSettlementModal" class="bg-[#8E9AAF] text-white px-4 py-2 rounded-xl text-sm font-black">📊 結算持倉</button>
                     <button @click="clearAllDataConfirm" class="bg-[#AF7A7D] text-white px-4 py-2 rounded-xl text-sm font-black">🗑️ 清除全部資料</button>
                     <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-4 py-2 rounded-xl text-sm font-black">🏠 返回選單</button>
                 </div>
@@ -316,8 +354,11 @@
             <div class="lg:col-span-8 space-y-6">
                 <div class="card-std">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6 toolbar-row">
-                        <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black block md:inline-block break-words max-w-full">📋 標的一覽（點名稱編輯價格/點張數編輯持倉）</span>
+                        <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black block md:inline-block break-words max-w-full">📋 標的（點名稱編輯價格）</span>
                         <div class="flex items-center gap-4 toolbar-right">
+                            <span class="fund-history-btn" @click="openFundHistoryModal">
+                                📊 歷史資金
+                            </span>
                             <select v-model="periodMode" class="border border-[#D7D3CC] rounded-xl p-2 text-sm font-bold bg-white text-[#4A4655]">
                                 <option value="auto">自動（最新期數）</option>
                                 <option value="manual">手動鎖定</option>
@@ -351,7 +392,11 @@
                                     <td class="font-mono text-slate-500">{{ formatPrice(item.lastPrice) }}</td>
                                     <td class="font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
                                     <td class="p-2"><div class="transparent-select"><span class="select-overlay-text" :class="getTagClass(item.tag)">{{ item.tag || '請選擇' }}</span><select v-model="item.tag" @change="updateTag(item.originalIndex, item.tag)"><option value="">請選擇</option><option value="迅速崛起">迅速崛起</option><option value="穩中向好">穩中向好</option><option value="坊中傳聞">坊中傳聞</option><option value="或有風險">或有風險</option><option value="一文不值">一文不值</option><option value="暫無">暫無</option></select></div></td>
-                                    <td class="p-2 clickable-shares" @click="openSharesHistoryModal(item)">{{ item.shares }}</td>
+                                    <td class="p-2">
+                                        <span class="clickable-shares" @click="openSharesHistoryModal(item)">
+                                            {{ item.shares }}<span class="edit-hint"> ✎</span>
+                                        </span>
+                                    </td>
                                     <td class="font-mono" :class="getUnrealizedClass(item)">{{ formatPrice(calculateUnrealized(item)) }}</td>
                                 </tr>
                             </tbody>
@@ -362,6 +407,13 @@
             <div class="lg:col-span-4">
                 <div class="card-std bg-slate-800 text-white sticky top-4 shadow-2xl border-none">
                     <div class="bg-orange-500 px-4 py-1 rounded-lg text-xs font-black inline-block mb-6">🏆 即時買入建議</div>
+                    
+                    <!-- 結算引導提示 -->
+                    <div v-if="hasPortfolio && periodMode === 'manual'" class="bg-amber-900/40 rounded-2xl p-3 mb-4 border-l-4 border-amber-500">
+                        <p class="text-amber-300 text-xs font-bold">📌 有持倉待結算</p>
+                        <p class="text-amber-200/70 text-xs mt-1">請點擊「📊 結算持倉」處理上一期持倉，結算完成後再參考買入建議</p>
+                    </div>
+
                     <div v-if="incompleteList.length" class="bg-yellow-900/30 rounded-2xl p-4 mb-5 border-l-4 border-yellow-500">
                         <div class="font-black text-yellow-300 mb-2">⚠️ 待完善資料</div>
                         <div v-for="inc in incompleteList" class="text-sm text-yellow-200">• {{ inc.name }}：{{ inc.reason }}</div>
@@ -391,8 +443,7 @@
             return JSON.parse(JSON.stringify(obj));
         }
 
-        // 當前資料結構版本號（用於 localStorage 升級）
-        const DATA_VERSION = 2;
+        const DATA_VERSION = 3;
 
         const defaultProducts = [
             '千刻地政','米和油店','朵朵縫紉','安行鞋業','宋城閃送','凝禮織造','東南園林','朧湖水築','豬豬戲院','衡動建築',
@@ -406,6 +457,8 @@
                 showPriceHistoryModal: false, currentProduct: null, currentProductIdx: -1,
                 selectedPricePeriod: 1, modalPrice: 0, modalTag: '', priceModalData: Array(13).fill(0), tagModalData: Array(13).fill(''),
                 showSharesHistoryModal: false, sharesModalData: Array(13).fill(0),
+                showFundHistoryModal: false, fundHistoryModalData: Array(13).fill(0),
+                showSettlementModal: false, portfolioReview: [], settlementPeriod: 1,
                 sortKey: null, sortOrder: 'asc',
                 showImportModal: false, showExportModal: false,
                 importOptions: { price: false, risk: false, tag: false, shares: false, fund: false },
@@ -414,26 +467,26 @@
                 presets: { 1: null, 2: null }, lastUsedPreset: null,
                 modalVisible: false, modalTitle: '', modalMsg: '', modalType: '', modalCallback: null,
                 productList: defaultProducts.map((name, idx) => ({
-                    name, risk: '', tag: '', prices: Array(13).fill(0), tags: Array(13).fill(''), sharesHistory: Array(13).fill(0), avgCost: 0, originalIndex: idx
+                    name, risk: '', tag: '', prices: Array(13).fill(0), tags: Array(13).fill(''), 
+                    sharesHistory: Array(13).fill(0), fundHistory: Array(13).fill(0), avgCost: 0, originalIndex: idx
                 })),
                 importDataBuffer: null,
                 // CSV 相關
                 showDelimiterModal: false,
                 showDelimiterInfoModal: false,
                 csvModalTitle: '',
-                csvExportMode: 'current', // 'current' 或 'full'
+                csvExportMode: 'current',
                 copyToClipboard: true,
                 saveAsFile: false,
                 selectedDelimiter: 'tsv',
+                exportRangeStart: 1,
+                exportRangeEnd: 12,
                 delimiterOptions: [
                     { value: 'tsv', label: 'TSV（Tab）' },
                     { value: 'csv', label: 'CSV（逗號）' },
                     { value: 'pipe', label: 'Pipe（管線）' },
                     { value: 'markdown', label: 'Markdown Table' }
-                ],
-                // 開始新一期相關
-                showNewPeriodModal: false,
-                portfolioReview: []
+                ]
             }},
             computed: {
                 currentPeriod() {
@@ -530,6 +583,13 @@
                     }
                     return res;
                 },
+                hasPortfolio() {
+                    const period = this.currentPeriod;
+                    for (let p of this.productList) {
+                        if ((p.sharesHistory[period] || 0) > 0) return true;
+                    }
+                    return false;
+                },
                 portfolioValue() {
                     const period = this.currentPeriod;
                     let value = 0;
@@ -571,7 +631,6 @@
                         if (p.distanceToPeak > 0.3 && p.trendUp && p.pricePosition > 0.3) {
                             score *= 1.08;
                         }
-                        // 新增：最新一期動能微調
                         let momentum = p.lastPrice > 0 ? (p.price - p.lastPrice) / p.lastPrice : 0;
                         if (momentum > 0.1) score *= 1.05;
                         if (momentum < -0.1) score *= 0.95;
@@ -731,15 +790,56 @@
                     if (newVal < 1) {
                         this.manualPeriod = 1;
                     }
+                    this.loadFundFromHistory();
+                },
+                periodMode() {
+                    this.loadFundFromHistory();
                 }
             },
             methods: {
                 formatPrice(v){ return (Math.floor((v||0)*100)/100).toFixed(2); },
-                formatWithComma(v){ return Math.floor(v||0).toLocaleString(); },
-                formatWan(v){ return v<10000 ? v.toLocaleString()+'元' : (Math.floor(v/10000*1000)/1000).toFixed(3)+'萬'; },
-                onFundFocus(){ this.displayFund=this.fund.toString(); },
-                onFundBlur(){ this.displayFund=this.formatWithComma(this.fund); },
-                onFundInput(e){ let num=parseInt(e.target.value.replace(/,/g,''))||0; this.fund=Math.max(0,num); this.displayFund=num.toString(); this.saveAllData(); },
+                formatWithComma(v){ 
+                    if (v === undefined || v === null) return '0';
+                    const parts = v.toFixed(2).split('.');
+                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    return parts.join('.');
+                },
+                formatWan(v){ 
+                    if (v < 10000) return this.formatWithComma(v) + ' 元';
+                    return (Math.floor((v / 10000) * 1000) / 1000).toFixed(3) + ' 萬';
+                },
+                onFundFocus(){ 
+                    this.displayFund = this.fund.toFixed(2); 
+                },
+                onFundBlur(){ 
+                    this.displayFund = this.formatWithComma(this.fund);
+                    // 寫入歷史資金
+                    const period = this.currentPeriod;
+                    if (period >= 1 && period <= 12) {
+                        this.productList[0].fundHistory[period] = this.fund;
+                        this.saveAllData();
+                    }
+                },
+                onFundInput(e){ 
+                    let raw = e.target.value.replace(/,/g, '');
+                    let num = parseFloat(raw) || 0;
+                    this.fund = Math.max(0, num);
+                    this.displayFund = raw;
+                },
+                loadFundFromHistory() {
+                    const period = this.currentPeriod;
+                    let fundValue = 0;
+                    for (let p of this.productList) {
+                        if (p.fundHistory && p.fundHistory[period] && p.fundHistory[period] > 0) {
+                            fundValue = p.fundHistory[period];
+                            break;
+                        }
+                    }
+                    if (fundValue > 0) {
+                        this.fund = fundValue;
+                        this.displayFund = this.formatWithComma(fundValue);
+                    }
+                },
                 getPriceChangePercent(item){ if(item?.lastPrice && item?.price) return ((item.price-item.lastPrice)/item.lastPrice*100).toFixed(1)+'%'; return '-'; },
                 getPriceChangeClass(item){ let chg = item?.lastPrice ? (item.price-item.lastPrice)/item.lastPrice : 0; return chg>0 ? 'text-gain' : chg<0 ? 'text-loss' : ''; },
                 getRiskClass(r){ if(r==='險') return 'risk-red'; if(r==='均') return 'risk-blue'; if(r==='穩') return 'risk-green'; return 'risk-missing'; },
@@ -883,19 +983,63 @@
                     this.saveAllData();
                 },
                 clearAllSharesPrompt(){ this.showModalMessage('🗑️ 清除所有持倉', `確定要清除 ${this.currentProduct.name} 的所有歷史持倉嗎？`, 'confirm', () => { this.sharesModalData.fill(0); this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData]; this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData); this.saveAllData(); }); },
-                // ========== 開始新一期 ==========
-                openNewPeriodModal() {
+                // ========== 歷史資金功能 ==========
+                openFundHistoryModal() {
                     const period = this.currentPeriod;
+                    for (let i = 1; i <= 12; i++) {
+                        let val = 0;
+                        for (let p of this.productList) {
+                            if (p.fundHistory && p.fundHistory[i] > 0) {
+                                val = p.fundHistory[i];
+                                break;
+                            }
+                        }
+                        this.fundHistoryModalData[i] = val;
+                    }
+                    this.showFundHistoryModal = true;
+                },
+                closeFundHistoryModal() { this.showFundHistoryModal = false; },
+                saveFundHistory() {
+                    for (let i = 1; i <= 12; i++) {
+                        for (let p of this.productList) {
+                            p.fundHistory[i] = this.fundHistoryModalData[i] || 0;
+                        }
+                    }
+                    this.saveAllData();
+                    // 更新當前資金
+                    const period = this.currentPeriod;
+                    if (this.fundHistoryModalData[period] > 0) {
+                        this.fund = this.fundHistoryModalData[period];
+                        this.displayFund = this.formatWithComma(this.fund);
+                    }
+                    this.showFundHistoryModal = false;
+                    this.showModalMessage('✅ 儲存成功', '歷史資金已更新', 'alert');
+                },
+                // ========== 結算持倉功能 ==========
+                openSettlementModal() {
+                    const period = this.currentPeriod;
+                    // 檢查是否在「手動鎖定」模式且切換到上一期
+                    if (this.periodMode !== 'manual') {
+                        this.showModalMessage('⚠️ 操作提醒', '請先將期數模式切換為「手動鎖定」，並選擇「上一期」再執行結算', 'alert');
+                        return;
+                    }
+                    const prevPeriod = this.manualPeriod;
+                    if (prevPeriod >= period) {
+                        this.showModalMessage('⚠️ 操作提醒', '請切換到「上一期」（小於目前最新期數）再執行結算', 'alert');
+                        return;
+                    }
+                    this.settlementPeriod = prevPeriod;
                     this.portfolioReview = [];
+                    let hasShares = false;
                     for (let p of this.productList) {
-                        const shares = p.sharesHistory[period] || 0;
+                        const shares = p.sharesHistory[prevPeriod] || 0;
                         if (shares > 0) {
+                            hasShares = true;
                             const price = p.prices[period] || 0;
                             const avgCost = p.avgCost || 0;
                             const profitPercent = avgCost > 0 ? (price - avgCost) / avgCost * 100 : 0;
-                            // 計算建議：根據評分
                             let score = 0;
-                            let tag = p.tags[period] || p.tag || '暫無';
+                            let tag = p.tags[prevPeriod] || p.tag || '暫無';
                             if (tag !== '一文不值' && tag !== '或有風險') {
                                 let riskScore = { '險':1.2, '均':1.0, '穩':0.8 }[p.risk] || 1.0;
                                 let tagScore = { '迅速崛起':100, '穩中向好':70, '坊中傳聞':40, '暫無':10 }[tag] || 0;
@@ -913,17 +1057,20 @@
                                 avgCost: avgCost,
                                 profitPercent: profitPercent,
                                 score: score,
-                                action: action,
-                                actionText: ''
+                                action: action
                             });
                         }
                     }
-                    this.showNewPeriodModal = true;
+                    if (!hasShares) {
+                        this.showModalMessage('ℹ️ 無持倉', '上一期沒有持倉，無需結算', 'alert');
+                        return;
+                    }
+                    this.showSettlementModal = true;
                 },
-                executeNewPeriod() {
+                executeSettlement() {
                     const period = this.currentPeriod;
+                    const prevPeriod = this.settlementPeriod;
                     let totalSellAmount = 0;
-                    let totalBuyAmount = 0;
                     const actions = [];
                     for (let item of this.portfolioReview) {
                         const p = this.productList.find(p => p.name === item.name);
@@ -931,29 +1078,32 @@
                         if (item.action === 'sell') {
                             const sellAmount = item.shares * item.price;
                             totalSellAmount += sellAmount;
-                            p.sharesHistory[period] = 0;
+                            p.sharesHistory[prevPeriod] = 0;
                             p.avgCost = 0;
                             actions.push(`${item.name}：賣出 ${item.shares} 張，回收 ${sellAmount.toFixed(2)} 元`);
                         } else if (item.action === 'reduce') {
                             const reduceShares = Math.floor(item.shares * 0.5);
                             const sellAmount = reduceShares * item.price;
                             totalSellAmount += sellAmount;
-                            p.sharesHistory[period] = item.shares - reduceShares;
+                            p.sharesHistory[prevPeriod] = item.shares - reduceShares;
                             actions.push(`${item.name}：減碼 ${reduceShares} 張，回收 ${sellAmount.toFixed(2)} 元`);
                         } else if (item.action === 'add') {
-                            // 加碼會在後續買入建議中處理
                             actions.push(`${item.name}：建議加碼（請參考買入建議）`);
                         } else {
                             actions.push(`${item.name}：繼續持有`);
                         }
                     }
-                    // 更新資金
                     this.fund += totalSellAmount;
                     this.displayFund = this.formatWithComma(this.fund);
+                    // 記錄歷史資金
+                    if (period >= 1 && period <= 12) {
+                        this.productList[0].fundHistory[period] = this.fund;
+                    }
                     this.saveAllData();
-                    this.showNewPeriodModal = false;
-                    // 顯示結算結果
-                    this.showModalMessage('✅ 新一期結算完成', 
+                    this.showSettlementModal = false;
+                    // 切換回自動模式
+                    this.periodMode = 'auto';
+                    this.showModalMessage('✅ 結算完成', 
                         `賣出回收：${totalSellAmount.toFixed(2)} 元\n目前現金：${this.fund.toFixed(2)} 元\n\n${actions.join('\n')}`, 
                         'alert'
                     );
@@ -965,6 +1115,8 @@
                     this.copyToClipboard = true;
                     this.saveAsFile = false;
                     this.selectedDelimiter = 'tsv';
+                    this.exportRangeStart = 1;
+                    this.exportRangeEnd = 12;
                     this.showDelimiterModal = true;
                 },
                 confirmDelimiterExport() {
@@ -992,13 +1144,15 @@
                             this.downloadCSV(csvData, `當期數據_${new Date().toISOString().slice(0,10)}`);
                         }
                     } else {
-                        const csvData = this.generateFullHistoryCSV(delimiter, isMarkdown);
+                        const start = Math.max(1, Math.min(this.exportRangeStart || 1, 12));
+                        const end = Math.min(12, Math.max(this.exportRangeEnd || 12, start));
+                        const csvData = this.generateFullHistoryCSV(delimiter, isMarkdown, start, end);
                         if (this.copyToClipboard) {
                             navigator.clipboard.writeText(csvData)
-                                .then(() => this.showModalMessage('✅ 複製成功', '完整歷史數據已複製到剪貼簿', 'alert'));
+                                .then(() => this.showModalMessage('✅ 複製成功', `完整歷史數據（第${start}～${end}期）已複製到剪貼簿`, 'alert'));
                         }
                         if (this.saveAsFile) {
-                            this.downloadCSV(csvData, `歷史數據_${new Date().toISOString().slice(0,10)}`);
+                            this.downloadCSV(csvData, `歷史數據_${new Date().toISOString().slice(0,10)}_P${start}-${end}`);
                         }
                     }
                 },
@@ -1023,16 +1177,18 @@
                     }
                     return [headers, ...rows].map(r => r.join(delimiter)).join('\n');
                 },
-                generateFullHistoryCSV(delimiter, isMarkdown) {
-                    const headers = ['標的名稱', '風險', '期數', '價格', '小道消息', '持倉張數', '成本均價', '未實現損益'];
+                generateFullHistoryCSV(delimiter, isMarkdown, start, end) {
+                    const headers = ['標的名稱', '風險', '期數', '價格', '小道消息', '持倉張數', '成本均價', '未實現損益', '資金'];
                     const rows = [];
+                    const fundHistory = this.productList[0]?.fundHistory || Array(13).fill(0);
                     for (let p of this.productList) {
-                        for (let i = 1; i <= 12; i++) {
+                        for (let i = start; i <= end; i++) {
                             const price = p.prices[i] || 0;
                             const tag = p.tags[i] || '';
                             const shares = p.sharesHistory[i] || 0;
                             const avgCost = p.avgCost || 0;
                             const unrealized = shares * (price - avgCost);
+                            const fund = fundHistory[i] || 0;
                             rows.push([
                                 p.name,
                                 p.risk || '未選',
@@ -1041,7 +1197,8 @@
                                 tag || '暫無',
                                 shares,
                                 avgCost.toFixed(2),
-                                unrealized.toFixed(2)
+                                unrealized.toFixed(2),
+                                fund.toFixed(2)
                             ]);
                         }
                     }
@@ -1125,6 +1282,13 @@
                         }
                     }
                     if(this.importOptions.fund && data.fund) this.fund = data.fund;
+                    if(this.importOptions.fund && data.fundHistory) {
+                        for(let i=0;i<this.productList.length && i<data.productList.length;i++) {
+                            if(data.productList[i]?.fundHistory) {
+                                this.productList[i].fundHistory = deepClone(data.productList[i].fundHistory);
+                            }
+                        }
+                    }
                     this.productList.forEach(p => { p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory); });
                     this.saveAllData();
                     this.showModalMessage('✅ 匯入完成', '設定已更新', 'alert');
@@ -1135,6 +1299,7 @@
                         activityStart: this.activityStart,
                         activityEnd: this.activityEnd,
                         fund: this.fund,
+                        fundHistory: this.productList[0]?.fundHistory || Array(13).fill(0),
                         productList: this.productList.map(p => ({
                             name: p.name,
                             risk: p.risk,
@@ -1142,7 +1307,8 @@
                             prices: p.prices,
                             tags: p.tags,
                             sharesHistory: p.sharesHistory,
-                            avgCost: p.avgCost
+                            avgCost: p.avgCost,
+                            fundHistory: p.fundHistory
                         }))
                     };
                     let blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'});
@@ -1173,6 +1339,7 @@
                             prices: p.prices,
                             tags: p.tags,
                             sharesHistory: p.sharesHistory,
+                            fundHistory: p.fundHistory,
                             avgCost: p.avgCost
                         }))
                     };
@@ -1197,11 +1364,13 @@
                                             this.productList[i].prices = data.productList[i].prices || Array(13).fill(0);
                                             this.productList[i].tags = data.productList[i].tags || Array(13).fill('');
                                             this.productList[i].sharesHistory = data.productList[i].sharesHistory || Array(13).fill(0);
+                                            this.productList[i].fundHistory = data.productList[i].fundHistory || Array(13).fill(0);
                                             this.productList[i].avgCost = data.productList[i].avgCost || 0;
                                         }
                                     }
                                 }
                                 this.productList.forEach(p => { p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory); });
+                                this.loadFundFromHistory();
                             }
                         } catch(e) { console.log('讀取失敗', e); }
                     }
