@@ -59,6 +59,8 @@
         .btn-danger:hover { background-color: #9B6B6E; }
         .btn-primary { background-color: #5E548E; color: white; border: none; padding: 8px 12px; border-radius: 0.5rem; font-weight: 700; text-align: center; transition: all 0.2s; cursor: pointer; }
         .btn-primary:hover { background-color: #4A3F6E; }
+        .delimiter-btn { padding: 4px 12px; border-radius: 0.5rem; font-weight: 700; font-size: 0.8rem; border: 2px solid #D7D3CC; background: white; cursor: pointer; transition: all 0.2s; }
+        .delimiter-btn.active { border-color: #5E548E; background: #5E548E; color: white; }
         @media (max-width: 768px) {
             .toolbar-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
             .toolbar-right { flex-direction: column !important; align-items: stretch !important; width: 100% !important; gap: 8px !important; }
@@ -80,6 +82,25 @@
                 <button @click="closeModal" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
             </div>
             <button v-if="modalType === 'alert'" @click="closeModal" class="w-full mt-4 bg-[#5E548E] text-white py-3 rounded-xl font-black">確定</button>
+        </div>
+
+        <!-- 匯出 CSV 分隔符選擇 Modal（共用） -->
+        <div v-if="showDelimiterModal" class="modal-overlay" @click="showDelimiterModal = false"></div>
+        <div v-if="showDelimiterModal" class="custom-modal modal-narrow">
+            <h3 class="text-2xl font-black text-[#5E548E] mb-4">{{ csvModalTitle }}</h3>
+            <p class="text-sm text-gray-500 mb-4">請選擇分隔方式：</p>
+            <div class="flex gap-2 mb-6">
+                <button v-for="opt in delimiterOptions" :key="opt.value" 
+                    @click="selectedDelimiter = opt.value" 
+                    class="delimiter-btn" 
+                    :class="{ active: selectedDelimiter === opt.value }">
+                    {{ opt.label }}
+                </button>
+            </div>
+            <div class="flex gap-4">
+                <button @click="showDelimiterModal = false" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
+                <button @click="confirmDelimiterExport" class="flex-1 btn-primary py-3 rounded-xl font-black">確認匯出</button>
+            </div>
         </div>
 
         <!-- 匯入設定 Modal -->
@@ -131,7 +152,7 @@
             </div>
         </div>
 
-        <!-- 價格歷史彈窗（新增小道消息下拉選單） -->
+        <!-- 價格歷史彈窗 -->
         <div v-if="showPriceHistoryModal" class="modal-overlay" @click="closePriceHistoryModal"></div>
         <div v-if="showPriceHistoryModal" class="custom-modal modal-wide">
             <div class="flex justify-between items-center mb-4">
@@ -203,10 +224,12 @@
                     <h1 class="text-2xl font-black text-[#5E548E]">交引風雲｜智慧買入決策工具</h1>
                 </div>
                 <div class="flex gap-3 flex-wrap">
+                    <!-- 調整順序：載入共用設定 → 匯入設定 → 匯出設定 → 複製當期數據 → 匯出完整歷史 → 清除全部資料 → 返回選單 -->
                     <button @click="loadFromGitHub" class="bg-[#6D6875] text-white px-4 py-2 rounded-xl text-sm font-black">🌐 載入共用設定</button>
                     <button @click="openImportModal" class="bg-[#B8B0A5] text-white px-4 py-2 rounded-xl text-sm font-black">📥 匯入設定</button>
                     <button @click="openExportModal" class="bg-[#8E9AAF] text-white px-4 py-2 rounded-xl text-sm font-black">📤 匯出設定</button>
-                    <button @click="copyCSV" class="bg-[#02C874] text-white px-4 py-2 rounded-xl text-sm font-black">📋 複製數據(CSV)</button>
+                    <button @click="openDelimiterModal('current')" class="bg-[#02C874] text-white px-4 py-2 rounded-xl text-sm font-black">📋 複製當期數據(CSV)</button>
+                    <button @click="openDelimiterModal('full')" class="bg-[#1E88E5] text-white px-4 py-2 rounded-xl text-sm font-black">📊 匯出完整歷史(CSV)</button>
                     <button @click="clearAllDataConfirm" class="bg-[#AF7A7D] text-white px-4 py-2 rounded-xl text-sm font-black">🗑️ 清除全部資料</button>
                     <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-4 py-2 rounded-xl text-sm font-black">🏠 返回選單</button>
                 </div>
@@ -317,28 +340,52 @@
                 productList: defaultProducts.map((name, idx) => ({
                     name, risk: '', tag: '', prices: Array(13).fill(0), tags: Array(13).fill(''), sharesHistory: Array(13).fill(0), avgCost: 0, originalIndex: idx
                 })),
-                importDataBuffer: null
+                importDataBuffer: null,
+                // CSV 相關
+                showDelimiterModal: false,
+                csvModalTitle: '',
+                csvExportMode: 'current', // 'current' 或 'full'
+                selectedDelimiter: '|',
+                delimiterOptions: [
+                    { value: '|', label: '管線（|）' },
+                    { value: ',', label: '逗號（,）' },
+                    { value: '\t', label: 'Tab（\\t）' }
+                ]
             }},
             computed: {
                 currentPeriod() {
                     if (this.periodMode === 'manual') return this.manualPeriod;
-                    let max=0;
-                    for(let p of this.productList) for(let i=1;i<=12;i++) if(p.prices[i]>0 && i>max) max=i;
-                    return max||1;
+                    let max = 0;
+                    for (let p of this.productList) {
+                        for (let i = 1; i <= 12; i++) {
+                            if (p.prices[i] > 0 && i > max) max = i;
+                        }
+                    }
+                    return max || 1;
                 },
                 effectiveProductList() {
                     const period = this.currentPeriod;
-                    return this.productList.map((p,idx) => {
-                        let lastPeriod=0, last2Period=0;
-                        for(let i=period-1;i>=1;i--) { if(p.prices[i]>0 && lastPeriod===0) lastPeriod=i;
-                        else if(p.prices[i]>0 && last2Period===0) last2Period=i; }
-                        let last2Price = last2Period ? p.prices[last2Period] : 0;
-                        let price = p.prices[period]||0;
-                        let lastPrice = lastPeriod?p.prices[lastPeriod]:0;
-                        let hasTrendData = lastPrice > 0 && last2Price > 0;
-                        let trendUp = hasTrendData && price > lastPrice && lastPrice > last2Price;
-                        let profitPercent = p.avgCost ? (price - p.avgCost) / p.avgCost * 100 : 0;
-                        let isValidRecovery = hasTrendData && trendUp && price > p.avgCost;
+                    return this.productList.map((p, idx) => {
+                        // 該標的自身有該期價格才使用，否則為 0
+                        const price = p.prices[period] || 0;
+                        const tag = p.tags[period] || '';
+                        // 上期價格：往前找最近一筆有資料的期數
+                        let lastPeriod = 0;
+                        for (let i = period - 1; i >= 1; i--) {
+                            if (p.prices[i] > 0) { lastPeriod = i; break; }
+                        }
+                        const lastPrice = lastPeriod ? p.prices[lastPeriod] : 0;
+                        const last2Period = lastPeriod ? (() => {
+                            for (let i = lastPeriod - 1; i >= 1; i--) {
+                                if (p.prices[i] > 0) return i;
+                            }
+                            return 0;
+                        })() : 0;
+                        const last2Price = last2Period ? p.prices[last2Period] : 0;
+                        const hasTrendData = lastPrice > 0 && last2Price > 0;
+                        const trendUp = hasTrendData && price > lastPrice && lastPrice > last2Price;
+                        const profitPercent = p.avgCost ? (price - p.avgCost) / p.avgCost * 100 : 0;
+                        const isValidRecovery = hasTrendData && trendUp && price > p.avgCost;
                         // 連續上漲期數（過濾無效價格）
                         let streak = 0;
                         for (let i = period; i > 1; i--) {
@@ -369,7 +416,9 @@
                             originalIndex: idx, 
                             price, lastPrice, profitPercent, trendUp, isValidRecovery,
                             shares: p.sharesHistory[period]||0,
-                            streak, pricePosition, rally5, rally3, distanceToPeak
+                            streak, pricePosition, rally5, rally3, distanceToPeak,
+                            // 同步主表格 tag 與歷史 tags
+                            tag: tag || p.tag || ''
                         };
                     }).filter(p => p && typeof p === 'object');
                 },
@@ -604,8 +653,8 @@
                 updateRisk(i,v){ if(this.productList[i]) this.productList[i].risk=v; this.saveAllData(); },
                 updateTag(i,v){ 
                     if(this.productList[i]) {
-                        this.productList[i].tag=v;
-                        // 同時更新歷史 tags
+                        this.productList[i].tag = v;
+                        // 同步寫入歷史 tags
                         const period = this.currentPeriod;
                         if (period >= 1 && period <= 12) {
                             this.productList[i].tags[period] = v;
@@ -739,22 +788,71 @@
                     this.saveAllData();
                 },
                 clearAllSharesPrompt(){ this.showModalMessage('🗑️ 清除所有持倉', `確定要清除 ${this.currentProduct.name} 的所有歷史持倉嗎？`, 'confirm', () => { this.sharesModalData.fill(0); this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData]; this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData); this.saveAllData(); }); },
-                copyCSV(){ 
-                    let headers=['標的名稱','風險','本期價格','上期價格','小道消息','持倉張數']; 
-                    let rows=this.displayList.map(p=>[
+                // ========== CSV 匯出功能 ==========
+                openDelimiterModal(mode) {
+                    this.csvExportMode = mode;
+                    this.csvModalTitle = mode === 'current' ? '📋 複製當期數據' : '📊 匯出完整歷史';
+                    this.showDelimiterModal = true;
+                },
+                confirmDelimiterExport() {
+                    this.showDelimiterModal = false;
+                    if (this.csvExportMode === 'current') {
+                        this.copyCurrentCSV();
+                    } else {
+                        this.doExportFullHistory();
+                    }
+                },
+                // 當期 CSV（複製到剪貼簿）
+                copyCurrentCSV() {
+                    const delimiter = this.selectedDelimiter;
+                    const headers = ['標的名稱', '風險', '本期價格', '上期價格', '小道消息', '持倉張數'];
+                    const rows = this.displayList.map(p => [
                         p.name,
-                        p.risk||'未選',
+                        p.risk || '未選',
                         this.formatPrice(p.price),
                         this.formatPrice(p.lastPrice),
-                        p.tag||'暫無',
+                        p.tag || '暫無',
                         p.shares
                     ]);
-                    let csv = [headers, ...rows]
-                        .map(r => r.map(v => `"${v}"`).join(','))
-                        .join('\n');
+                    const csv = [headers, ...rows].map(r => r.join(delimiter)).join('\n');
                     navigator.clipboard.writeText(csv)
-                        .then(()=>this.showModalMessage('✅ 複製成功','數據已複製到剪貼簿','alert'));
+                        .then(() => this.showModalMessage('✅ 複製成功', '當期數據已複製到剪貼簿', 'alert'));
                 },
+                // 完整歷史 CSV（下載檔案）
+                doExportFullHistory() {
+                    const delimiter = this.selectedDelimiter;
+                    const headers = ['標的名稱', '風險', '期數', '價格', '小道消息', '持倉張數', '成本均價', '未實現損益'];
+                    const rows = [];
+                    for (let p of this.productList) {
+                        for (let i = 1; i <= 12; i++) {
+                            const price = p.prices[i] || 0;
+                            const tag = p.tags[i] || '';
+                            const shares = p.sharesHistory[i] || 0;
+                            const avgCost = p.avgCost || 0;
+                            const unrealized = shares * (price - avgCost);
+                            rows.push([
+                                p.name,
+                                p.risk || '未選',
+                                `第${i}期`,
+                                price.toFixed(2),
+                                tag || '暫無',
+                                shares,
+                                avgCost.toFixed(2),
+                                unrealized.toFixed(2)
+                            ]);
+                        }
+                    }
+                    const csv = [headers, ...rows].map(r => r.join(delimiter)).join('\n');
+                    // 加 BOM 支援 Excel
+                    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    const dateStr = new Date().toISOString().slice(0,10);
+                    link.download = `歷史數據_${dateStr}.csv`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                },
+                // ========== 原有功能 ==========
                 openImportModal(){
                     this.loadLastUsedPreset();
                     const input = document.createElement('input');
@@ -849,7 +947,6 @@
                         });
                     } catch(e){ this.showModalMessage('❌ 載入失敗', '無法讀取共用設定，請確認 GitHub 檔案是否存在', 'alert'); }
                 },
-                // 儲存時加入版本號
                 saveAllData(){ 
                     const dataToSave = {
                         version: DATA_VERSION,
@@ -868,13 +965,11 @@
                     };
                     localStorage.setItem('exchange_tool_data', JSON.stringify(dataToSave));
                 },
-                // 載入時檢查版本號
                 loadAllData(){
                     let saved = localStorage.getItem('exchange_tool_data');
                     if(saved) {
                         try {
                             let data = JSON.parse(saved);
-                            // 相容舊版（無 version 欄位）
                             let version = data.version || 0;
                             if (version <= DATA_VERSION) {
                                 this.fund = data.fund || 0;
