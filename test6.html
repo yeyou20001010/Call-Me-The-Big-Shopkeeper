@@ -72,6 +72,7 @@
         .fund-history-btn { cursor: pointer; color: #5E548E; font-weight: 900; font-size: 0.85rem; padding: 4px 8px; border-radius: 6px; border: 1px solid #D7D3CC; background: #F4F2EE; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
         .fund-history-btn:hover { background: #E8E6E0; border-color: #5E548E; }
         .edit-hint { font-size: 0.65rem; color: #9CA3AF; font-weight: 400; margin-left: 2px; }
+        .fund-status { font-size: 0.65rem; color: #9CA3AF; font-weight: 400; margin-left: 6px; white-space: nowrap; }
         @media (max-width: 768px) {
             .toolbar-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
             .toolbar-right { flex-direction: column !important; align-items: stretch !important; width: 100% !important; gap: 8px !important; }
@@ -95,7 +96,7 @@
             <button v-if="modalType === 'alert'" @click="closeModal" class="w-full mt-4 bg-[#5E548E] text-white py-3 rounded-xl font-black">確定</button>
         </div>
 
-        <!-- 分隔符說明 Modal（最高層級） -->
+        <!-- 分隔符說明 Modal -->
         <div v-if="showDelimiterInfoModal" class="modal-overlay info-overlay" @click="showDelimiterInfoModal = false"></div>
         <div v-if="showDelimiterInfoModal" class="custom-modal modal-narrow modal-info info-modal">
             <div class="flex justify-between items-center mb-4">
@@ -130,7 +131,6 @@
                     </button>
                     <span class="info-icon" @click="showDelimiterInfoModal = true" title="點我看說明">ⓘ</span>
                 </div>
-                <!-- 匯出範圍選擇（完整歷史專用） -->
                 <div v-if="csvExportMode === 'full'" class="mt-4 pt-3 border-t border-gray-200">
                     <div class="flex items-center gap-3">
                         <span class="text-sm font-bold text-gray-600">📅 期數範圍：</span>
@@ -160,7 +160,7 @@
                     <label><input type="checkbox" v-model="importOptions.risk"> 風險</label>
                     <label><input type="checkbox" v-model="importOptions.tag"> 小道消息</label>
                     <label><input type="checkbox" v-model="importOptions.shares"> 持倉張數</label>
-                    <label><input type="checkbox" v-model="importOptions.fund"> 總資金</label>
+                    <label><input type="checkbox" v-model="importOptions.fund"> 交引幣金額</label>
                 </div>
             </div>
             <div class="mb-4">
@@ -261,20 +261,20 @@
             </div>
         </div>
 
-        <!-- 歷史資金彈窗 -->
+        <!-- 歷史推算用資金彈窗 -->
         <div v-if="showFundHistoryModal" class="modal-overlay" @click="closeFundHistoryModal"></div>
         <div v-if="showFundHistoryModal" class="custom-modal modal-narrow">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-black text-[#5E548E]">📊 歷史資金記錄</h3>
+                <h3 class="text-2xl font-black text-[#5E548E]">📊 歷史推算用資金</h3>
                 <button @click="closeFundHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
             </div>
-            <div class="text-xs text-gray-500 mb-3">💡 編輯各期資金後，切換期數時會自動載入對應金額</div>
+            <div class="text-xs text-gray-500 mb-3 bg-blue-50 p-2 rounded-lg">💡 每期金額為該期「開始交易前」的可用交引幣，用於回測與模型推算</div>
             <div class="overflow-y-auto max-h-80">
                 <table class="w-full text-sm">
                     <thead class="sticky top-0 bg-white">
                         <tr class="border-b-2">
                             <th class="p-2">期數</th>
-                            <th class="p-2">資金（元）</th>
+                            <th class="p-2">可用交引幣</th>
                          </tr>
                     </thead>
                     <tbody>
@@ -297,7 +297,7 @@
             </div>
             <div class="mb-4">
                 <p class="text-sm text-gray-500 mb-4">📌 目前正在結算：第 <span class="font-bold text-[#5E548E]">{{ settlementPeriod }}</span> 期的持倉（以第 <span class="font-bold text-[#5E548E]">{{ currentPeriod }}</span> 期價格計算）</p>
-                <p class="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg mb-3">💡 提醒：請先「手動鎖定」切換到「上一期」，再執行結算</p>
+                <p class="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg mb-3">💡 請先「手動鎖定」切換到「上一期」，再執行結算</p>
                 <div class="bg-slate-50 p-4 rounded-xl max-h-60 overflow-y-auto">
                     <table class="w-full text-sm">
                         <thead><tr class="border-b-2"><th class="p-2 text-left">標的</th><th class="p-2 text-right">持倉</th><th class="p-2 text-right">價格</th><th class="p-2 text-right">損益%</th><th class="p-2 text-center">建議</th></tr></thead>
@@ -320,13 +320,21 @@
                     </table>
                 </div>
                 <div class="mt-4 flex justify-between items-center">
-                    <span class="text-sm text-gray-500">📊 目前現金：<span class="font-black">{{ formatWithComma(fund) }} 元</span></span>
+                    <span class="text-sm text-gray-500">📊 目前交引幣：<span class="font-black">{{ formatWithComma(fund) }} 元</span></span>
                     <span class="text-sm text-gray-500">📈 持倉市值：<span class="font-black">{{ formatWithComma(portfolioValue) }} 元</span></span>
                 </div>
             </div>
-            <div class="flex gap-4">
-                <button @click="showSettlementModal = false" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
-                <button @click="executeSettlement" class="flex-1 btn-success py-3 rounded-xl font-black">✅ 確認執行</button>
+            <div class="flex flex-col gap-3">
+                <div class="flex justify-between items-center gap-4">
+                    <button @click="showSettlementModal = false" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
+                    <button @click="executeSettlement" class="flex-1 btn-success py-3 rounded-xl font-black">✅ 確認執行</button>
+                </div>
+                <div class="flex justify-center gap-6">
+                    <button @click="undoSettlement" class="text-sm text-blue-500 hover:text-blue-700 font-bold">↪️ 復原上一筆</button>
+                    <button @click="exportSharesOnly" class="text-sm text-purple-500 hover:text-purple-700 font-bold">📤 匯出持倉</button>
+                    <button @click="triggerImportShares" class="text-sm text-green-500 hover:text-green-700 font-bold">📥 匯入持倉</button>
+                    <input type="file" ref="importSharesInput" style="display:none" accept=".json" @change="importSharesOnly">
+                </div>
             </div>
         </div>
 
@@ -357,7 +365,7 @@
                         <span class="bg-[#5E548E] text-white px-4 py-1 rounded-lg text-sm font-black block md:inline-block break-words max-w-full">📋 標的（點名稱編輯價格）</span>
                         <div class="flex items-center gap-4 toolbar-right">
                             <span class="fund-history-btn" @click="openFundHistoryModal">
-                                📊 歷史資金
+                                📊 歷史推算用資金
                             </span>
                             <select v-model="periodMode" class="border border-[#D7D3CC] rounded-xl p-2 text-sm font-bold bg-white text-[#4A4655]">
                                 <option value="auto">自動（最新期數）</option>
@@ -365,8 +373,9 @@
                             </select>
                             <input v-if="periodMode === 'manual'" type="number" v-model.number="manualPeriod" min="1" max="12" class="input-inline !w-20">
                             <div class="flex items-center gap-2 fund-input-area">
-                                <input type="text" v-model="displayFund" @focus="onFundFocus" @blur="onFundBlur" @input="onFundInput" class="input-inline !w-32 !text-xl !text-orange-600 border-2 border-orange-200" placeholder="總資金(元)">
+                                <input type="text" v-model="displayFund" @focus="onFundFocus" @blur="onFundBlur" @input="onFundInput" class="input-inline !w-32 !text-xl !text-orange-600 border-2 border-orange-200" placeholder="交引幣金額(元)">
                                 <div class="bg-slate-100 px-3 py-2 rounded-xl whitespace-nowrap"><span class="font-black text-indigo-600">{{ formatWan(fund) }}</span></div>
+                                <span class="fund-status">{{ fundStatus }}</span>
                             </div>
                         </div>
                     </div>
@@ -408,7 +417,6 @@
                 <div class="card-std bg-slate-800 text-white sticky top-4 shadow-2xl border-none">
                     <div class="bg-orange-500 px-4 py-1 rounded-lg text-xs font-black inline-block mb-6">🏆 即時買入建議</div>
                     
-                    <!-- 結算引導提示 -->
                     <div v-if="hasPortfolio && periodMode === 'manual'" class="bg-amber-900/40 rounded-2xl p-3 mb-4 border-l-4 border-amber-500">
                         <p class="text-amber-300 text-xs font-bold">📌 有持倉待結算</p>
                         <p class="text-amber-200/70 text-xs mt-1">請點擊「📊 結算持倉」處理上一期持倉，結算完成後再參考買入建議</p>
@@ -454,6 +462,7 @@
         createApp({
             data() { return {
                 fund: 0, displayFund: '0', periodMode: 'auto', manualPeriod: 1,
+                fundStatus: '',
                 showPriceHistoryModal: false, currentProduct: null, currentProductIdx: -1,
                 selectedPricePeriod: 1, modalPrice: 0, modalTag: '', priceModalData: Array(13).fill(0), tagModalData: Array(13).fill(''),
                 showSharesHistoryModal: false, sharesModalData: Array(13).fill(0),
@@ -486,11 +495,21 @@
                     { value: 'csv', label: 'CSV（逗號）' },
                     { value: 'pipe', label: 'Pipe（管線）' },
                     { value: 'markdown', label: 'Markdown Table' }
-                ]
+                ],
+                // 備份資料
+                settlementBackup: null
             }},
             computed: {
                 currentPeriod() {
-                    if (this.periodMode === 'manual') return this.manualPeriod;
+                    if (this.periodMode === 'manual') {
+                        let maxDataPeriod = 0;
+                        for (let p of this.productList) {
+                            for (let i = 1; i <= 12; i++) {
+                                if (p.prices[i] > 0 && i > maxDataPeriod) maxDataPeriod = i;
+                            }
+                        }
+                        return Math.min(this.manualPeriod, maxDataPeriod || 1);
+                    }
                     let max = 0;
                     for (let p of this.productList) {
                         for (let i = 1; i <= 12; i++) {
@@ -797,10 +816,10 @@
                 }
             },
             methods: {
-                formatPrice(v){ return (Math.floor((v||0)*100)/100).toFixed(2); },
+                formatPrice(v){ return (Math.round((v||0)*100)/100).toFixed(2); },
                 formatWithComma(v){ 
                     if (v === undefined || v === null) return '0';
-                    const parts = v.toFixed(2).split('.');
+                    const parts = Number(v).toFixed(2).split('.');
                     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                     return parts.join('.');
                 },
@@ -813,12 +832,12 @@
                 },
                 onFundBlur(){ 
                     this.displayFund = this.formatWithComma(this.fund);
-                    // 寫入歷史資金
                     const period = this.currentPeriod;
                     if (period >= 1 && period <= 12) {
                         this.productList[0].fundHistory[period] = this.fund;
                         this.saveAllData();
                     }
+                    this.fundStatus = '✏️ 手動編輯';
                 },
                 onFundInput(e){ 
                     let raw = e.target.value.replace(/,/g, '');
@@ -838,6 +857,9 @@
                     if (fundValue > 0) {
                         this.fund = fundValue;
                         this.displayFund = this.formatWithComma(fundValue);
+                        this.fundStatus = '📂 歷史記錄';
+                    } else {
+                        this.fundStatus = '';
                     }
                 },
                 getPriceChangePercent(item){ if(item?.lastPrice && item?.price) return ((item.price-item.lastPrice)/item.lastPrice*100).toFixed(1)+'%'; return '-'; },
@@ -983,7 +1005,7 @@
                     this.saveAllData();
                 },
                 clearAllSharesPrompt(){ this.showModalMessage('🗑️ 清除所有持倉', `確定要清除 ${this.currentProduct.name} 的所有歷史持倉嗎？`, 'confirm', () => { this.sharesModalData.fill(0); this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData]; this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData); this.saveAllData(); }); },
-                // ========== 歷史資金功能 ==========
+                // ========== 歷史推算用資金 ==========
                 openFundHistoryModal() {
                     const period = this.currentPeriod;
                     for (let i = 1; i <= 12; i++) {
@@ -1006,19 +1028,18 @@
                         }
                     }
                     this.saveAllData();
-                    // 更新當前資金
                     const period = this.currentPeriod;
                     if (this.fundHistoryModalData[period] > 0) {
                         this.fund = this.fundHistoryModalData[period];
                         this.displayFund = this.formatWithComma(this.fund);
+                        this.fundStatus = '📂 歷史記錄';
                     }
                     this.showFundHistoryModal = false;
-                    this.showModalMessage('✅ 儲存成功', '歷史資金已更新', 'alert');
+                    this.showModalMessage('✅ 儲存成功', '歷史推算用資金已更新', 'alert');
                 },
-                // ========== 結算持倉功能 ==========
+                // ========== 結算持倉 ==========
                 openSettlementModal() {
                     const period = this.currentPeriod;
-                    // 檢查是否在「手動鎖定」模式且切換到上一期
                     if (this.periodMode !== 'manual') {
                         this.showModalMessage('⚠️ 操作提醒', '請先將期數模式切換為「手動鎖定」，並選擇「上一期」再執行結算', 'alert');
                         return;
@@ -1028,13 +1049,20 @@
                         this.showModalMessage('⚠️ 操作提醒', '請切換到「上一期」（小於目前最新期數）再執行結算', 'alert');
                         return;
                     }
+                    // 檢查上一期是否有持倉
+                    let hasShares = false;
+                    for (let p of this.productList) {
+                        if ((p.sharesHistory[prevPeriod] || 0) > 0) { hasShares = true; break; }
+                    }
+                    if (!hasShares) {
+                        this.showModalMessage('ℹ️ 無持倉', '上一期沒有持倉，無需結算', 'alert');
+                        return;
+                    }
                     this.settlementPeriod = prevPeriod;
                     this.portfolioReview = [];
-                    let hasShares = false;
                     for (let p of this.productList) {
                         const shares = p.sharesHistory[prevPeriod] || 0;
                         if (shares > 0) {
-                            hasShares = true;
                             const price = p.prices[period] || 0;
                             const avgCost = p.avgCost || 0;
                             const profitPercent = avgCost > 0 ? (price - avgCost) / avgCost * 100 : 0;
@@ -1061,10 +1089,11 @@
                             });
                         }
                     }
-                    if (!hasShares) {
-                        this.showModalMessage('ℹ️ 無持倉', '上一期沒有持倉，無需結算', 'alert');
-                        return;
-                    }
+                    // 備份當前資料
+                    this.settlementBackup = {
+                        fund: this.fund,
+                        productList: deepClone(this.productList)
+                    };
                     this.showSettlementModal = true;
                 },
                 executeSettlement() {
@@ -1093,20 +1122,88 @@
                             actions.push(`${item.name}：繼續持有`);
                         }
                     }
+                    // 更新交引幣
                     this.fund += totalSellAmount;
                     this.displayFund = this.formatWithComma(this.fund);
-                    // 記錄歷史資金
+                    this.fundStatus = '🔄 已更新';
+                    // 記錄歷史推算用資金（結算前資金）
+                    if (prevPeriod >= 1 && prevPeriod <= 12) {
+                        const prevFund = this.fund - totalSellAmount;
+                        for (let p of this.productList) {
+                            p.fundHistory[prevPeriod] = prevFund;
+                        }
+                    }
+                    // 記錄當前資金
                     if (period >= 1 && period <= 12) {
-                        this.productList[0].fundHistory[period] = this.fund;
+                        for (let p of this.productList) {
+                            p.fundHistory[period] = this.fund;
+                        }
                     }
                     this.saveAllData();
                     this.showSettlementModal = false;
-                    // 切換回自動模式
                     this.periodMode = 'auto';
                     this.showModalMessage('✅ 結算完成', 
-                        `賣出回收：${totalSellAmount.toFixed(2)} 元\n目前現金：${this.fund.toFixed(2)} 元\n\n${actions.join('\n')}`, 
+                        `賣出回收：${totalSellAmount.toFixed(2)} 元\n目前交引幣：${this.fund.toFixed(2)} 元\n\n${actions.join('\n')}`, 
                         'alert'
                     );
+                },
+                undoSettlement() {
+                    if (!this.settlementBackup) {
+                        this.showModalMessage('ℹ️ 無備份', '沒有可復原的結算記錄', 'alert');
+                        return;
+                    }
+                    this.fund = this.settlementBackup.fund;
+                    this.displayFund = this.formatWithComma(this.fund);
+                    this.productList = deepClone(this.settlementBackup.productList);
+                    this.saveAllData();
+                    this.settlementBackup = null;
+                    this.showModalMessage('✅ 復原完成', '已回到結算前的狀態', 'alert');
+                },
+                exportSharesOnly() {
+                    const data = {
+                        version: '1.0',
+                        exportType: 'sharesHistory',
+                        timestamp: new Date().toISOString(),
+                        productList: this.productList.map(p => ({
+                            name: p.name,
+                            sharesHistory: p.sharesHistory
+                        }))
+                    };
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `shares_backup_${new Date().toISOString().slice(0,10)}.json`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                },
+                triggerImportShares() {
+                    this.$refs.importSharesInput.click();
+                },
+                importSharesOnly(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        try {
+                            const data = JSON.parse(ev.target.result);
+                            if (data.exportType !== 'sharesHistory') {
+                                this.showModalMessage('❌ 匯入失敗', '檔案格式不正確，請匯入持倉備份檔', 'alert');
+                                return;
+                            }
+                            for (let importItem of data.productList) {
+                                const target = this.productList.find(p => p.name === importItem.name);
+                                if (target) {
+                                    target.sharesHistory = importItem.sharesHistory;
+                                }
+                            }
+                            this.saveAllData();
+                            this.showModalMessage('✅ 匯入成功', '持倉資料已更新', 'alert');
+                        } catch (err) {
+                            this.showModalMessage('❌ 匯入失敗', '檔案格式錯誤', 'alert');
+                        }
+                    };
+                    reader.readAsText(file);
+                    e.target.value = '';
                 },
                 // ========== CSV 匯出功能 ==========
                 openDelimiterModal(mode) {
@@ -1178,7 +1275,7 @@
                     return [headers, ...rows].map(r => r.join(delimiter)).join('\n');
                 },
                 generateFullHistoryCSV(delimiter, isMarkdown, start, end) {
-                    const headers = ['標的名稱', '風險', '期數', '價格', '小道消息', '持倉張數', '成本均價', '未實現損益', '資金'];
+                    const headers = ['標的名稱', '風險', '期數', '價格', '小道消息', '持倉張數', '成本均價', '未實現損益', '交引幣金額'];
                     const rows = [];
                     const fundHistory = this.productList[0]?.fundHistory || Array(13).fill(0);
                     for (let p of this.productList) {
