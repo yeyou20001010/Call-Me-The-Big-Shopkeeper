@@ -15,9 +15,11 @@
         .input-inline { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; padding: 6px 10px; text-align: right; font-weight: 900; color: #5E548E; outline: none; font-size: 14px; width: 100%; }
         .modal-narrow { max-width: 500px; }
         .modal-wide { max-width: 850px; }
+        .modal-info { max-width: 480px; z-index: 202; }
         .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         .modal-overlay.confirm-overlay { z-index: 200; }
+        .modal-overlay.info-overlay { z-index: 201; }
         .custom-modal.confirm-modal { z-index: 201; }
         .text-gain { color: #E53935 !important; }
         .text-loss { color: #00897B !important; }
@@ -59,11 +61,16 @@
         .btn-danger:hover { background-color: #9B6B6E; }
         .btn-primary { background-color: #5E548E; color: white; border: none; padding: 8px 12px; border-radius: 0.5rem; font-weight: 700; text-align: center; transition: all 0.2s; cursor: pointer; }
         .btn-primary:hover { background-color: #4A3F6E; }
+        .btn-success { background-color: #02C874; color: white; border: none; padding: 8px 12px; border-radius: 0.5rem; font-weight: 700; text-align: center; transition: all 0.2s; cursor: pointer; }
+        .btn-success:hover { background-color: #03A861; }
         .delimiter-btn { padding: 4px 12px; border-radius: 0.5rem; font-weight: 700; font-size: 0.8rem; border: 2px solid #D7D3CC; background: white; cursor: pointer; transition: all 0.2s; }
         .delimiter-btn.active { border-color: #5E548E; background: #5E548E; color: white; }
         .info-icon { color: #9CA3AF; cursor: pointer; font-weight: 900; font-size: 0.9rem; padding: 0 4px; }
         .info-icon:hover { color: #5E548E; }
-        .modal-info { max-width: 480px; }
+        .action-btn { border: 2px solid #D7D3CC; border-radius: 0.75rem; padding: 0.5rem 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; background: white; }
+        .action-btn:hover { background: #F4F2EE; }
+        .action-btn-primary { border-color: #5E548E; background: #5E548E; color: white; }
+        .action-btn-primary:hover { background: #4A3F6E; border-color: #4A3F6E; }
         @media (max-width: 768px) {
             .toolbar-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
             .toolbar-right { flex-direction: column !important; align-items: stretch !important; width: 100% !important; gap: 8px !important; }
@@ -87,8 +94,8 @@
             <button v-if="modalType === 'alert'" @click="closeModal" class="w-full mt-4 bg-[#5E548E] text-white py-3 rounded-xl font-black">確定</button>
         </div>
 
-        <!-- 分隔符說明 Modal -->
-        <div v-if="showDelimiterInfoModal" class="modal-overlay" @click="showDelimiterInfoModal = false"></div>
+        <!-- 分隔符說明 Modal（z-index 提高） -->
+        <div v-if="showDelimiterInfoModal" class="modal-overlay info-overlay" @click="showDelimiterInfoModal = false"></div>
         <div v-if="showDelimiterInfoModal" class="custom-modal modal-narrow modal-info">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-black text-[#5E548E]">📋 分隔符說明</h3>
@@ -126,6 +133,47 @@
             <div class="flex gap-4">
                 <button @click="showDelimiterModal = false" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
                 <button @click="confirmDelimiterExport" class="flex-1 btn-primary py-3 rounded-xl font-black">確認匯出</button>
+            </div>
+        </div>
+
+        <!-- 開始新一期 Modal -->
+        <div v-if="showNewPeriodModal" class="modal-overlay confirm-overlay" @click="showNewPeriodModal = false"></div>
+        <div v-if="showNewPeriodModal" class="custom-modal modal-wide">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-black text-[#5E548E]">🔄 開始新一期</h3>
+                <button @click="showNewPeriodModal = false" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-sm text-gray-500 mb-4">請先輸入本期價格與小道消息，系統將分析目前持倉並建議操作：</p>
+                <div class="bg-slate-50 p-4 rounded-xl max-h-60 overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead><tr class="border-b-2"><th class="p-2 text-left">標的</th><th class="p-2 text-right">持倉</th><th class="p-2 text-right">價格</th><th class="p-2 text-right">損益%</th><th class="p-2 text-center">建議</th></tr></thead>
+                        <tbody>
+                            <tr v-for="item in portfolioReview" :key="item.name" class="border-b">
+                                <td class="p-2 text-left font-bold">{{ item.name }}</td>
+                                <td class="p-2 text-right">{{ item.shares }}</td>
+                                <td class="p-2 text-right">{{ formatPrice(item.price) }}</td>
+                                <td class="p-2 text-right" :class="item.profitPercent >= 0 ? 'text-gain' : 'text-loss'">{{ item.profitPercent.toFixed(1) }}%</td>
+                                <td class="p-2 text-center">
+                                    <select v-model="item.action" class="input-inline !w-24">
+                                        <option value="hold">持有</option>
+                                        <option value="add">加碼</option>
+                                        <option value="reduce">減碼</option>
+                                        <option value="sell">賣出</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 flex justify-between items-center">
+                    <span class="text-sm text-gray-500">📊 目前現金：<span class="font-black">{{ formatWithComma(fund) }} 元</span></span>
+                    <span class="text-sm text-gray-500">📈 持倉市值：<span class="font-black">{{ formatWithComma(portfolioValue) }} 元</span></span>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <button @click="showNewPeriodModal = false" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
+                <button @click="executeNewPeriod" class="flex-1 btn-success py-3 rounded-xl font-black">✅ 確認執行</button>
             </div>
         </div>
 
@@ -255,6 +303,7 @@
                     <button @click="openExportModal" class="bg-[#8E9AAF] text-white px-4 py-2 rounded-xl text-sm font-black">📤 匯出設定</button>
                     <button @click="openDelimiterModal('current')" class="bg-[#02C874] text-white px-4 py-2 rounded-xl text-sm font-black">📋 複製當期數據(CSV)</button>
                     <button @click="openDelimiterModal('full')" class="bg-[#1E88E5] text-white px-4 py-2 rounded-xl text-sm font-black">📊 匯出完整歷史(CSV)</button>
+                    <button @click="openNewPeriodModal" class="bg-[#8E9AAF] text-white px-4 py-2 rounded-xl text-sm font-black">🔄 開始新一期</button>
                     <button @click="clearAllDataConfirm" class="bg-[#AF7A7D] text-white px-4 py-2 rounded-xl text-sm font-black">🗑️ 清除全部資料</button>
                     <button onclick="location.href='portal.html'" class="bg-[#6D6875] text-white px-4 py-2 rounded-xl text-sm font-black">🏠 返回選單</button>
                 </div>
@@ -379,7 +428,10 @@
                     { value: 'csv', label: 'CSV（逗號）' },
                     { value: 'pipe', label: 'Pipe（管線）' },
                     { value: 'markdown', label: 'Markdown Table' }
-                ]
+                ],
+                // 開始新一期相關
+                showNewPeriodModal: false,
+                portfolioReview: []
             }},
             computed: {
                 currentPeriod() {
@@ -395,10 +447,8 @@
                 effectiveProductList() {
                     const period = this.currentPeriod;
                     return this.productList.map((p, idx) => {
-                        // 該標的自身有該期價格才使用，否則為 0
                         const price = p.prices[period] || 0;
                         const tag = p.tags[period] || '';
-                        // 上期價格：往前找最近一筆有資料的期數
                         let lastPeriod = 0;
                         for (let i = period - 1; i >= 1; i--) {
                             if (p.prices[i] > 0) { lastPeriod = i; break; }
@@ -415,13 +465,11 @@
                         const trendUp = hasTrendData && price > lastPrice && lastPrice > last2Price;
                         const profitPercent = p.avgCost ? (price - p.avgCost) / p.avgCost * 100 : 0;
                         const isValidRecovery = hasTrendData && trendUp && price > p.avgCost;
-                        // 連續上漲期數（過濾無效價格）
                         let streak = 0;
                         for (let i = period; i > 1; i--) {
                             if (p.prices[i] > 0 && p.prices[i-1] > 0 && p.prices[i] > p.prices[i-1]) streak++;
                             else break;
                         }
-                        // 價格位置（使用 6期 window + 自動 fallback）
                         let start = Math.max(1, period - 6);
                         let pricesWindow = p.prices.slice(start, period + 1).filter(v => v > 0);
                         let pricePosition = 0.5;
@@ -431,13 +479,10 @@
                             let range = maxPrice - minPrice;
                             pricePosition = range > 0 ? (price - minPrice) / range : 0.5;
                         }
-                        // 5期漲幅（邊界修正：確保有有效資料）
                         let period5Price = period > 5 ? p.prices[period-5] : null;
                         let rally5 = (period5Price !== null && period5Price > 0) ? (price - period5Price) / period5Price : 0;
-                        // 3期漲幅（邊界修正：確保有有效資料）
                         let period3Price = period > 3 ? p.prices[period-3] : null;
                         let rally3 = (period3Price !== null && period3Price > 0) ? (price - period3Price) / period3Price : null;
-                        // 距離高點（超跌反彈用）
                         let maxPrice = pricesWindow.length > 0 ? Math.max(...pricesWindow) : price;
                         let distanceToPeak = maxPrice > 0 ? (maxPrice - price) / maxPrice : 0;
                         return { 
@@ -483,6 +528,16 @@
                     }
                     return res;
                 },
+                portfolioValue() {
+                    const period = this.currentPeriod;
+                    let value = 0;
+                    for (let p of this.productList) {
+                        const price = p.prices[period] || 0;
+                        const shares = p.sharesHistory[period] || 0;
+                        value += price * shares;
+                    }
+                    return value;
+                },
                 recommendations() {
                     const period = this.currentPeriod;
                     const stopLossNames = new Set(this.stopLossList.map(s => s.name));
@@ -496,37 +551,35 @@
                         let riskScore = { '險':1.2, '均':1.0, '穩':0.8 }[p.risk] || 1.0;
                         let tagScore = { '迅速崛起':100, '穩中向好':70, '坊中傳聞':40, '暫無':10 }[tag] || 0;
                         let score = tagScore * riskScore;
-                        // 價格獎勵（低位加分）
                         let priceFactor = 1 + Math.max(0, (10 - price) / 50);
                         score *= priceFactor;
-                        // 價格位置影響
                         if (p.pricePosition < 0.3) score *= 1.15;
                         if (p.pricePosition > 0.7) score *= 0.85;
-                        // 連續上漲 × 價格位置
                         if (p.streak >= 3) {
                             if (p.pricePosition > 0.7) score *= 0.75;
                             else if (p.pricePosition < 0.3) score *= 1.1;
                         }
-                        // 5期漲幅 × 價格位置
                         if (p.rally5 > 0.5) {
                             if (p.pricePosition > 0.7) score *= 0.6;
                             else if (p.pricePosition < 0.3) score *= 1.15;
                         }
-                        // 3期動能（短期爆發，不追高）
                         if (p.rally3 !== null && p.rally3 > 0.2 && p.pricePosition < 0.6) {
                             score *= 1.08;
                         }
-                        // 超跌反彈（距離高點 > 30% + 趨勢向上 + 避開低位重疊）
                         if (p.distanceToPeak > 0.3 && p.trendUp && p.pricePosition > 0.3) {
                             score *= 1.08;
                         }
-                        // 分數上限保護
+                        // 新增：最新一期動能微調
+                        let momentum = p.lastPrice > 0 ? (p.price - p.lastPrice) / p.lastPrice : 0;
+                        if (momentum > 0.1) score *= 1.05;
+                        if (momentum < -0.1) score *= 0.95;
                         score = Math.max(0, Math.min(score, 200));
                         allCandidates.push({
                             ...p,
                             price, tag, score, tagMsg: tag,
                             profitPercent: p.profitPercent,
-                            isValidRecovery: p.isValidRecovery
+                            isValidRecovery: p.isValidRecovery,
+                            momentum: momentum
                         });
                     }
                     allCandidates.sort((a,b) => b.score - a.score);
@@ -543,7 +596,6 @@
                     if (!canAdd && !canNew) return [];
                     
                     let allInTarget = null;
-                    // ALL IN 條件：增加 pricePosition < 0.7 避免高位追高
                     if (holdCandidates.length > 0 && holdCandidates[0].score >= 100 && holdCandidates[0].profitPercent >= -5 && holdCandidates[0].isValidRecovery && holdCandidates[0].pricePosition < 0.7) {
                         allInTarget = holdCandidates[0];
                     } else if (newCandidates.length > 0 && newCandidates[0].score >= 100) {
@@ -569,7 +621,6 @@
                     
                     let result = [];
                     
-                    // 加碼池（動態門檻）
                     if (addPoolRatio > 0 && holdCandidates.length > 0) {
                         let topScore = holdCandidates[0].score;
                         let topHeld = holdCandidates.filter(p => p.score >= topScore * 0.8);
@@ -609,7 +660,6 @@
                         }
                     }
                     
-                    // 新標的池
                     if (newPoolRatio > 0 && newCandidates.length > 0) {
                         let topNew = [...newCandidates].slice(0, 3);
                         let totalScore = topNew.reduce((s, t) => s + t.score, 0);
@@ -666,7 +716,6 @@
             },
             watch: {
                 manualPeriod(newVal) {
-                    // 手動鎖定期數自動修正為最大有資料期數
                     let maxPeriod = 0;
                     for (let p of this.productList) {
                         for (let i = 1; i <= 12; i++) {
@@ -700,7 +749,6 @@
                 updateTag(i,v){ 
                     if(this.productList[i]) {
                         this.productList[i].tag = v;
-                        // 同步寫入歷史 tags
                         const period = this.currentPeriod;
                         if (period >= 1 && period <= 12) {
                             this.productList[i].tags[period] = v;
@@ -743,7 +791,6 @@
                     this.tagModalData[this.selectedPricePeriod] = this.modalTag;
                     this.productList[this.currentProductIdx].prices = [...this.priceModalData];
                     this.productList[this.currentProductIdx].tags = [...this.tagModalData];
-                    // 如果編輯的是當前期數，同步更新主表格的 tag
                     if (this.selectedPricePeriod === this.currentPeriod) {
                         this.productList[this.currentProductIdx].tag = this.modalTag;
                     }
@@ -834,6 +881,81 @@
                     this.saveAllData();
                 },
                 clearAllSharesPrompt(){ this.showModalMessage('🗑️ 清除所有持倉', `確定要清除 ${this.currentProduct.name} 的所有歷史持倉嗎？`, 'confirm', () => { this.sharesModalData.fill(0); this.productList[this.currentProductIdx].sharesHistory = [...this.sharesModalData]; this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.productList[this.currentProductIdx].prices, this.sharesModalData); this.saveAllData(); }); },
+                // ========== 開始新一期 ==========
+                openNewPeriodModal() {
+                    const period = this.currentPeriod;
+                    this.portfolioReview = [];
+                    for (let p of this.productList) {
+                        const shares = p.sharesHistory[period] || 0;
+                        if (shares > 0) {
+                            const price = p.prices[period] || 0;
+                            const avgCost = p.avgCost || 0;
+                            const profitPercent = avgCost > 0 ? (price - avgCost) / avgCost * 100 : 0;
+                            // 計算建議：根據評分
+                            let score = 0;
+                            let tag = p.tags[period] || p.tag || '暫無';
+                            if (tag !== '一文不值' && tag !== '或有風險') {
+                                let riskScore = { '險':1.2, '均':1.0, '穩':0.8 }[p.risk] || 1.0;
+                                let tagScore = { '迅速崛起':100, '穩中向好':70, '坊中傳聞':40, '暫無':10 }[tag] || 0;
+                                score = tagScore * riskScore;
+                            }
+                            let action = 'hold';
+                            if (profitPercent < -15) action = 'sell';
+                            else if (score >= 80) action = 'add';
+                            else if (score >= 50) action = 'hold';
+                            else action = 'sell';
+                            this.portfolioReview.push({
+                                name: p.name,
+                                shares: shares,
+                                price: price,
+                                avgCost: avgCost,
+                                profitPercent: profitPercent,
+                                score: score,
+                                action: action,
+                                actionText: ''
+                            });
+                        }
+                    }
+                    this.showNewPeriodModal = true;
+                },
+                executeNewPeriod() {
+                    const period = this.currentPeriod;
+                    let totalSellAmount = 0;
+                    let totalBuyAmount = 0;
+                    const actions = [];
+                    for (let item of this.portfolioReview) {
+                        const p = this.productList.find(p => p.name === item.name);
+                        if (!p) continue;
+                        if (item.action === 'sell') {
+                            const sellAmount = item.shares * item.price;
+                            totalSellAmount += sellAmount;
+                            p.sharesHistory[period] = 0;
+                            p.avgCost = 0;
+                            actions.push(`${item.name}：賣出 ${item.shares} 張，回收 ${sellAmount.toFixed(2)} 元`);
+                        } else if (item.action === 'reduce') {
+                            const reduceShares = Math.floor(item.shares * 0.5);
+                            const sellAmount = reduceShares * item.price;
+                            totalSellAmount += sellAmount;
+                            p.sharesHistory[period] = item.shares - reduceShares;
+                            actions.push(`${item.name}：減碼 ${reduceShares} 張，回收 ${sellAmount.toFixed(2)} 元`);
+                        } else if (item.action === 'add') {
+                            // 加碼會在後續買入建議中處理
+                            actions.push(`${item.name}：建議加碼（請參考買入建議）`);
+                        } else {
+                            actions.push(`${item.name}：繼續持有`);
+                        }
+                    }
+                    // 更新資金
+                    this.fund += totalSellAmount;
+                    this.displayFund = this.formatWithComma(this.fund);
+                    this.saveAllData();
+                    this.showNewPeriodModal = false;
+                    // 顯示結算結果
+                    this.showModalMessage('✅ 新一期結算完成', 
+                        `賣出回收：${totalSellAmount.toFixed(2)} 元\n目前現金：${this.fund.toFixed(2)} 元\n\n${actions.join('\n')}`, 
+                        'alert'
+                    );
+                },
                 // ========== CSV 匯出功能 ==========
                 openDelimiterModal(mode) {
                     this.csvExportMode = mode;
@@ -889,7 +1011,6 @@
                         p.shares
                     ]);
                     if (isMarkdown) {
-                        // Markdown Table 格式
                         const headerRow = '| ' + headers.join(' | ') + ' |';
                         const alignRow = '| ' + headers.map((h, i) => {
                             if (i === 0 || i === 4) return '---';
@@ -931,7 +1052,6 @@
                         const dataRows = rows.map(row => '| ' + row.join(' | ') + ' |');
                         return [headerRow, alignRow, ...dataRows].join('\n');
                     }
-                    // 加 BOM 支援 Excel
                     const csvContent = [headers, ...rows].map(r => r.join(delimiter)).join('\n');
                     return '\uFEFF' + csvContent;
                 },
