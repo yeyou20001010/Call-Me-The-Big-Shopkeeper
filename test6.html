@@ -15,12 +15,14 @@
         .input-inline { background: #F4F2EE; border: 1px solid #D7D3CC; border-radius: 0.5rem; padding: 6px 10px; text-align: right; font-weight: 900; color: #5E548E; outline: none; font-size: 14px; width: 100%; }
         .modal-narrow { max-width: 500px; }
         .modal-wide { max-width: 850px; }
-        .modal-info { max-width: 480px; z-index: 202; }
+        .modal-info { max-width: 480px; }
         .custom-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 1.5rem; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3); z-index: 100; width: 90%; padding: 1.5rem; border: 2px solid #5E548E; max-height: 85vh; overflow-y: auto; }
+        /* z-index 層級：backdrop 90 → 一般 modal 100 → confirm overlay 200 → confirm modal 201 → info overlay 300 → info modal 301 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(3px); }
         .modal-overlay.confirm-overlay { z-index: 200; }
-        .modal-overlay.info-overlay { z-index: 201; }
+        .modal-overlay.info-overlay { z-index: 300; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
         .custom-modal.confirm-modal { z-index: 201; }
+        .custom-modal.info-modal { z-index: 301; }
         .text-gain { color: #E53935 !important; }
         .text-loss { color: #00897B !important; }
         .row-label { font-size: 12px; color: #8E9AAF; font-weight: 900; margin-bottom: 2px; display: block; }
@@ -94,9 +96,9 @@
             <button v-if="modalType === 'alert'" @click="closeModal" class="w-full mt-4 bg-[#5E548E] text-white py-3 rounded-xl font-black">確定</button>
         </div>
 
-        <!-- 分隔符說明 Modal（z-index 提高） -->
+        <!-- 分隔符說明 Modal（最高層級） -->
         <div v-if="showDelimiterInfoModal" class="modal-overlay info-overlay" @click="showDelimiterInfoModal = false"></div>
-        <div v-if="showDelimiterInfoModal" class="custom-modal modal-narrow modal-info">
+        <div v-if="showDelimiterInfoModal" class="custom-modal modal-narrow modal-info info-modal">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-black text-[#5E548E]">📋 分隔符說明</h3>
                 <button @click="showDelimiterInfoModal = false" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
@@ -138,7 +140,7 @@
 
         <!-- 開始新一期 Modal -->
         <div v-if="showNewPeriodModal" class="modal-overlay confirm-overlay" @click="showNewPeriodModal = false"></div>
-        <div v-if="showNewPeriodModal" class="custom-modal modal-wide">
+        <div v-if="showNewPeriodModal" class="custom-modal modal-wide confirm-modal">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-2xl font-black text-[#5E548E]">🔄 開始新一期</h3>
                 <button @click="showNewPeriodModal = false" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
