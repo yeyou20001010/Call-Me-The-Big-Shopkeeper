@@ -131,7 +131,7 @@
             </div>
         </div>
 
-        <!-- 價格歷史彈窗 -->
+        <!-- 價格歷史彈窗（新增小道消息下拉選單） -->
         <div v-if="showPriceHistoryModal" class="modal-overlay" @click="closePriceHistoryModal"></div>
         <div v-if="showPriceHistoryModal" class="custom-modal modal-wide">
             <div class="flex justify-between items-center mb-4">
@@ -146,6 +146,16 @@
                     <div class="mt-4">
                         <label class="row-label">價格（元）</label>
                         <input type="number" step="0.01" v-model.number="modalPrice" class="input-inline !text-xl">
+                        <label class="row-label mt-3">小道消息</label>
+                        <select v-model="modalTag" class="input-inline !text-xl">
+                            <option value="">請選擇</option>
+                            <option value="迅速崛起">迅速崛起</option>
+                            <option value="穩中向好">穩中向好</option>
+                            <option value="坊中傳聞">坊中傳聞</option>
+                            <option value="或有風險">或有風險</option>
+                            <option value="一文不值">一文不值</option>
+                            <option value="暫無">暫無</option>
+                        </select>
                         <button @click="savePricePeriod" class="mt-3 w-full btn-primary py-2 rounded-xl font-black">💾 儲存</button>
                         <button @click="clearAllPricesPrompt" class="mt-2 w-full btn-danger py-2 rounded-xl font-black text-sm">🗑️ 清除所有價格</button>
                     </div>
@@ -283,7 +293,7 @@
         }
 
         // 當前資料結構版本號（用於 localStorage 升級）
-        const DATA_VERSION = 1;
+        const DATA_VERSION = 2;
 
         const defaultProducts = [
             '千刻地政','米和油店','朵朵縫紉','安行鞋業','宋城閃送','凝禮織造','東南園林','朧湖水築','豬豬戲院','衡動建築',
@@ -295,7 +305,7 @@
             data() { return {
                 fund: 0, displayFund: '0', periodMode: 'auto', manualPeriod: 1,
                 showPriceHistoryModal: false, currentProduct: null, currentProductIdx: -1,
-                selectedPricePeriod: 1, modalPrice: 0, priceModalData: Array(13).fill(0),
+                selectedPricePeriod: 1, modalPrice: 0, modalTag: '', priceModalData: Array(13).fill(0), tagModalData: Array(13).fill(''),
                 showSharesHistoryModal: false, sharesModalData: Array(13).fill(0),
                 sortKey: null, sortOrder: 'asc',
                 showImportModal: false, showExportModal: false,
@@ -305,7 +315,7 @@
                 presets: { 1: null, 2: null }, lastUsedPreset: null,
                 modalVisible: false, modalTitle: '', modalMsg: '', modalType: '', modalCallback: null,
                 productList: defaultProducts.map((name, idx) => ({
-                    name, risk: '', tag: '', prices: Array(13).fill(0), sharesHistory: Array(13).fill(0), avgCost: 0, originalIndex: idx
+                    name, risk: '', tag: '', prices: Array(13).fill(0), tags: Array(13).fill(''), sharesHistory: Array(13).fill(0), avgCost: 0, originalIndex: idx
                 })),
                 importDataBuffer: null
             }},
@@ -592,7 +602,17 @@
                 calculateUnrealized(item){ return item?.shares && item?.avgCost && item?.price ? (item.price-item.avgCost)*item.shares : 0; },
                 getUnrealizedClass(item){ let v=this.calculateUnrealized(item); return v>0?'text-gain':v<0?'text-loss':''; },
                 updateRisk(i,v){ if(this.productList[i]) this.productList[i].risk=v; this.saveAllData(); },
-                updateTag(i,v){ if(this.productList[i]) this.productList[i].tag=v; this.saveAllData(); },
+                updateTag(i,v){ 
+                    if(this.productList[i]) {
+                        this.productList[i].tag=v;
+                        // 同時更新歷史 tags
+                        const period = this.currentPeriod;
+                        if (period >= 1 && period <= 12) {
+                            this.productList[i].tags[period] = v;
+                        }
+                        this.saveAllData();
+                    }
+                },
                 sortByRisk(){ if(this.sortKey === 'risk') this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc'; else { this.sortKey = 'risk'; this.sortOrder = 'asc'; } },
                 sortByTag(){ if(this.sortKey === 'tag') this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc'; else { this.sortKey = 'tag'; this.sortOrder = 'asc'; } },
                 sortByShares(){ if(this.sortKey === 'shares') this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc'; else { this.sortKey = 'shares'; this.sortOrder = 'asc'; } },
@@ -606,11 +626,49 @@
                     }
                     return totalShares > 0 ? totalCost / totalShares : 0;
                 },
-                openPriceHistoryModal(p){ if(!p) return; this.currentProduct=p; this.currentProductIdx=p.originalIndex; this.priceModalData = [...p.prices]; this.selectedPricePeriod = this.getLatestPricePeriod(); this.modalPrice = this.priceModalData[this.selectedPricePeriod]||0; this.showPriceHistoryModal=true; this.$nextTick(()=>{ setTimeout(()=>this.drawPriceChart(), 100); }); },
+                openPriceHistoryModal(p){ 
+                    if(!p) return; 
+                    this.currentProduct=p; 
+                    this.currentProductIdx=p.originalIndex; 
+                    this.priceModalData = [...p.prices]; 
+                    this.tagModalData = [...p.tags];
+                    this.selectedPricePeriod = this.getLatestPricePeriod(); 
+                    this.modalPrice = this.priceModalData[this.selectedPricePeriod]||0;
+                    this.modalTag = this.tagModalData[this.selectedPricePeriod]||'';
+                    this.showPriceHistoryModal=true; 
+                    this.$nextTick(()=>{ setTimeout(()=>this.drawPriceChart(), 100); }); 
+                },
                 closePriceHistoryModal(){ this.showPriceHistoryModal=false; },
-                loadPriceForPeriod(period){ this.modalPrice = this.priceModalData[period] || 0; },
-                savePricePeriod(){ this.priceModalData[this.selectedPricePeriod] = this.modalPrice; this.productList[this.currentProductIdx].prices = [...this.priceModalData]; this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.priceModalData, this.productList[this.currentProductIdx].sharesHistory); this.saveAllData(); this.drawPriceChart(); },
-                clearAllPricesPrompt(){ this.showModalMessage('🗑️ 清除所有價格', `確定要清除 ${this.currentProduct.name} 的所有歷史價格嗎？`, 'confirm', () => { this.priceModalData.fill(0); this.modalPrice=0; this.productList[this.currentProductIdx].prices = [...this.priceModalData]; this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.priceModalData, this.productList[this.currentProductIdx].sharesHistory); this.saveAllData(); this.drawPriceChart(); }); },
+                loadPriceForPeriod(period){ 
+                    this.modalPrice = this.priceModalData[period] || 0;
+                    this.modalTag = this.tagModalData[period] || '';
+                },
+                savePricePeriod(){ 
+                    this.priceModalData[this.selectedPricePeriod] = this.modalPrice;
+                    this.tagModalData[this.selectedPricePeriod] = this.modalTag;
+                    this.productList[this.currentProductIdx].prices = [...this.priceModalData];
+                    this.productList[this.currentProductIdx].tags = [...this.tagModalData];
+                    // 如果編輯的是當前期數，同步更新主表格的 tag
+                    if (this.selectedPricePeriod === this.currentPeriod) {
+                        this.productList[this.currentProductIdx].tag = this.modalTag;
+                    }
+                    this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.priceModalData, this.productList[this.currentProductIdx].sharesHistory);
+                    this.saveAllData(); 
+                    this.drawPriceChart();
+                },
+                clearAllPricesPrompt(){ 
+                    this.showModalMessage('🗑️ 清除所有價格', `確定要清除 ${this.currentProduct.name} 的所有歷史價格嗎？`, 'confirm', () => { 
+                        this.priceModalData.fill(0); 
+                        this.tagModalData.fill('');
+                        this.modalPrice=0;
+                        this.modalTag='';
+                        this.productList[this.currentProductIdx].prices = [...this.priceModalData];
+                        this.productList[this.currentProductIdx].tags = [...this.tagModalData];
+                        this.productList[this.currentProductIdx].avgCost = this.calculateAvgCost(this.priceModalData, this.productList[this.currentProductIdx].sharesHistory);
+                        this.saveAllData(); 
+                        this.drawPriceChart(); 
+                    }); 
+                },
                 getLatestPricePeriod(){ for(let i=12;i>=1;i--) if(this.priceModalData[i]>0) return i; return 1; },
                 drawPriceChart() {
                     let canvas = document.getElementById('priceChart');
@@ -741,6 +799,11 @@
                     if(this.importOptions.tag) {
                         for(let i=0;i<this.productList.length && i<data.productList.length;i++) {
                             if(data.productList[i]?.tag) this.productList[i].tag = data.productList[i].tag;
+                            if(data.productList[i]?.tags) {
+                                this.productList[i].tags = deepClone(data.productList[i].tags);
+                            } else {
+                                this.productList[i].tags = Array(13).fill('');
+                            }
                         }
                     }
                     if(this.importOptions.shares) {
@@ -756,7 +819,21 @@
                     this.showModalMessage('✅ 匯入完成', '設定已更新', 'alert');
                 },
                 doExport(){
-                    let exportData={version:this.exportVersion, activityStart:this.activityStart, activityEnd:this.activityEnd, fund:this.fund, productList:this.productList.map(p=>({name:p.name,risk:p.risk,tag:p.tag,prices:p.prices,sharesHistory:p.sharesHistory,avgCost:p.avgCost}))};
+                    let exportData={
+                        version: this.exportVersion,
+                        activityStart: this.activityStart,
+                        activityEnd: this.activityEnd,
+                        fund: this.fund,
+                        productList: this.productList.map(p => ({
+                            name: p.name,
+                            risk: p.risk,
+                            tag: p.tag,
+                            prices: p.prices,
+                            tags: p.tags,
+                            sharesHistory: p.sharesHistory,
+                            avgCost: p.avgCost
+                        }))
+                    };
                     let blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'});
                     let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='exchange_preset.json'; a.click(); URL.revokeObjectURL(a.href); this.closeExportModal();
                 },
@@ -784,6 +861,7 @@
                             risk: p.risk,
                             tag: p.tag,
                             prices: p.prices,
+                            tags: p.tags,
                             sharesHistory: p.sharesHistory,
                             avgCost: p.avgCost
                         }))
@@ -809,6 +887,7 @@
                                             this.productList[i].risk = data.productList[i].risk || '';
                                             this.productList[i].tag = data.productList[i].tag || '';
                                             this.productList[i].prices = data.productList[i].prices || Array(13).fill(0);
+                                            this.productList[i].tags = data.productList[i].tags || Array(13).fill('');
                                             this.productList[i].sharesHistory = data.productList[i].sharesHistory || Array(13).fill(0);
                                             this.productList[i].avgCost = data.productList[i].avgCost || 0;
                                         }
