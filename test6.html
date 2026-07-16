@@ -502,14 +502,10 @@
             computed: {
                 currentPeriod() {
                     if (this.periodMode === 'manual') {
-                        let maxDataPeriod = 0;
-                        for (let p of this.productList) {
-                            for (let i = 1; i <= 12; i++) {
-                                if (p.prices[i] > 0 && i > maxDataPeriod) maxDataPeriod = i;
-                            }
-                        }
-                        return Math.min(this.manualPeriod, maxDataPeriod || 1);
+                        // 手動模式：直接返回手動設定的期數
+                        return this.manualPeriod;
                     }
+                    // 自動模式：找最大有資料期數
                     let max = 0;
                     for (let p of this.productList) {
                         for (let i = 1; i <= 12; i++) {
@@ -1039,35 +1035,41 @@
                 },
                 // ========== 結算持倉 ==========
                 openSettlementModal() {
-                    const period = this.currentPeriod;
+                    // 計算最新有資料的期數
+                    let latestDataPeriod = 0;
+                    for (let p of this.productList) {
+                        for (let i = 1; i <= 12; i++) {
+                            if (p.prices[i] > 0 && i > latestDataPeriod) latestDataPeriod = i;
+                        }
+                    }
                     if (this.periodMode !== 'manual') {
-                        this.showModalMessage('⚠️ 操作提醒', '請先將期數模式切換為「手動鎖定」，並選擇「上一期」再執行結算', 'alert');
+                        this.showModalMessage('⚠️ 操作提醒', '請先將期數模式切換為「手動鎖定」，再執行結算', 'alert');
                         return;
                     }
-                    const prevPeriod = this.manualPeriod;
-                    if (prevPeriod >= period) {
+                    const targetPeriod = this.manualPeriod;
+                    if (targetPeriod >= latestDataPeriod) {
                         this.showModalMessage('⚠️ 操作提醒', '請切換到「上一期」（小於目前最新期數）再執行結算', 'alert');
                         return;
                     }
                     // 檢查上一期是否有持倉
                     let hasShares = false;
                     for (let p of this.productList) {
-                        if ((p.sharesHistory[prevPeriod] || 0) > 0) { hasShares = true; break; }
+                        if ((p.sharesHistory[targetPeriod] || 0) > 0) { hasShares = true; break; }
                     }
                     if (!hasShares) {
                         this.showModalMessage('ℹ️ 無持倉', '上一期沒有持倉，無需結算', 'alert');
                         return;
                     }
-                    this.settlementPeriod = prevPeriod;
+                    this.settlementPeriod = targetPeriod;
                     this.portfolioReview = [];
                     for (let p of this.productList) {
-                        const shares = p.sharesHistory[prevPeriod] || 0;
+                        const shares = p.sharesHistory[targetPeriod] || 0;
                         if (shares > 0) {
-                            const price = p.prices[period] || 0;
+                            const price = p.prices[latestDataPeriod] || 0;
                             const avgCost = p.avgCost || 0;
                             const profitPercent = avgCost > 0 ? (price - avgCost) / avgCost * 100 : 0;
                             let score = 0;
-                            let tag = p.tags[prevPeriod] || p.tag || '暫無';
+                            let tag = p.tags[targetPeriod] || p.tag || '暫無';
                             if (tag !== '一文不值' && tag !== '或有風險') {
                                 let riskScore = { '險':1.2, '均':1.0, '穩':0.8 }[p.risk] || 1.0;
                                 let tagScore = { '迅速崛起':100, '穩中向好':70, '坊中傳聞':40, '暫無':10 }[tag] || 0;
