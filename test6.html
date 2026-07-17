@@ -98,7 +98,9 @@
 <body class="p-4 md:p-8">
     <div id="app" v-cloak class="max-w-[1600px] mx-auto">
 
-        <!-- 通用確認 Modal -->
+        <!-- ============================================================ -->
+        <!-- 通用確認 Modal                                                -->
+        <!-- ============================================================ -->
         <div v-if="modalVisible" class="modal-overlay confirm-overlay" @click="closeModal"></div>
         <div v-if="modalVisible" class="custom-modal modal-narrow confirm-modal">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">{{ modalTitle }}</h3>
@@ -110,7 +112,9 @@
             <button v-if="modalType === 'alert'" @click="closeModal" class="w-full mt-4 bg-[#5E548E] text-white py-3 rounded-xl font-black">確定</button>
         </div>
 
-        <!-- 分隔符說明 Modal -->
+        <!-- ============================================================ -->
+        <!-- 分隔符說明 Modal                                              -->
+        <!-- ============================================================ -->
         <div v-if="showDelimiterInfoModal" class="modal-overlay info-overlay" @click="showDelimiterInfoModal = false"></div>
         <div v-if="showDelimiterInfoModal" class="custom-modal modal-narrow modal-info info-modal">
             <div class="flex justify-between items-center mb-4">
@@ -126,7 +130,9 @@
             <button @click="showDelimiterInfoModal = false" class="w-full mt-4 btn-primary py-2 rounded-xl font-black">我知道了</button>
         </div>
 
-        <!-- 匯出 CSV 分隔符選擇 Modal -->
+        <!-- ============================================================ -->
+        <!-- 匯出 CSV 分隔符選擇 Modal                                     -->
+        <!-- ============================================================ -->
         <div v-if="showDelimiterModal" class="modal-overlay" @click="showDelimiterModal = false"></div>
         <div v-if="showDelimiterModal" class="custom-modal modal-narrow">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">{{ csvModalTitle }}</h3>
@@ -162,7 +168,9 @@
             </div>
         </div>
 
-        <!-- 匯入設定 Modal -->
+        <!-- ============================================================ -->
+        <!-- 匯入設定 Modal                                                -->
+        <!-- ============================================================ -->
         <div v-if="showImportModal" class="modal-overlay" @click="closeImportModal"></div>
         <div v-if="showImportModal" class="custom-modal modal-narrow">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">📥 匯入設定</h3>
@@ -192,7 +200,9 @@
             </div>
         </div>
 
-        <!-- 匯出設定 Modal -->
+        <!-- ============================================================ -->
+        <!-- 匯出設定 Modal                                                -->
+        <!-- ============================================================ -->
         <div v-if="showExportModal" class="modal-overlay" @click="closeExportModal"></div>
         <div v-if="showExportModal" class="custom-modal modal-narrow">
             <h3 class="text-2xl font-black text-[#5E548E] mb-4">📤 匯出設定</h3>
@@ -211,7 +221,9 @@
             </div>
         </div>
 
-        <!-- 價格歷史彈窗 -->
+        <!-- ============================================================ -->
+        <!-- 價格歷史彈窗                                                  -->
+        <!-- ============================================================ -->
         <div v-if="showPriceHistoryModal" class="modal-overlay" @click="closePriceHistoryModal"></div>
         <div v-if="showPriceHistoryModal" class="custom-modal modal-wide">
             <div class="flex justify-between items-center mb-4">
@@ -247,7 +259,9 @@
             </div>
         </div>
 
-        <!-- 持倉歷史彈窗 -->
+        <!-- ============================================================ -->
+        <!-- 持倉歷史彈窗                                                  -->
+        <!-- ============================================================ -->
         <div v-if="showSharesHistoryModal" class="modal-overlay" @click="closeSharesHistoryModal"></div>
         <div v-if="showSharesHistoryModal" class="custom-modal modal-narrow">
             <div class="flex justify-between items-center mb-4">
@@ -275,7 +289,9 @@
             </div>
         </div>
 
-        <!-- 歷史推算用資金彈窗 -->
+        <!-- ============================================================ -->
+        <!-- 歷史推算用資金彈窗                                            -->
+        <!-- ============================================================ -->
         <div v-if="showFundHistoryModal" class="modal-overlay" @click="closeFundHistoryModal"></div>
         <div v-if="showFundHistoryModal" class="custom-modal modal-narrow">
             <div class="flex justify-between items-center mb-4">
@@ -303,7 +319,7 @@
         </div>
 
         <!-- ============================================================ -->
-        <!-- 持倉決策模擬 Modal（保留作為 Decision Inspector）              -->
+        <!-- 決策檢查器（原 Settlement，開發者工具）                       -->
         <!-- ============================================================ -->
         <div v-if="showSettlementModal" class="modal-overlay confirm-overlay" @click="showSettlementModal = false"></div>
         <div v-if="showSettlementModal" class="custom-modal modal-wide confirm-modal">
@@ -433,23 +449,24 @@
                         <span class="bg-orange-500 px-4 py-1 rounded-lg text-xs font-black inline-block">🏆 策略中心</span>
                         <span v-if="strategySnapshot" class="text-xs text-blue-300">🔒 策略已鎖定</span>
                         <span v-else-if="workflowStatus === 'executed'" class="text-xs text-green-300">✅ 本期已完成</span>
-                        <span v-else-if="workflowStatus === 'settled'" class="text-xs text-blue-300">📋 可建立策略</span>
-                        <span v-else-if="workflowStatus === 'pending'" class="text-xs text-amber-300">⏳ 待處理持倉</span>
+                        <span v-else class="text-xs text-gray-400">📋 可建立策略</span>
                     </div>
 
-                    <!-- 情境1：待處理持倉 -->
-                    <div v-if="workflowStatus === 'pending'" class="bg-amber-900/50 rounded-2xl p-4 mb-4 border-l-4 border-amber-400">
-                        <div class="flex items-center gap-2 text-amber-300 font-black">⚠️ 上一期持倉待處理</div>
-                        <p class="text-amber-200/80 text-sm mt-1">
-                            請點擊主畫面上方
-                            <span class="bg-amber-700/50 px-2 py-1 rounded text-white font-bold">💼 持倉決策模擬</span>
-                            處理上一期持倉
+                    <!-- ========================================================== -->
+                    <!-- 情境：待處理持倉（引導文字，不阻擋操作）                      -->
+                    <!-- ========================================================== -->
+                    <div v-if="workflowStatus === 'pending' && !strategySnapshot" class="bg-amber-900/50 rounded-2xl p-3 mb-4 border-l-4 border-amber-400">
+                        <div class="flex items-center gap-2 text-amber-300 font-black text-sm">📌 上一期有持倉待處理</div>
+                        <p class="text-amber-200/70 text-xs mt-1">
+                            點擊下方「建立本期策略」，AI 將自動分析並產生完整交易計畫
                         </p>
-                        <p class="text-amber-200/50 text-xs mt-2">💡 完成後將自動為你建立本期策略</p>
                     </div>
 
-                    <!-- 情境2：已結算，可建立策略 -->
-                    <div v-if="workflowStatus === 'settled' && !strategySnapshot">
+                    <!-- ========================================================== -->
+                    <!-- 情境：一般狀態（顯示推薦 + 建立策略按鈕）                    -->
+                    <!-- ========================================================== -->
+                    <div v-if="!strategySnapshot">
+                        <!-- 即時推薦摘要 -->
                         <div class="bg-white/10 rounded-3xl p-4 mb-4">
                             <h4 class="text-lg font-black text-yellow-400 mb-2">{{ decisionMsg }}</h4>
                             <div class="text-sm text-slate-200" v-html="decisionDetail"></div>
@@ -459,6 +476,7 @@
                             </div>
                         </div>
 
+                        <!-- 推薦清單 -->
                         <div v-for="rec in recommendations" :key="rec.name"
                              class="bg-black/30 rounded-xl p-3 mb-2 border-l-4" :class="rec.borderColor">
                             <div class="flex justify-between">
@@ -474,22 +492,26 @@
 
                         <div v-if="!recommendations.length" class="text-gray-400 text-sm mb-4">⚠️ 市場訊號不足，建議保留現金</div>
 
+                        <!-- 建立策略按鈕（無論 workflow 狀態，只要有推薦就顯示） -->
                         <button v-if="recommendations.length"
                                 @click="generateStrategy"
                                 class="w-full mt-2 bg-[#5E548E] text-white py-3 rounded-xl font-black hover:bg-[#4A3F6E] transition">
                             📋 建立本期策略
                         </button>
-                        <p v-if="recommendations.length" class="text-xs text-gray-500 mt-2 text-center">點擊後鎖定推薦，開始執行</p>
+                        <p v-if="recommendations.length" class="text-xs text-gray-500 mt-2 text-center">
+                            AI 將自動分析所有持股，產生完整交易計畫
+                        </p>
                     </div>
 
-                    <!-- 情境3：有策略快照（完整交易計畫） -->
+                    <!-- ========================================================== -->
+                    <!-- 情境：有策略快照（完整交易計畫）                              -->
+                    <!-- ========================================================== -->
                     <div v-if="strategySnapshot">
                         <div class="bg-blue-900/30 rounded-xl p-2 mb-3 text-center text-xs text-blue-300">
                             🔒 策略已鎖定
                             <span class="block text-gray-400 text-[10px]">第 {{ strategySnapshot.period }} 期</span>
                         </div>
 
-                        <!-- 完整策略內容 -->
                         <div class="space-y-2 text-sm">
 
                             <!-- 保留清單 -->
@@ -498,7 +520,7 @@
                                 <div v-for="item in strategySnapshot.hold" :key="item.name" class="bg-black/20 rounded p-1.5 mb-1">
                                     <span class="font-bold">{{ item.name }}</span>
                                     <span class="text-gray-300">：{{ item.shares }} 張</span>
-                                    <span class="strategy-reason">{{ item.reason }}</span>
+                                    <span class="strategy-reason">{{ item.reason || '繼續持有' }}</span>
                                 </div>
                             </div>
 
@@ -508,7 +530,7 @@
                                 <div v-for="item in strategySnapshot.sell" :key="item.name" class="bg-black/20 rounded p-1.5 mb-1">
                                     <span class="font-bold">{{ item.name }}</span>
                                     <span class="text-gray-300">：{{ item.shares }} 張 → 回收 {{ formatWithComma(item.revenue) }} 元</span>
-                                    <span class="strategy-reason">{{ item.reason }}</span>
+                                    <span class="strategy-reason">{{ item.reason || '目標配置調整' }}</span>
                                 </div>
                             </div>
 
@@ -537,20 +559,25 @@
                         </div>
                     </div>
 
-                    <!-- 情境4：已完成 -->
+                    <!-- ========================================================== -->
+                    <!-- 情境：已完成                                                -->
+                    <!-- ========================================================== -->
                     <div v-if="workflowStatus === 'executed' && !strategySnapshot" class="bg-green-900/30 rounded-2xl p-4 border-l-4 border-green-400">
                         <div class="flex items-center gap-2 text-green-300 font-black">✅ 本期策略已完成</div>
                         <p class="text-green-200/80 text-sm mt-1">等待下一期價格更新後，將自動進入新一輪決策</p>
                     </div>
 
+                    <!-- ========================================================== -->
+                    <!-- 輔助資訊區                                                -->
+                    <!-- ========================================================== -->
                     <!-- 待完善資料提醒 -->
-                    <div v-if="incompleteList.length && workflowStatus !== 'pending' && !strategySnapshot" class="bg-yellow-900/30 rounded-2xl p-4 mt-4 border-l-4 border-yellow-500">
+                    <div v-if="incompleteList.length && !strategySnapshot" class="bg-yellow-900/30 rounded-2xl p-4 mt-4 border-l-4 border-yellow-500">
                         <div class="font-black text-yellow-300 mb-2">⚠️ 待完善資料</div>
                         <div v-for="inc in incompleteList" class="text-sm text-yellow-200">• {{ inc.name }}：{{ inc.reason }}</div>
                     </div>
 
                     <!-- 停損提醒 -->
-                    <div v-if="stopLossList.length && workflowStatus !== 'pending' && !strategySnapshot" class="bg-red-900/30 rounded-2xl p-4 mt-4 border-l-4 border-red-500">
+                    <div v-if="stopLossList.length && !strategySnapshot" class="bg-red-900/30 rounded-2xl p-4 mt-4 border-l-4 border-red-500">
                         <div class="font-black text-red-300 mb-2">⚠️ 停損提醒</div>
                         <div v-for="sl in stopLossList" class="text-sm text-red-200">{{ sl.name }}：虧損 {{ Math.abs(sl.lossPercent).toFixed(1) }}%</div>
                     </div>
@@ -734,7 +761,7 @@
                     }
                     return res;
                 },
-                // ===== 舊版 recommendations（保留兼容） =====
+                // ===== recommendations（舊版，保留兼容） =====
                 recommendations() {
                     const period = this.currentPeriod;
                     const stopLossNames = new Set(this.stopLossList.map(s => s.name));
@@ -1143,21 +1170,18 @@
                         });
                     }
 
-                    // 按分數排序（高分在前）
                     scores.sort((a, b) => b.score - a.score);
                     return scores;
                 },
 
-                // 3. 選股（決定哪些標的進入目標組合）
+                // 3. 選股
                 selectTargetHoldings(gameState, scores) {
                     const config = gameState.config;
                     const threshold = config.selectionThreshold || 70;
                     const maxHoldings = config.maxHoldings || 3;
 
-                    // 過濾：分數 >= 門檻 且 可交易
                     let candidates = scores.filter(s => s.score >= threshold && s.isTradable);
 
-                    // 限制數量
                     if (candidates.length > maxHoldings) {
                         candidates = candidates.slice(0, maxHoldings);
                     }
@@ -1174,7 +1198,7 @@
                     }));
                 },
 
-                // 4. 資金配置（把錢分配給被選中的標的）
+                // 4. 資金配置
                 allocateCapital(gameState, selectedHoldings) {
                     const availableFund = gameState.fund;
                     if (selectedHoldings.length === 0 || availableFund <= 0) {
@@ -1186,7 +1210,6 @@
                         }));
                     }
 
-                    // 計算總分
                     const totalScore = selectedHoldings.reduce((sum, h) => sum + Math.max(0, h.score), 0);
                     if (totalScore <= 0) {
                         return selectedHoldings.map(h => ({
@@ -1197,7 +1220,6 @@
                         }));
                     }
 
-                    // 依分數比例分配資金（只分配給被選中的標的）
                     const results = [];
                     let remainingFund = availableFund;
 
@@ -1206,7 +1228,6 @@
                         const ratio = Math.max(0, h.score) / totalScore;
                         let amount = Math.floor(availableFund * ratio);
 
-                        // 最後一筆拿剩餘的
                         if (i === selectedHoldings.length - 1) {
                             amount = remainingFund;
                         }
@@ -1228,7 +1249,7 @@
                     return results;
                 },
 
-                // 5. 產生目標持倉
+                // 5. 目標持倉
                 generateTargetPortfolio(gameState) {
                     const scores = this.generateScores(gameState);
                     const selected = this.selectTargetHoldings(gameState, scores);
@@ -1247,27 +1268,24 @@
                     };
                 },
 
-                // 6. 計算差異（目前 vs 目標）
+                // 6. 計算差異
                 diffPortfolio(gameState, targetPortfolio) {
                     const prevPeriod = gameState.prevPeriod;
                     const hold = [];
                     const sell = [];
                     const buy = [];
 
-                    // 建立目標對照表
                     const targetMap = {};
                     for (let t of targetPortfolio.holdings) {
                         targetMap[t.name] = t;
                     }
 
-                    // 檢查目前持有的標的
                     for (let p of gameState.products) {
                         const current = p.currentShares || 0;
                         const target = targetMap[p.name] || null;
 
                         if (current > 0) {
                             if (target && target.targetShares > 0) {
-                                // 目前有，目標也有 → 保留或部分賣出
                                 const targetShares = target.targetShares;
                                 if (targetShares >= current) {
                                     hold.push({
@@ -1277,7 +1295,6 @@
                                         reason: target.reasons?.join('、') || '目標配置保留',
                                         score: target.score || 0,
                                     });
-                                    // 如果需要加碼（目標 > 目前），在 buy 中處理
                                     if (targetShares > current) {
                                         buy.push({
                                             name: p.name,
@@ -1289,7 +1306,6 @@
                                         });
                                     }
                                 } else {
-                                    // 目標少於目前 → 部分賣出
                                     const sellShares = current - targetShares;
                                     sell.push({
                                         name: p.name,
@@ -1306,7 +1322,6 @@
                                     });
                                 }
                             } else {
-                                // 目前有，目標沒有 → 全部賣出
                                 sell.push({
                                     name: p.name,
                                     shares: current,
@@ -1315,7 +1330,6 @@
                                 });
                             }
                         } else {
-                            // 目前沒有，目標有 → 新買
                             if (target && target.targetShares > 0) {
                                 buy.push({
                                     name: p.name,
@@ -1329,13 +1343,10 @@
                         }
                     }
 
-                    // 檢查目標中有但目前完全沒有的（上面迴圈已經處理）
-                    // 但有可能完全沒被掃到，再補一輪
                     for (let t of targetPortfolio.holdings) {
                         if (t.targetShares > 0) {
                             const exists = gameState.products.some(p => p.name === t.name && p.currentShares > 0);
                             if (!exists) {
-                                // 已存在於 buy 中，跳過
                                 const alreadyInBuy = buy.some(b => b.name === t.name);
                                 if (!alreadyInBuy) {
                                     buy.push({
@@ -1362,13 +1373,12 @@
                     };
                 },
 
-                // 7. 產生完整策略（協調者）
+                // 7. 完整策略（協調者）
                 generateCompleteStrategy() {
                     const gameState = this.buildGameState();
                     const targetPortfolio = this.generateTargetPortfolio(gameState);
                     const diff = this.diffPortfolio(gameState, targetPortfolio);
 
-                    // 計算最終資金
                     const finalFund = gameState.fund + diff.summary.totalSellRevenue - diff.summary.totalBuyCost;
 
                     return {
@@ -1393,35 +1403,30 @@
                 // ===== 策略快照（使用新引擎） ================================
                 // =============================================================
                 generateStrategy() {
-                    if (this.workflowStatus !== 'settled') {
-                        if (this.workflowStatus === 'pending') {
-                            this.showModalMessage('⚠️ 有持倉待處理', '請先點擊「💼 持倉決策模擬」處理上一期持倉', 'alert');
-                        } else if (this.workflowStatus === 'executed') {
-                            this.showModalMessage('✅ 已完成', '本期策略已執行完成', 'alert');
-                        } else {
-                            this.showModalMessage('⚠️ 無法建立策略', '目前狀態不允許建立策略', 'alert');
-                        }
+                    // 只要有推薦就允許建立策略，不再依賴 workflow
+                    if (!this.recommendations.length) {
+                        this.showModalMessage('ℹ️ 無建議', '目前沒有買入建議可以建立策略', 'alert');
                         return;
                     }
 
-                    // ✅ 使用新引擎
+                    // 如果 workflow 是 pending，提示但不阻止
+                    if (this.workflowStatus === 'pending') {
+                        // 仍然繼續，但顯示提示
+                    }
+
                     const strategy = this.generateCompleteStrategy();
 
-                    // 檢查是否有任何交易
-                    if (strategy.buy.length === 0 && strategy.sell.length === 0) {
+                    if (strategy.buy.length === 0 && strategy.sell.length === 0 && strategy.hold.length === 0) {
                         this.showModalMessage('ℹ️ 無調整', 'AI 判斷本期無需調整持股', 'alert');
                         return;
                     }
 
-                    // 轉換為 strategySnapshot 格式
                     this.strategySnapshot = {
                         period: strategy.period,
-                        // 保留完整資訊
                         hold: strategy.hold,
                         sell: strategy.sell,
                         buy: strategy.buy,
                         summary: strategy.summary,
-                        // 兼容舊版（買入清單）
                         recommendations: strategy.buy.map(b => ({
                             name: b.name,
                             price: b.price || 0,
@@ -1469,7 +1474,6 @@
                         return;
                     }
 
-                    // 檢查是否勾選完成
                     const unchecked = this.strategySnapshot.recommendations?.filter(r => !r.checked && r.actualShares > 0) || [];
                     if (unchecked.length > 0) {
                         this.showModalMessage(
@@ -1488,7 +1492,6 @@
                     let totalCost = 0;
                     let boughtCount = 0;
 
-                    // 執行賣出（清空賣出清單中的標的）
                     if (this.strategySnapshot.sell) {
                         for (let item of this.strategySnapshot.sell) {
                             const p = this.productList.find(p => p.name === item.name);
@@ -1499,13 +1502,11 @@
                         }
                     }
 
-                    // 執行買入
                     if (this.strategySnapshot.recommendations) {
                         for (let rec of this.strategySnapshot.recommendations) {
                             const actual = rec.actualShares || 0;
                             const p = this.productList.find(p => p.name === rec.name);
                             if (p) {
-                                // 保留原有持倉（如果有）+ 新增買入
                                 const currentShares = p.sharesHistory[period] || 0;
                                 p.sharesHistory[period] = currentShares + actual;
                                 p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory);
@@ -1517,25 +1518,21 @@
                         }
                     }
 
-                    // 更新資金
-                    // 先加上賣出回收
                     let sellRevenue = 0;
                     if (this.strategySnapshot.sell) {
                         for (let item of this.strategySnapshot.sell) {
                             sellRevenue += item.revenue || 0;
                         }
                     }
-                    // 再扣除買入成本
+
                     this.fund = Math.max(0, this.fund + sellRevenue - totalCost);
                     this.displayFund = this.formatWithComma(this.fund);
                     this.fundStatus = '✅ 策略執行完成';
 
-                    // 記錄資金歷史
                     for (let p of this.productList) {
                         p.fundHistory[period] = this.fund;
                     }
 
-                    // 更新 workflow
                     this.setWorkflow(period, 'executed');
 
                     const snapshot = this.strategySnapshot;
@@ -1564,14 +1561,13 @@
                 },
 
                 // =============================================================
-                // ===== 決策檢查器（原 Settlement） ===========================
+                // ===== 決策檢查器 ===========================================
                 // =============================================================
                 openSettlementInspector() {
                     const period = this.currentPeriod;
                     const prevPeriod = period - 1;
                     this.portfolioReview = [];
 
-                    // 使用新引擎的數據
                     const strategy = this.generateCompleteStrategy();
 
                     for (let p of this.productList) {
@@ -1582,7 +1578,6 @@
                         const avgCost = p.avgCost || 0;
                         const profitPercent = avgCost > 0 ? (price - avgCost) / avgCost * 100 : 0;
 
-                        // 判斷策略中的建議
                         let action = 'hold';
                         const sellItem = strategy.sell.find(s => s.name === p.name);
                         const holdItem = strategy.hold.find(h => h.name === p.name);
