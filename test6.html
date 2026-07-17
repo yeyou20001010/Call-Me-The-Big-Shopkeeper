@@ -73,11 +73,6 @@
         .fund-history-btn:hover { background: #E8E6E0; border-color: #5E548E; }
         .edit-hint { font-size: 0.65rem; color: #9CA3AF; font-weight: 400; margin-left: 2px; }
         .fund-status { font-size: 0.65rem; color: #9CA3AF; font-weight: 400; margin-left: 6px; white-space: nowrap; }
-        .strategy-checkbox { width: 18px; height: 18px; accent-color: #02C874; cursor: pointer; }
-        .strategy-input { background: transparent; border: 1px solid #4B5563; border-radius: 0.375rem; padding: 4px 6px; width: 64px; text-align: center; color: white; font-weight: 700; font-size: 0.875rem; }
-        .strategy-input:focus { outline: none; border-color: #8B5CF6; }
-        .strategy-input::-webkit-inner-spin-button { -webkit-appearance: none; }
-        .strategy-input[type=number] { -moz-appearance: textfield; }
         .workflow-badge { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 0.65rem; font-weight: 900; }
         .workflow-badge.pending { background: #92400E; color: #FCD34D; }
         .workflow-badge.settled { background: #1E3A5F; color: #93C5FD; }
@@ -319,7 +314,7 @@
         </div>
 
         <!-- ============================================================ -->
-        <!-- 決策檢查器（原 Settlement，開發者工具）                       -->
+        <!-- 決策檢查器（開發者工具）                                      -->
         <!-- ============================================================ -->
         <div v-if="showSettlementModal" class="modal-overlay confirm-overlay" @click="showSettlementModal = false"></div>
         <div v-if="showSettlementModal" class="custom-modal modal-wide confirm-modal">
@@ -453,7 +448,7 @@
                     </div>
 
                     <!-- ========================================================== -->
-                    <!-- 情境：待處理持倉（引導文字，不阻擋操作）                      -->
+                    <!-- 情境：待處理持倉（僅提示，不阻擋）                          -->
                     <!-- ========================================================== -->
                     <div v-if="workflowStatus === 'pending' && !strategySnapshot" class="bg-amber-900/50 rounded-2xl p-3 mb-4 border-l-4 border-amber-400">
                         <div class="flex items-center gap-2 text-amber-300 font-black text-sm">📌 上一期有持倉待處理</div>
@@ -466,7 +461,6 @@
                     <!-- 情境：一般狀態（顯示推薦 + 建立策略按鈕）                    -->
                     <!-- ========================================================== -->
                     <div v-if="!strategySnapshot">
-                        <!-- 即時推薦摘要 -->
                         <div class="bg-white/10 rounded-3xl p-4 mb-4">
                             <h4 class="text-lg font-black text-yellow-400 mb-2">{{ decisionMsg }}</h4>
                             <div class="text-sm text-slate-200" v-html="decisionDetail"></div>
@@ -476,7 +470,6 @@
                             </div>
                         </div>
 
-                        <!-- 推薦清單 -->
                         <div v-for="rec in recommendations" :key="rec.name"
                              class="bg-black/30 rounded-xl p-3 mb-2 border-l-4" :class="rec.borderColor">
                             <div class="flex justify-between">
@@ -492,7 +485,6 @@
 
                         <div v-if="!recommendations.length" class="text-gray-400 text-sm mb-4">⚠️ 市場訊號不足，建議保留現金</div>
 
-                        <!-- 建立策略按鈕（無論 workflow 狀態，只要有推薦就顯示） -->
                         <button v-if="recommendations.length"
                                 @click="generateStrategy"
                                 class="w-full mt-2 bg-[#5E548E] text-white py-3 rounded-xl font-black hover:bg-[#4A3F6E] transition">
@@ -552,7 +544,7 @@
                             </div>
                         </div>
 
-                        <!-- 操作按鈕 -->
+                        <!-- 操作按鈕（無 checkbox，直接執行） -->
                         <div class="flex gap-2 mt-4">
                             <button @click="cancelStrategy" class="flex-1 bg-gray-600 text-white py-2 rounded-xl font-black text-sm hover:bg-gray-500 transition">取消策略</button>
                             <button @click="executeStrategy" class="flex-1 bg-green-600 text-white py-2 rounded-xl font-black text-sm hover:bg-green-500 transition">✅ 執行策略</button>
@@ -570,19 +562,16 @@
                     <!-- ========================================================== -->
                     <!-- 輔助資訊區                                                -->
                     <!-- ========================================================== -->
-                    <!-- 待完善資料提醒 -->
                     <div v-if="incompleteList.length && !strategySnapshot" class="bg-yellow-900/30 rounded-2xl p-4 mt-4 border-l-4 border-yellow-500">
                         <div class="font-black text-yellow-300 mb-2">⚠️ 待完善資料</div>
                         <div v-for="inc in incompleteList" class="text-sm text-yellow-200">• {{ inc.name }}：{{ inc.reason }}</div>
                     </div>
 
-                    <!-- 停損提醒 -->
                     <div v-if="stopLossList.length && !strategySnapshot" class="bg-red-900/30 rounded-2xl p-4 mt-4 border-l-4 border-red-500">
                         <div class="font-black text-red-300 mb-2">⚠️ 停損提醒</div>
                         <div v-for="sl in stopLossList" class="text-sm text-red-200">{{ sl.name }}：虧損 {{ Math.abs(sl.lossPercent).toFixed(1) }}%</div>
                     </div>
 
-                    <!-- 流程狀態 -->
                     <div class="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center text-xs text-gray-500">
                         <span>流程狀態</span>
                         <span class="workflow-badge" :class="workflowStatus">
@@ -600,7 +589,7 @@
             return JSON.parse(JSON.stringify(obj));
         }
 
-        const DATA_VERSION = 6;
+        const DATA_VERSION = 7;
 
         const defaultProducts = [
             '千刻地政','米和油店','朵朵縫紉','安行鞋業','宋城閃送','凝禮織造','東南園林','朧湖水築','豬豬戲院','衡動建築',
@@ -647,7 +636,7 @@
                         { value: 'pipe', label: 'Pipe（管線）' },
                         { value: 'markdown', label: 'Markdown Table' }
                     ],
-                    // ===== 策略快照 =====
+                    // ===== 策略快照（新版：無 checkbox） =====
                     strategySnapshot: null,
                     // ===== 流程狀態 =====
                     periodWorkflow: {},
@@ -761,7 +750,6 @@
                     }
                     return res;
                 },
-                // ===== recommendations（舊版，保留兼容） =====
                 recommendations() {
                     const period = this.currentPeriod;
                     const stopLossNames = new Set(this.stopLossList.map(s => s.name));
@@ -1062,7 +1050,6 @@
                 // ===== 策略引擎（核心） =====================================
                 // =============================================================
 
-                // 1. 建立遊戲狀態
                 buildGameState() {
                     const period = this.currentPeriod;
                     const prevPeriod = period - 1;
@@ -1089,7 +1076,6 @@
                     };
                 },
 
-                // 2. 計算分數
                 generateScores(gameState) {
                     const scores = [];
                     const period = gameState.period;
@@ -1112,7 +1098,6 @@
                         const avgCost = p.avgCost;
                         const profitPercent = avgCost > 0 ? (price - avgCost) / avgCost * 100 : 0;
 
-                        // 消息權重
                         let tagScore = 10;
                         let tagReason = '消息普通';
                         if (tag === '迅速崛起') { tagScore = 100; tagReason = '最強利多消息'; }
@@ -1121,16 +1106,13 @@
                         else if (tag === '或有風險') { tagScore = -50; tagReason = '風險消息'; }
                         else if (tag === '一文不值') { tagScore = -100; tagReason = '負面消息'; }
 
-                        // 風險權重
                         let riskMultiplier = 1.0;
                         if (risk === '險') riskMultiplier = 1.2;
                         else if (risk === '穩') riskMultiplier = 0.8;
 
-                        // 價格因子
                         let priceFactor = 1 + Math.max(0, (10 - price) / 50);
                         let priceReason = price < 10 ? '價格偏低，潛在漲幅大' : '價格偏高';
 
-                        // 趨勢分析
                         let trendBonus = 0;
                         let trendReason = '';
                         const prices = p.prices;
@@ -1147,7 +1129,6 @@
                             trendReason = '近期開始上漲';
                         }
 
-                        // 計算總分
                         let score = tagScore * riskMultiplier * priceFactor + trendBonus;
                         score = Math.max(-100, Math.min(200, score));
 
@@ -1174,7 +1155,6 @@
                     return scores;
                 },
 
-                // 3. 選股
                 selectTargetHoldings(gameState, scores) {
                     const config = gameState.config;
                     const threshold = config.selectionThreshold || 70;
@@ -1198,7 +1178,6 @@
                     }));
                 },
 
-                // 4. 資金配置
                 allocateCapital(gameState, selectedHoldings) {
                     const availableFund = gameState.fund;
                     if (selectedHoldings.length === 0 || availableFund <= 0) {
@@ -1249,7 +1228,6 @@
                     return results;
                 },
 
-                // 5. 目標持倉
                 generateTargetPortfolio(gameState) {
                     const scores = this.generateScores(gameState);
                     const selected = this.selectTargetHoldings(gameState, scores);
@@ -1268,7 +1246,6 @@
                     };
                 },
 
-                // 6. 計算差異
                 diffPortfolio(gameState, targetPortfolio) {
                     const prevPeriod = gameState.prevPeriod;
                     const hold = [];
@@ -1373,7 +1350,6 @@
                     };
                 },
 
-                // 7. 完整策略（協調者）
                 generateCompleteStrategy() {
                     const gameState = this.buildGameState();
                     const targetPortfolio = this.generateTargetPortfolio(gameState);
@@ -1400,18 +1376,12 @@
                 },
 
                 // =============================================================
-                // ===== 策略快照（使用新引擎） ================================
+                // ===== 策略快照（無 checkbox 版本） =========================
                 // =============================================================
                 generateStrategy() {
-                    // 只要有推薦就允許建立策略，不再依賴 workflow
                     if (!this.recommendations.length) {
                         this.showModalMessage('ℹ️ 無建議', '目前沒有買入建議可以建立策略', 'alert');
                         return;
-                    }
-
-                    // 如果 workflow 是 pending，提示但不阻止
-                    if (this.workflowStatus === 'pending') {
-                        // 仍然繼續，但顯示提示
                     }
 
                     const strategy = this.generateCompleteStrategy();
@@ -1427,19 +1397,6 @@
                         sell: strategy.sell,
                         buy: strategy.buy,
                         summary: strategy.summary,
-                        recommendations: strategy.buy.map(b => ({
-                            name: b.name,
-                            price: b.price || 0,
-                            buyShares: b.buyShares,
-                            amount: b.amount || 0,
-                            actualShares: b.buyShares,
-                            checked: false,
-                            risk: '均',
-                            tagMsg: b.reason || '買入',
-                            borderColor: 'border-blue-400',
-                            badgeClass: 'bg-blue-500/30',
-                        })),
-                        fund: this.fund,
                     };
 
                     this.saveAllData();
@@ -1453,16 +1410,8 @@
                     this.showModalMessage('📋 策略已建立', msg, 'alert');
                 },
 
-                updateStrategyActual(name, value) {
-                    const rec = this.strategySnapshot?.recommendations?.find(r => r.name === name);
-                    if (rec) {
-                        rec.actualShares = Math.max(0, parseInt(value) || 0);
-                        this.saveAllData();
-                    }
-                },
-
                 // =============================================================
-                // ===== 執行策略 =============================================
+                // ===== 執行策略（無 checkbox 檢查） =========================
                 // =============================================================
                 executeStrategy() {
                     if (!this.strategySnapshot) return;
@@ -1474,68 +1423,66 @@
                         return;
                     }
 
-                    const unchecked = this.strategySnapshot.recommendations?.filter(r => !r.checked && r.actualShares > 0) || [];
-                    if (unchecked.length > 0) {
-                        this.showModalMessage(
-                            '⚠️ 尚有未完成的項目',
-                            `以下標的尚未勾選完成：${unchecked.map(r => r.name).join('、')}\n\n確定要繼續嗎？`,
-                            'confirm',
-                            () => { this.applyStrategy(); }
-                        );
-                    } else {
-                        this.applyStrategy();
-                    }
+                    // ✅ 直接執行，不檢查任何 checkbox
+                    this.applyStrategy();
                 },
 
                 applyStrategy() {
                     const period = this.strategySnapshot.period;
+                    let sellRevenue = 0;
                     let totalCost = 0;
-                    let boughtCount = 0;
 
+                    // 1. 先處理賣出
                     if (this.strategySnapshot.sell) {
                         for (let item of this.strategySnapshot.sell) {
                             const p = this.productList.find(p => p.name === item.name);
                             if (p) {
                                 p.sharesHistory[period] = 0;
                                 p.avgCost = 0;
+                                sellRevenue += item.revenue || 0;
                             }
                         }
                     }
 
-                    if (this.strategySnapshot.recommendations) {
-                        for (let rec of this.strategySnapshot.recommendations) {
-                            const actual = rec.actualShares || 0;
-                            const p = this.productList.find(p => p.name === rec.name);
+                    // 2. 處理買入
+                    if (this.strategySnapshot.buy) {
+                        for (let item of this.strategySnapshot.buy) {
+                            const p = this.productList.find(p => p.name === item.name);
                             if (p) {
-                                const currentShares = p.sharesHistory[period] || 0;
-                                p.sharesHistory[period] = currentShares + actual;
+                                p.sharesHistory[period] = item.buyShares || 0;
                                 p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory);
-                                if (actual > 0) {
-                                    totalCost += actual * (rec.price || 0);
-                                    boughtCount++;
+                                if (item.buyShares > 0) {
+                                    totalCost += item.buyShares * (item.price || 0);
                                 }
                             }
                         }
                     }
 
-                    let sellRevenue = 0;
-                    if (this.strategySnapshot.sell) {
-                        for (let item of this.strategySnapshot.sell) {
-                            sellRevenue += item.revenue || 0;
+                    // 3. 處理保留（確保保留清單中的標的不被清空）
+                    if (this.strategySnapshot.hold) {
+                        for (let item of this.strategySnapshot.hold) {
+                            const p = this.productList.find(p => p.name === item.name);
+                            if (p) {
+                                p.sharesHistory[period] = item.shares || 0;
+                                p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory);
+                            }
                         }
                     }
 
+                    // 4. 更新資金
                     this.fund = Math.max(0, this.fund + sellRevenue - totalCost);
                     this.displayFund = this.formatWithComma(this.fund);
                     this.fundStatus = '✅ 策略執行完成';
 
+                    // 5. 記錄資金歷史
                     for (let p of this.productList) {
                         p.fundHistory[period] = this.fund;
                     }
 
+                    // 6. 更新 workflow
                     this.setWorkflow(period, 'executed');
 
-                    const snapshot = this.strategySnapshot;
+                    // 7. 清除快照
                     this.strategySnapshot = null;
                     this.saveAllData();
 
