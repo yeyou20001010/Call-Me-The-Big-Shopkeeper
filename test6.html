@@ -78,6 +78,10 @@
         .strategy-input:focus { outline: none; border-color: #8B5CF6; }
         .strategy-input::-webkit-inner-spin-button { -webkit-appearance: none; }
         .strategy-input[type=number] { -moz-appearance: textfield; }
+        .workflow-badge { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 0.65rem; font-weight: 900; }
+        .workflow-badge.pending { background: #92400E; color: #FCD34D; }
+        .workflow-badge.settled { background: #1E3A5F; color: #93C5FD; }
+        .workflow-badge.executed { background: #064E3B; color: #6EE7B7; }
         @media (max-width: 768px) {
             .toolbar-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
             .toolbar-right { flex-direction: column !important; align-items: stretch !important; width: 100% !important; gap: 8px !important; }
@@ -293,9 +297,7 @@
             <button @click="saveFundHistory" class="mt-4 w-full btn-primary py-2 rounded-xl font-black">💾 儲存</button>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- 持倉決策模擬 Modal（工作區結算）                                -->
-        <!-- ============================================================ -->
+        <!-- 持倉決策模擬 Modal（工作區結算） -->
         <div v-if="showWorkingModal" class="modal-overlay" @click="closeWorkingModal"></div>
         <div v-if="showWorkingModal" class="custom-modal modal-wide" style="max-width: 1000px;">
             <div class="flex justify-between items-center mb-4">
@@ -408,7 +410,6 @@
                     </table>
                 </div>
 
-                <!-- 模擬結果摘要 -->
                 <div class="grid grid-cols-3 gap-4 mt-4 p-4 bg-blue-50 rounded-xl">
                     <div>
                         <span class="text-xs text-gray-500">💰 賣出回收</span>
@@ -466,7 +467,6 @@
                     </div>
                 </div>
 
-                <!-- 匯出歷史持倉報表 -->
                 <div class="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center">
                     <button @click="exportHistoryReport" class="text-sm text-purple-500 hover:text-purple-700 font-bold">
                         📤 匯出歷史持倉報表
@@ -553,33 +553,43 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- 右側：策略中心                                                -->
+            <!-- 右側：策略中心                                               -->
             <!-- ============================================================ -->
             <div class="lg:col-span-4">
                 <div class="card-std bg-slate-800 text-white sticky top-4 shadow-2xl border-none">
                     <div class="flex justify-between items-center mb-4">
                         <span class="bg-orange-500 px-4 py-1 rounded-lg text-xs font-black inline-block">🏆 策略中心</span>
                         <span v-if="strategySnapshot" class="text-xs text-blue-300">🔒 策略已鎖定</span>
+                        <span v-else-if="workflowStatus === 'executed'" class="text-xs text-green-300">✅ 本期已完成</span>
+                        <span v-else-if="workflowStatus === 'settled'" class="text-xs text-blue-300">📋 可建立策略</span>
+                        <span v-else-if="workflowStatus === 'pending'" class="text-xs text-amber-300">⏳ 待處理持倉</span>
                     </div>
 
-                    <!-- 情境1：有持倉待處理 -->
-                    <div v-if="hasPendingHoldings && !strategySnapshot && !workingMode" class="bg-amber-900/50 rounded-2xl p-4 mb-4 border-l-4 border-amber-400">
+                    <!-- ========================================================== -->
+                    <!-- 情境1：pending（待處理持倉）                                -->
+                    <!-- ========================================================== -->
+                    <div v-if="workflowStatus === 'pending'" class="bg-amber-900/50 rounded-2xl p-4 mb-4 border-l-4 border-amber-400">
                         <div class="flex items-center gap-2 text-amber-300 font-black">⚠️ 上一期持倉待處理</div>
                         <p class="text-amber-200/80 text-sm mt-1">
                             請點擊主畫面上方
                             <span class="bg-amber-700/50 px-2 py-1 rounded text-white font-bold">💼 持倉決策模擬</span>
                             處理上一期持倉
                         </p>
+                        <p class="text-amber-200/50 text-xs mt-2">💡 完成後將自動為你建立本期策略</p>
                     </div>
 
-                    <!-- 情境2：工作區模式中 -->
+                    <!-- ========================================================== -->
+                    <!-- 情境2：工作區模式中（workingMode = true）                   -->
+                    <!-- ========================================================== -->
                     <div v-if="workingMode" class="bg-blue-900/50 rounded-2xl p-4 mb-4 border-l-4 border-blue-400">
                         <div class="flex items-center gap-2 text-blue-300 font-black">🛠️ 模擬模式進行中</div>
                         <p class="text-blue-200/80 text-sm mt-1">完成調整後點擊 <span class="bg-blue-700/50 px-2 py-1 rounded text-white font-bold">✅ 確認執行結算</span> 套用結果</p>
                     </div>
 
-                    <!-- 情境3：無策略快照（正常顯示即時推薦） -->
-                    <div v-if="!strategySnapshot && !hasPendingHoldings && !workingMode">
+                    <!-- ========================================================== -->
+                    <!-- 情境3：settled + 無策略快照（顯示建立策略）                 -->
+                    <!-- ========================================================== -->
+                    <div v-if="workflowStatus === 'settled' && !strategySnapshot && !workingMode">
                         <div class="bg-white/10 rounded-3xl p-4 mb-4">
                             <h4 class="text-lg font-black text-yellow-400 mb-2">{{ decisionMsg }}</h4>
                             <div class="text-sm text-slate-200" v-html="decisionDetail"></div>
@@ -612,7 +622,9 @@
                         <p v-if="recommendations.length" class="text-xs text-gray-500 mt-2 text-center">點擊後鎖定推薦，開始執行</p>
                     </div>
 
-                    <!-- 情境4：有策略快照（鎖定中） -->
+                    <!-- ========================================================== -->
+                    <!-- 情境4：有策略快照（策略中心）                                 -->
+                    <!-- ========================================================== -->
                     <div v-if="strategySnapshot">
                         <div class="bg-blue-900/30 rounded-xl p-2 mb-3 text-center text-xs text-blue-300">
                             🔒 策略已鎖定，修改持倉不會影響此建議
@@ -655,6 +667,14 @@
                         </div>
                     </div>
 
+                    <!-- ========================================================== -->
+                    <!-- 情境5：executed（已完成）                                   -->
+                    <!-- ========================================================== -->
+                    <div v-if="workflowStatus === 'executed' && !strategySnapshot && !workingMode" class="bg-green-900/30 rounded-2xl p-4 border-l-4 border-green-400">
+                        <div class="flex items-center gap-2 text-green-300 font-black">✅ 本期策略已完成</div>
+                        <p class="text-green-200/80 text-sm mt-1">等待下一期價格更新後，將自動進入新一輪決策</p>
+                    </div>
+
                     <!-- 工作區模式顯示模擬資金 -->
                     <div v-if="workingMode" class="mt-4 pt-3 border-t border-gray-700 text-sm text-gray-400">
                         <div class="flex justify-between">
@@ -668,15 +688,23 @@
                     </div>
 
                     <!-- 待完善資料提醒 -->
-                    <div v-if="incompleteList.length && !strategySnapshot && !workingMode" class="bg-yellow-900/30 rounded-2xl p-4 mt-4 border-l-4 border-yellow-500">
+                    <div v-if="incompleteList.length && workflowStatus !== 'pending' && !strategySnapshot && !workingMode" class="bg-yellow-900/30 rounded-2xl p-4 mt-4 border-l-4 border-yellow-500">
                         <div class="font-black text-yellow-300 mb-2">⚠️ 待完善資料</div>
                         <div v-for="inc in incompleteList" class="text-sm text-yellow-200">• {{ inc.name }}：{{ inc.reason }}</div>
                     </div>
 
                     <!-- 停損提醒 -->
-                    <div v-if="stopLossList.length && !strategySnapshot && !workingMode" class="bg-red-900/30 rounded-2xl p-4 mt-4 border-l-4 border-red-500">
+                    <div v-if="stopLossList.length && workflowStatus !== 'pending' && !strategySnapshot && !workingMode" class="bg-red-900/30 rounded-2xl p-4 mt-4 border-l-4 border-red-500">
                         <div class="font-black text-red-300 mb-2">⚠️ 停損提醒</div>
                         <div v-for="sl in stopLossList" class="text-sm text-red-200">{{ sl.name }}：虧損 {{ Math.abs(sl.lossPercent).toFixed(1) }}%</div>
+                    </div>
+
+                    <!-- 流程狀態指示器 -->
+                    <div class="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center text-xs text-gray-500">
+                        <span>流程狀態</span>
+                        <span class="workflow-badge" :class="workflowStatus">
+                            {{ { pending: '⏳ 待處理', settled: '📋 已結算', executed: '✅ 已完成' }[workflowStatus] || '未知' }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -689,7 +717,7 @@
             return JSON.parse(JSON.stringify(obj));
         }
 
-        const DATA_VERSION = 4;
+        const DATA_VERSION = 5;
 
         const defaultProducts = [
             '千刻地政','米和油店','朵朵縫紉','安行鞋業','宋城閃送','凝禮織造','東南園林','朧湖水築','豬豬戲院','衡動建築',
@@ -746,6 +774,9 @@
                     workingFund: 0,
                     workingShares: {},
                     workingAvgCost: {},
+                    // ===== 流程狀態 =====
+                    // 'pending' | 'settled' | 'executed'
+                    periodWorkflow: {},
                 }
             },
             computed: {
@@ -760,6 +791,10 @@
                         }
                     }
                     return max || 1;
+                },
+                // ===== 流程狀態（直接從 periodWorkflow 讀取） =====
+                workflowStatus() {
+                    return this.getWorkflow(this.currentPeriod);
                 },
                 effectiveProductList() {
                     const period = this.currentPeriod;
@@ -803,7 +838,6 @@
                         let maxPrice = pricesWindow.length > 0 ? Math.max(...pricesWindow) : price;
                         let distanceToPeak = maxPrice > 0 ? (maxPrice - price) / maxPrice : 0;
                         let shares = p.sharesHistory[period] || 0;
-                        // 如果正在工作區模式，使用工作區持倉
                         if (this.workingMode) {
                             shares = this.workingShares[p.name] || 0;
                         }
@@ -849,21 +883,6 @@
                         if(p.profitPercent < -thr) res.push({name:p.name, lossPercent: p.profitPercent});
                     }
                     return res;
-                },
-                hasPendingHoldings() {
-                    const prevPeriod = this.currentPeriod - 1;
-                    if (prevPeriod < 1) return false;
-                    for (let p of this.productList) {
-                        if ((p.sharesHistory[prevPeriod] || 0) > 0) return true;
-                    }
-                    return false;
-                },
-                hasAnyHoldings() {
-                    const period = this.currentPeriod;
-                    for (let p of this.productList) {
-                        if ((p.sharesHistory[period] || 0) > 0) return true;
-                    }
-                    return false;
                 },
                 portfolioValue() {
                     const period = this.currentPeriod;
@@ -947,7 +966,6 @@
                     } else if (newCandidates.length > 0 && newCandidates[0].score >= 100) {
                         allInTarget = newCandidates[0];
                     }
-                    // 在工作區模式使用 workingFund，否則使用 fund
                     const currentFund = this.workingMode ? this.workingFund : this.fund;
                     if (allInTarget) {
                         let shares = Math.floor(currentFund / allInTarget.price);
@@ -1046,9 +1064,7 @@
                     }
                     return result;
                 },
-                // 工作區推薦（使用 workingFund）
                 workingRecommendations() {
-                    // 暫時切換到工作區模式計算
                     const origWorkingMode = this.workingMode;
                     this.workingMode = true;
                     const result = this.recommendations;
@@ -1094,13 +1110,19 @@
                         this.manualPeriod = 1;
                     }
                     this.loadFundFromHistory();
-                    // 如果有策略快照且期數不符，清除策略快照
                     if (this.strategySnapshot && this.strategySnapshot.period !== this.currentPeriod) {
                         this.strategySnapshot = null;
                     }
                 },
                 periodMode() {
                     this.loadFundFromHistory();
+                },
+                // 當期數改變時，確保 workflow 存在
+                currentPeriod(newVal, oldVal) {
+                    if (newVal !== oldVal) {
+                        this.getWorkflow(newVal);
+                        this.saveAllData();
+                    }
                 }
             },
             methods: {
@@ -1179,6 +1201,18 @@
                         else if (shares < totalShares && totalShares > 0) { totalCost *= (shares / totalShares); totalShares = shares; }
                     }
                     return totalShares > 0 ? totalCost / totalShares : 0;
+                },
+
+                // ===== Workflow Helper =====
+                getWorkflow(period) {
+                    if (!this.periodWorkflow[period]) {
+                        this.periodWorkflow[period] = 'pending';
+                    }
+                    return this.periodWorkflow[period];
+                },
+                setWorkflow(period, status) {
+                    this.periodWorkflow[period] = status;
+                    this.saveAllData();
                 },
 
                 // ===== 價格歷史 =====
@@ -1334,14 +1368,23 @@
                 // ===== 策略快照（Strategy Snapshot） =========================
                 // =============================================================
                 generateStrategy() {
-                    if (this.hasPendingHoldings) {
-                        this.showModalMessage('⚠️ 有持倉待處理', '請先點擊「💼 持倉決策模擬」處理上一期持倉', 'alert');
+                    // 檢查 workflow 是否為 settled
+                    if (this.workflowStatus !== 'settled') {
+                        if (this.workflowStatus === 'pending') {
+                            this.showModalMessage('⚠️ 有持倉待處理', '請先點擊「💼 持倉決策模擬」處理上一期持倉', 'alert');
+                        } else if (this.workflowStatus === 'executed') {
+                            this.showModalMessage('✅ 已完成', '本期策略已執行完成', 'alert');
+                        } else {
+                            this.showModalMessage('⚠️ 無法建立策略', '目前狀態不允許建立策略', 'alert');
+                        }
                         return;
                     }
+
                     if (!this.recommendations.length) {
                         this.showModalMessage('ℹ️ 無建議', '目前沒有買入建議可以建立策略', 'alert');
                         return;
                     }
+
                     this.strategySnapshot = {
                         period: this.currentPeriod,
                         fund: this.fund,
@@ -1358,23 +1401,29 @@
                             badgeClass: r.badgeClass,
                         }))
                     };
-                    this.showModalMessage('📋 策略已建立', `第 ${this.currentPeriod} 期策略已鎖定\n請至右側「策略中心」執行買入`, 'alert');
+                    this.saveAllData();
+                    this.showModalMessage(
+                        '📋 策略已建立',
+                        `第 ${this.currentPeriod} 期策略已鎖定\n請至右側「策略中心」調整實際買入張數後執行`,
+                        'alert'
+                    );
                 },
 
                 updateStrategyActual(name, value) {
                     const rec = this.strategySnapshot?.recommendations?.find(r => r.name === name);
                     if (rec) {
                         rec.actualShares = Math.max(0, parseInt(value) || 0);
+                        this.saveAllData();
                     }
                 },
 
                 executeStrategy() {
                     if (!this.strategySnapshot) return;
 
-                    // 檢查期數是否匹配
                     if (this.strategySnapshot.period !== this.currentPeriod) {
                         this.showModalMessage('⚠️ 策略期數不符', `此策略為第 ${this.strategySnapshot.period} 期\n目前為第 ${this.currentPeriod} 期\n請重新建立策略`, 'alert');
                         this.strategySnapshot = null;
+                        this.saveAllData();
                         return;
                     }
 
@@ -1398,38 +1447,31 @@
 
                     for (let rec of this.strategySnapshot.recommendations) {
                         const actual = rec.actualShares || 0;
-                        if (actual > 0) {
-                            const p = this.productList.find(p => p.name === rec.name);
-                            if (p) {
-                                // 覆蓋方式：直接設定為實際買入張數
-                                p.sharesHistory[period] = actual;
-                                p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory);
+                        const p = this.productList.find(p => p.name === rec.name);
+                        if (p) {
+                            p.sharesHistory[period] = actual;
+                            p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory);
+                            if (actual > 0) {
                                 totalCost += actual * rec.price;
                                 boughtCount++;
-                            }
-                        } else {
-                            // 如果實際為0，清空持倉
-                            const p = this.productList.find(p => p.name === rec.name);
-                            if (p) {
-                                p.sharesHistory[period] = 0;
                             }
                         }
                     }
 
-                    // 更新資金（扣除買入金額）
                     this.fund = Math.max(0, this.fund - totalCost);
                     this.displayFund = this.formatWithComma(this.fund);
                     this.fundStatus = '✅ 策略執行完成';
 
-                    // 記錄資金歷史
                     for (let p of this.productList) {
                         p.fundHistory[period] = this.fund;
                     }
 
-                    this.saveAllData();
+                    // ✅ 更新 workflow 為 executed
+                    this.setWorkflow(period, 'executed');
 
                     const snapshot = this.strategySnapshot;
                     this.strategySnapshot = null;
+                    this.saveAllData();
 
                     this.showModalMessage(
                         '✅ 策略執行完成',
@@ -1446,6 +1488,7 @@
                         'confirm',
                         () => {
                             this.strategySnapshot = null;
+                            this.saveAllData();
                             this.showModalMessage('已取消', '策略已取消', 'alert');
                         }
                     );
@@ -1461,7 +1504,6 @@
                         return;
                     }
 
-                    // 檢查上一期是否有持倉
                     let hasShares = false;
                     for (let p of this.productList) {
                         if ((p.sharesHistory[prevPeriod] || 0) > 0) { hasShares = true; break; }
@@ -1471,13 +1513,17 @@
                         return;
                     }
 
-                    // 如果已有策略快照，提醒使用者
                     if (this.strategySnapshot) {
                         this.showModalMessage('⚠️ 已有策略', '請先執行或取消當前策略，再進行持倉決策模擬', 'alert');
                         return;
                     }
 
-                    // 進入工作區模式
+                    // 檢查 workflow 是否為 pending，如果不是則提示
+                    if (this.workflowStatus !== 'pending') {
+                        this.showModalMessage('ℹ️ 已處理', '本期持倉已處理完成，無需再次結算', 'alert');
+                        return;
+                    }
+
                     this.enterWorkingMode(prevPeriod);
                     this.settlementPeriod = prevPeriod;
                     this.settlementStep = 'analyze';
@@ -1620,7 +1666,6 @@
 
                 goToConfirm() {
                     this.settlementStep = 'confirm';
-                    // 更新工作區的平均成本
                     for (let p of this.productList) {
                         if (this.workingShares[p.name] > 0) {
                             this.workingAvgCost[p.name] = p.avgCost || 0;
@@ -1632,11 +1677,9 @@
                     const period = this.currentPeriod;
                     const prevPeriod = this.settlementPeriod;
 
-                    // 寫入歷史：將工作區的結果寫入 sharesHistory[period]
                     for (let p of this.productList) {
                         const shares = this.workingShares[p.name] || 0;
                         p.sharesHistory[period] = shares;
-
                         if (shares === 0) {
                             p.avgCost = 0;
                         } else {
@@ -1644,27 +1687,28 @@
                         }
                     }
 
-                    // 更新資金
                     this.fund = this.workingFund;
                     this.displayFund = this.formatWithComma(this.fund);
                     this.fundStatus = '✅ 已結算';
 
-                    // 記錄資金歷史
                     for (let p of this.productList) {
                         p.fundHistory[period] = this.fund;
                     }
+
+                    // ✅ 更新 workflow 為 settled
+                    this.setWorkflow(period, 'settled');
 
                     this.saveAllData();
                     this.settlementStep = 'done';
                     this.showWorkingModal = false;
                     this.exitWorkingMode();
 
-                    // 自動產生策略快照
+                    // ✅ 自動產生策略快照
                     this.generateStrategy();
 
                     this.showModalMessage(
                         '✅ 結算完成',
-                        `第 ${prevPeriod} 期持倉已結算完成\n目前交引幣：${this.formatWithComma(this.fund)} 元\n已寫入第 ${period} 期持倉記錄\n\n已自動建立本期策略快照，請至右側「策略中心」執行買入`,
+                        `第 ${prevPeriod} 期持倉已結算完成\n目前交引幣：${this.formatWithComma(this.fund)} 元\n已寫入第 ${period} 期持倉記錄\n\n✅ 已為你建立本期策略\n請確認右側策略中心，調整實際買入張數後執行。`,
                         'alert'
                     );
                 },
@@ -1929,6 +1973,8 @@
                         fund: this.fund,
                         periodMode: this.periodMode,
                         manualPeriod: this.manualPeriod,
+                        periodWorkflow: this.periodWorkflow,
+                        strategySnapshot: this.strategySnapshot,
                         productList: this.productList.map(p => ({
                             name: p.name,
                             risk: p.risk,
@@ -1954,6 +2000,8 @@
                                 this.displayFund = this.formatWithComma(this.fund);
                                 this.periodMode = data.periodMode || 'auto';
                                 this.manualPeriod = data.manualPeriod || 1;
+                                this.periodWorkflow = data.periodWorkflow || {};
+                                this.strategySnapshot = data.strategySnapshot || null;
                                 if(data.productList && data.productList.length) {
                                     for(let i = 0; i < this.productList.length; i++) {
                                         if(data.productList[i]) {
@@ -1969,8 +2017,20 @@
                                 }
                                 this.productList.forEach(p => { p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory); });
                                 this.loadFundFromHistory();
+
+                                // 確保當前期的 workflow 存在
+                                this.getWorkflow(this.currentPeriod);
+
+                                // 檢查 strategySnapshot 是否過期
+                                if (this.strategySnapshot && this.strategySnapshot.period !== this.currentPeriod) {
+                                    this.strategySnapshot = null;
+                                    this.saveAllData();
+                                }
                             }
                         } catch(e) { console.log('讀取失敗', e); }
+                    } else {
+                        // 首次使用，初始化當前期的 workflow
+                        this.getWorkflow(this.currentPeriod);
                     }
                 },
 
