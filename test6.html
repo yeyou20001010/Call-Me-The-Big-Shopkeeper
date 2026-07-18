@@ -89,6 +89,12 @@
         .ai-header { font-size: 0.65rem; color: #9CA3AF; font-weight: 400; margin-bottom: 4px; letter-spacing: 0.5px; }
         .card-title { display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
         .card-shares { font-size: 0.75rem; color: #9CA3AF; font-weight: 400; }
+        .strategy-section-title { font-size: 0.7rem; font-weight: 900; margin-bottom: 4px; }
+        .strategy-section-title.sell { color: #FCA5A5; }
+        .strategy-section-title.buy { color: #93C5FD; }
+        .strategy-section-title.hold { color: #6EE7B7; }
+        .no-strategy-hint { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; text-align: center; color: #9CA3AF; font-size: 0.9rem; border: 1px dashed rgba(255,255,255,0.1); }
+        .no-strategy-hint .big-icon { font-size: 2.5rem; display: block; margin-bottom: 8px; }
         @media (max-width: 768px) {
             .toolbar-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
             .toolbar-right { flex-direction: column !important; align-items: stretch !important; width: 100% !important; gap: 8px !important; }
@@ -450,7 +456,7 @@
             </div>
 
             <!-- ========================================================== -->
-            <!-- 右側：策略中心                                             -->
+            <!-- 右側：策略中心（單一決策來源）                              -->
             <!-- ========================================================== -->
             <div class="lg:col-span-4">
                 <div class="card-std bg-slate-800 text-white sticky top-4 shadow-2xl border-none">
@@ -461,54 +467,41 @@
                         <span v-else class="text-xs text-gray-400">📋 可建立策略</span>
                     </div>
 
-                    <!-- 待處理持倉提示 -->
+                    <!-- ========================================================== -->
+                    <!-- 待處理持倉提示                                              -->
+                    <!-- ========================================================== -->
                     <div v-if="workflowStatus === 'pending' && !strategySnapshot" class="bg-amber-900/50 rounded-2xl p-3 mb-4 border-l-4 border-amber-400">
                         <div class="flex items-center gap-2 text-amber-300 font-black text-sm">📌 上一期有持倉待處理</div>
                         <p class="text-amber-200/70 text-xs mt-1">
-                            點擊下方「建立本期策略」，AI 將自動分析並產生完整交易計畫
+                            點擊下方「建立本期策略」，AI 將自動分析所有持股，產生完整交易計畫
                         </p>
                     </div>
 
                     <!-- ========================================================== -->
-                    <!-- 一般狀態（顯示推薦 + 建立策略按鈕）                        -->
+                    <!-- 無策略狀態：顯示「建立策略」按鈕                           -->
                     <!-- ========================================================== -->
-                    <div v-if="!strategySnapshot">
-                        <div class="bg-white/10 rounded-3xl p-4 mb-4">
-                            <h4 class="text-lg font-black text-yellow-400 mb-2">{{ decisionMsg }}</h4>
-                            <div class="text-sm text-slate-200" v-html="decisionDetail"></div>
-                            <div class="border-t mt-3 pt-2 flex justify-between">
-                                <span class="text-xs">建議金額</span>
-                                <span class="text-lg text-pink-300">{{ formatWithComma(suggestedAmount) }} 元</span>
-                            </div>
+                    <div v-if="!strategySnapshot" class="space-y-4">
+                        <div class="no-strategy-hint">
+                            <span class="big-icon">📋</span>
+                            <p>尚未建立本期策略</p>
+                            <p class="text-xs text-gray-500 mt-1">點擊下方按鈕，AI 將自動分析並產生完整交易計畫</p>
                         </div>
 
-                        <div v-for="rec in recommendations" :key="rec.name"
-                             class="bg-black/30 rounded-xl p-3 mb-2 border-l-4" :class="rec.borderColor">
-                            <div class="flex justify-between">
-                                <span class="font-black">{{ rec.name }}</span>
-                                <span class="text-xs px-2 rounded-full" :class="rec.badgeClass">{{ rec.risk }}</span>
-                            </div>
-                            <div class="text-xs text-gray-300">{{ rec.tagMsg }}</div>
-                            <div class="flex justify-between mt-1 text-sm">
-                                <span>投入 {{ formatWithComma(rec.amount) }} 元</span>
-                                <span>≈ {{ rec.buyShares }} 張</span>
-                            </div>
-                        </div>
-
-                        <div v-if="!recommendations.length" class="text-gray-400 text-sm mb-4">⚠️ 市場訊號不足，建議保留現金</div>
-
-                        <button v-if="recommendations.length"
+                        <button v-if="canGenerateStrategy"
                                 @click="generateStrategy"
-                                class="w-full mt-2 bg-[#5E548E] text-white py-3 rounded-xl font-black hover:bg-[#4A3F6E] transition">
+                                class="w-full bg-[#5E548E] text-white py-3 rounded-xl font-black hover:bg-[#4A3F6E] transition">
                             📋 建立本期策略
                         </button>
-                        <p v-if="recommendations.length" class="text-xs text-gray-500 mt-2 text-center">
-                            AI 將自動分析所有持股，產生完整交易計畫
+                        <p v-if="canGenerateStrategy" class="text-xs text-gray-500 text-center">
+                            AI 將分析所有持股，產生完整交易計畫
                         </p>
+                        <div v-else class="text-xs text-gray-500 text-center bg-yellow-900/20 p-2 rounded-lg">
+                            ⚠️ 請先輸入本期價格與小道消息
+                        </div>
                     </div>
 
                     <!-- ========================================================== -->
-                    <!-- 策略快照（完整交易計畫 + AI 判斷 + Sparkline）            -->
+                    <!-- 有策略狀態：顯示完整交易計畫（單一來源）                    -->
                     <!-- ========================================================== -->
                     <div v-if="strategySnapshot">
                         <div class="bg-blue-900/30 rounded-xl p-2 mb-3 text-center text-xs text-blue-300">
@@ -528,13 +521,11 @@
                                         <span class="card-shares">{{ item.shares }} 張 → 回收 {{ formatWithComma(item.revenue) }} 元</span>
                                     </div>
 
-                                    <!-- Sparkline（只顯示第一檔） -->
-                                    <div v-if="index === 0" class="sparkline-container">
+                                    <div v-if="index === 0 && item.sparklineData" class="sparkline-container">
                                         <canvas :id="'sparkline_sell_' + item.name" width="80" height="30" style="width:80px;height:30px;"></canvas>
                                         <span class="sparkline-label">最近 12 期走勢</span>
                                     </div>
 
-                                    <!-- AI 判斷 -->
                                     <div class="ai-card">
                                         <div class="ai-header">🤖 AI 判斷</div>
                                         <div v-for="obs in getObservations(item)" :key="obs" class="ai-observation">
@@ -556,13 +547,11 @@
                                         <span class="card-shares">{{ item.buyShares }} 張（{{ formatWithComma(item.amount) }} 元）</span>
                                     </div>
 
-                                    <!-- Sparkline（只顯示第一檔） -->
-                                    <div v-if="index === 0" class="sparkline-container">
+                                    <div v-if="index === 0 && item.sparklineData" class="sparkline-container">
                                         <canvas :id="'sparkline_buy_' + item.name" width="80" height="30" style="width:80px;height:30px;"></canvas>
                                         <span class="sparkline-label">最近 12 期走勢</span>
                                     </div>
 
-                                    <!-- AI 判斷 -->
                                     <div class="ai-card">
                                         <div class="ai-header">🤖 AI 判斷</div>
                                         <div v-for="obs in getObservations(item)" :key="obs" class="ai-observation">
@@ -633,7 +622,7 @@
             return JSON.parse(JSON.stringify(obj));
         }
 
-        const DATA_VERSION = 8;
+        const DATA_VERSION = 9;
 
         const defaultProducts = [
             '千刻地政','米和油店','朵朵縫紉','安行鞋業','宋城閃送','凝禮織造','東南園林','朧湖水築','豬豬戲院','衡動建築',
@@ -680,7 +669,7 @@
                         { value: 'pipe', label: 'Pipe（管線）' },
                         { value: 'markdown', label: 'Markdown Table' }
                     ],
-                    // ===== 策略快照 =====
+                    // ===== 策略快照（單一決策來源） =====
                     strategySnapshot: null,
                     // ===== 流程狀態 =====
                     periodWorkflow: {},
@@ -695,6 +684,8 @@
                     toastVisible: false,
                     toastMessage: '',
                     toastTimer: null,
+                    // ===== 共用的股票評分快取 =====
+                    cachedScores: null,
                 }
             },
             computed: {
@@ -712,6 +703,14 @@
                 },
                 workflowStatus() {
                     return this.getWorkflow(this.currentPeriod);
+                },
+                canGenerateStrategy() {
+                    // 至少有一些價格資料才能生成策略
+                    const period = this.currentPeriod;
+                    for (let p of this.productList) {
+                        if (p.prices[period] > 0) return true;
+                    }
+                    return false;
                 },
                 effectiveProductList() {
                     const period = this.currentPeriod;
@@ -798,181 +797,6 @@
                     }
                     return res;
                 },
-                recommendations() {
-                    const period = this.currentPeriod;
-                    const stopLossNames = new Set(this.stopLossList.map(s => s.name));
-                    let allCandidates = [];
-                    for(let p of this.effectiveProductList) {
-                        let price = p.price;
-                        if(price<=0) continue;
-                        let tag = p.tag||'暫無';
-                        if(tag === '一文不值' || tag === '或有風險') continue;
-                        if(stopLossNames.has(p.name)) continue;
-                        let riskScore = { '險':1.2, '均':1.0, '穩':0.8 }[p.risk] || 1.0;
-                        let tagScore = { '迅速崛起':100, '穩中向好':70, '坊中傳聞':40, '暫無':10 }[tag] || 0;
-                        let score = tagScore * riskScore;
-                        let priceFactor = 1 + Math.max(0, (10 - price) / 50);
-                        score *= priceFactor;
-                        if (p.pricePosition < 0.3) score *= 1.15;
-                        if (p.pricePosition > 0.7) score *= 0.85;
-                        if (p.streak >= 3) {
-                            if (p.pricePosition > 0.7) score *= 0.75;
-                            else if (p.pricePosition < 0.3) score *= 1.1;
-                        }
-                        if (p.rally5 > 0.5) {
-                            if (p.pricePosition > 0.7) score *= 0.6;
-                            else if (p.pricePosition < 0.3) score *= 1.15;
-                        }
-                        if (p.rally3 !== null && p.rally3 > 0.2 && p.pricePosition < 0.6) {
-                            score *= 1.08;
-                        }
-                        if (p.distanceToPeak > 0.3 && p.trendUp && p.pricePosition > 0.3) {
-                            score *= 1.08;
-                        }
-                        let momentum = p.lastPrice > 0 ? (p.price - p.lastPrice) / p.lastPrice : 0;
-                        if (momentum > 0.1) score *= 1.05;
-                        if (momentum < -0.1) score *= 0.95;
-                        score = Math.max(0, Math.min(score, 200));
-                        allCandidates.push({
-                            ...p,
-                            price, tag, score, tagMsg: tag,
-                            profitPercent: p.profitPercent,
-                            isValidRecovery: p.isValidRecovery,
-                            momentum: momentum
-                        });
-                    }
-                    allCandidates.sort((a,b) => b.score - a.score);
-
-                    let holdCandidates = allCandidates.filter(p => {
-                        if(p.shares <= 0) return false;
-                        let threshold = p.risk === '險' ? -25 : p.risk === '均' ? -20 : -15;
-                        return p.profitPercent >= threshold;
-                    });
-                    let newCandidates = allCandidates.filter(p => p.shares === 0);
-
-                    let canAdd = holdCandidates.some(p => p.score >= 50);
-                    let canNew = newCandidates.some(p => p.score >= 50);
-                    if (!canAdd && !canNew) return [];
-
-                    let allInTarget = null;
-                    if (holdCandidates.length > 0 && holdCandidates[0].score >= 100 && holdCandidates[0].profitPercent >= -5 && holdCandidates[0].isValidRecovery && holdCandidates[0].pricePosition < 0.7) {
-                        allInTarget = holdCandidates[0];
-                    } else if (newCandidates.length > 0 && newCandidates[0].score >= 100) {
-                        allInTarget = newCandidates[0];
-                    }
-                    const currentFund = this.fund;
-                    if (allInTarget) {
-                        let shares = Math.floor(currentFund / allInTarget.price);
-                        let amount = shares * allInTarget.price;
-                        return [{
-                            name: allInTarget.name, risk: allInTarget.risk, price: allInTarget.price,
-                            tag: allInTarget.tag, amount, buyShares: shares, tagMsg: allInTarget.tagMsg + '（ALL IN）',
-                            score: allInTarget.score,
-                            borderColor: 'border-orange-400', badgeClass: allInTarget.risk==='險'?'bg-red-500/30':(allInTarget.risk==='均'?'bg-yellow-500/30':'bg-green-500/30')
-                        }];
-                    }
-
-                    let addPoolRatio = 0.6, newPoolRatio = 0.4;
-                    if (holdCandidates.length > 0 && newCandidates.length > 0 && holdCandidates[0].score > newCandidates[0].score * 1.5) {
-                        addPoolRatio = 0.8; newPoolRatio = 0.2;
-                    }
-                    if (canAdd && !canNew) { addPoolRatio = 1.0; newPoolRatio = 0.0; }
-                    else if (!canAdd && canNew) { addPoolRatio = 0.0; newPoolRatio = 1.0; }
-
-                    let result = [];
-
-                    if (addPoolRatio > 0 && holdCandidates.length > 0) {
-                        let topScore = holdCandidates[0].score;
-                        let topHeld = holdCandidates.filter(p => p.score >= topScore * 0.8);
-                        if (topHeld.length === 0) topHeld = holdCandidates.slice(0, 2);
-                        let totalScore = topHeld.reduce((s, t) => s + t.score, 0);
-                        if (totalScore > 0) {
-                            let addAmount = Math.floor(currentFund * addPoolRatio);
-                            let remain = addAmount;
-                            let allocated = [];
-                            for (let t of topHeld) {
-                                let target = (t.score / totalScore) * addAmount;
-                                let shares = Math.floor(target / t.price);
-                                let actual = shares * t.price;
-                                if (actual > remain) {
-                                    shares = Math.floor(remain / t.price);
-                                    actual = shares * t.price;
-                                }
-                                t.amount = actual;
-                                t.buyShares = shares;
-                                remain -= actual;
-                                allocated.push(t);
-                            }
-                            if (remain > 0 && allocated.length > 0) {
-                                let best = allocated[0];
-                                let extraShares = Math.floor(remain / best.price);
-                                let extraActual = extraShares * best.price;
-                                best.amount += extraActual;
-                                best.buyShares += extraShares;
-                                remain -= extraActual;
-                            }
-                            for (let t of allocated) {
-                                t.borderColor = 'border-blue-400';
-                                t.badgeClass = t.risk==='險'? 'bg-red-500/30' : (t.risk==='均'?'bg-yellow-500/30':'bg-green-500/30');
-                                t.tagMsg = t.tagMsg + '（加碼）';
-                                result.push(t);
-                            }
-                        }
-                    }
-
-                    if (newPoolRatio > 0 && newCandidates.length > 0) {
-                        let topNew = [...newCandidates].slice(0, 3);
-                        let totalScore = topNew.reduce((s, t) => s + t.score, 0);
-                        if (totalScore > 0) {
-                            let newAmount = Math.floor(currentFund * newPoolRatio);
-                            let remain = newAmount;
-                            let allocated = [];
-                            for (let t of topNew) {
-                                let target = (t.score / totalScore) * newAmount;
-                                let shares = Math.floor(target / t.price);
-                                let actual = shares * t.price;
-                                if (actual > remain) {
-                                    shares = Math.floor(remain / t.price);
-                                    actual = shares * t.price;
-                                }
-                                t.amount = actual;
-                                t.buyShares = shares;
-                                remain -= actual;
-                                allocated.push(t);
-                            }
-                            if (remain > 0 && allocated.length > 0) {
-                                let best = allocated[0];
-                                let extraShares = Math.floor(remain / best.price);
-                                let extraActual = extraShares * best.price;
-                                best.amount += extraActual;
-                                best.buyShares += extraShares;
-                                remain -= extraActual;
-                            }
-                            for (let t of allocated) {
-                                t.borderColor = t === allocated[0] ? 'border-green-400' : 'border-purple-400';
-                                t.badgeClass = t.risk==='險'? 'bg-red-500/30' : (t.risk==='均'?'bg-yellow-500/30':'bg-green-500/30');
-                                t.tagMsg = t.tagMsg + '（新買）';
-                                result.push(t);
-                            }
-                        }
-                    }
-                    return result;
-                },
-                suggestedAmount() {
-                    if (this.recommendations.length === 1 && this.recommendations[0].tagMsg.includes('ALL IN')) return this.recommendations[0].amount;
-                    return this.recommendations.reduce((s,r)=>s+r.amount,0);
-                },
-                decisionMsg() {
-                    if(!this.recommendations.length) return '⚠️ 市場訊號不足，建議保留現金';
-                    let r=this.recommendations[0];
-                    if(r.tagMsg.includes('ALL IN')) return '🔥 ALL IN：' + r.name;
-                    if(r.score >= 100) return '🔥 強烈買入：' + r.name;
-                    return r.score >= 70 ? '📈 建議買入：' + r.name : '📊 保守配置';
-                },
-                decisionDetail() {
-                    if(!this.recommendations.length) return '無符合條件的標的';
-                    return '<ul><li>' + this.recommendations.map(r=>`${r.name}(${r.risk}/${r.tagMsg}) 單價${this.formatPrice(r.price)}`).join('</li><li>') + '</li></ul>';
-                }
             },
             watch: {
                 manualPeriod(newVal) {
@@ -1001,6 +825,8 @@
                     if (newVal !== oldVal) {
                         this.getWorkflow(newVal);
                         this.saveAllData();
+                        // 清除緩存的評分
+                        this.cachedScores = null;
                     }
                 }
             },
@@ -1103,182 +929,11 @@
                 },
 
                 // =============================================================
-                // ===== 策略引擎 =============================================
+                // ===== 共用評分函式（Single Source of Truth） ==============
                 // =============================================================
+                calculateStockScores(gameState) {
+                    if (this.cachedScores) return this.cachedScores;
 
-                buildGameState() {
-                    const period = this.currentPeriod;
-                    const prevPeriod = period - 1;
-
-                    const products = this.productList.map(p => ({
-                        name: p.name,
-                        price: p.prices[period] || 0,
-                        tag: p.tags[period] || p.tag || '暫無',
-                        risk: p.risk || '均',
-                        currentShares: p.sharesHistory[prevPeriod] || 0,
-                        avgCost: p.avgCost || 0,
-                        prices: p.prices,
-                        tags: p.tags,
-                        sharesHistory: p.sharesHistory,
-                        fundHistory: p.fundHistory,
-                    }));
-
-                    return {
-                        period: period,
-                        prevPeriod: prevPeriod,
-                        fund: this.fund,
-                        products: products,
-                        config: this.strategyConfig,
-                    };
-                },
-
-                // ===== 價格歷史分析 =====
-                analyzePriceHistory(prices, currentPeriod) {
-                    const validPrices = [];
-                    for (let i = 1; i <= 12; i++) {
-                        if (prices[i] > 0) validPrices.push({ period: i, price: prices[i] });
-                    }
-
-                    if (validPrices.length < 3) {
-                        return {
-                            trend: 0,
-                            momentum: 0,
-                            trendText: '資料不足',
-                            momentumText: '資料不足',
-                            isLow: false,
-                            isHigh: false,
-                            consecutiveDown: 0,
-                            consecutiveUp: 0,
-                        };
-                    }
-
-                    const currentPrice = validPrices[validPrices.length - 1].price;
-                    const recent4 = validPrices.slice(-4);
-                    let trend = 0;
-                    let trendText = '盤整';
-                    if (recent4.length >= 4) {
-                        const p1 = recent4[0].price;
-                        const p4 = recent4[3].price;
-                        trend = (p4 - p1) / p1 * 100;
-                        if (trend > 10) trendText = '強勢上漲';
-                        else if (trend > 3) trendText = '溫和上漲';
-                        else if (trend < -10) trendText = '強勢下跌';
-                        else if (trend < -3) trendText = '溫和下跌';
-                    }
-
-                    const recent3 = validPrices.slice(-3);
-                    let momentum = 0;
-                    let momentumText = '持平';
-                    if (recent3.length >= 3) {
-                        const p1 = recent3[0].price;
-                        const p3 = recent3[2].price;
-                        momentum = (p3 - p1) / p1 * 100;
-                        if (momentum > 10) momentumText = '動能強勁';
-                        else if (momentum > 3) momentumText = '動能正向';
-                        else if (momentum < -10) momentumText = '動能疲弱';
-                        else if (momentum < -3) momentumText = '動能偏弱';
-                    }
-
-                    // 連續下跌/上漲期數
-                    let consecutiveDown = 0;
-                    let consecutiveUp = 0;
-                    for (let i = validPrices.length - 1; i >= 1; i--) {
-                        const prev = validPrices[i - 1].price;
-                        const curr = validPrices[i].price;
-                        if (curr < prev) consecutiveDown++;
-                        else break;
-                    }
-                    for (let i = validPrices.length - 1; i >= 1; i--) {
-                        const prev = validPrices[i - 1].price;
-                        const curr = validPrices[i].price;
-                        if (curr > prev) consecutiveUp++;
-                        else break;
-                    }
-
-                    const maxPrice = Math.max(...validPrices.map(p => p.price));
-                    const minPrice = Math.min(...validPrices.map(p => p.price));
-                    const isHigh = currentPrice >= maxPrice * 0.95;
-                    const isLow = currentPrice <= minPrice * 1.05;
-
-                    return {
-                        trend: Math.round(trend * 10) / 10,
-                        momentum: Math.round(momentum * 10) / 10,
-                        trendText,
-                        momentumText,
-                        isHigh,
-                        isLow,
-                        consecutiveDown,
-                        consecutiveUp,
-                    };
-                },
-
-                // ===== 生成 Signals（統一結構） =====
-                generateSignals(product, gameState) {
-                    const signals = [];
-                    const period = gameState.period;
-                    const price = product.price;
-                    const tag = product.tag;
-                    const prevTag = product.tags[period - 1] || '';
-                    const prevPrice = product.prices[period - 1] || 0;
-
-                    const priceAnalysis = this.analyzePriceHistory(product.prices, period);
-
-                    // 趨勢觀察（翻譯成人話）
-                    if (priceAnalysis.trendText === '強勢下跌') {
-                        signals.push({ type: 'trend', level: 'negative', text: '近期趨勢強勢下跌' });
-                    } else if (priceAnalysis.trendText === '溫和下跌') {
-                        signals.push({ type: 'trend', level: 'negative', text: '近期趨勢持續走弱' });
-                    } else if (priceAnalysis.trendText === '強勢上漲') {
-                        signals.push({ type: 'trend', level: 'positive', text: '近期趨勢強勢上漲' });
-                    } else if (priceAnalysis.trendText === '溫和上漲') {
-                        signals.push({ type: 'trend', level: 'positive', text: '近期趨勢持續轉強' });
-                    }
-
-                    // 連續下跌/上漲
-                    if (priceAnalysis.consecutiveDown >= 2) {
-                        signals.push({ type: 'consecutive', level: 'negative', text: `已連續 ${priceAnalysis.consecutiveDown} 期下跌` });
-                    } else if (priceAnalysis.consecutiveUp >= 2) {
-                        signals.push({ type: 'consecutive', level: 'positive', text: `已連續 ${priceAnalysis.consecutiveUp} 期上漲` });
-                    }
-
-                    // 小道消息
-                    if (tag === '迅速崛起') {
-                        signals.push({ type: 'news', level: 'positive', text: '出現「迅速崛起」利多消息' });
-                    } else if (tag === '穩中向好') {
-                        signals.push({ type: 'news', level: 'positive', text: '出現「穩中向好」正向消息' });
-                    } else if (tag === '坊中傳聞') {
-                        signals.push({ type: 'news', level: 'neutral', text: '市場傳聞，影響待觀察' });
-                    } else if (tag === '或有風險') {
-                        signals.push({ type: 'news', level: 'negative', text: '出現「或有風險」警示' });
-                    } else if (tag === '一文不值') {
-                        signals.push({ type: 'news', level: 'negative', text: '出現「一文不值」負面消息' });
-                    }
-
-                    // 利多驗證（上一期有利多，看本期價格反應）
-                    if (prevTag === '迅速崛起' || prevTag === '穩中向好') {
-                        if (prevPrice > 0 && price > 0) {
-                            const change = (price - prevPrice) / prevPrice * 100;
-                            if (change > 3) {
-                                signals.push({ type: 'validation', level: 'positive', text: `利多消息帶動價格上漲 ${change.toFixed(1)}%` });
-                            } else if (change < -3) {
-                                signals.push({ type: 'validation', level: 'negative', text: '利多消息公布後價格未回升，持續走弱' });
-                            } else {
-                                signals.push({ type: 'validation', level: 'neutral', text: '利多消息後價格持穩，等待進一步訊號' });
-                            }
-                        }
-                    }
-
-                    // 價格位置
-                    if (priceAnalysis.isLow) {
-                        signals.push({ type: 'position', level: 'positive', text: '價格位於歷史低點，具備反彈潛力' });
-                    } else if (priceAnalysis.isHigh) {
-                        signals.push({ type: 'position', level: 'negative', text: '價格位於歷史高點，需留意追高風險' });
-                    }
-
-                    return signals;
-                },
-
-                generateScores(gameState) {
                     const scores = [];
                     const period = gameState.period;
 
@@ -1290,23 +945,26 @@
                                 score: 0,
                                 reasons: ['價格為 0，無法交易'],
                                 isTradable: false,
-                                signals: []
+                                signals: [],
+                                priceAnalysis: null
                             });
                             continue;
                         }
 
+                        // 價格歷史分析
                         const priceAnalysis = this.analyzePriceHistory(p.prices, period);
 
                         // 小道消息
                         const tag = p.tag;
                         let tagScore = 10;
-                        if (tag === '迅速崛起') tagScore = 100;
-                        else if (tag === '穩中向好') tagScore = 70;
-                        else if (tag === '坊中傳聞') tagScore = 40;
-                        else if (tag === '或有風險') tagScore = -50;
-                        else if (tag === '一文不值') tagScore = -100;
+                        let tagLabel = '消息普通';
+                        if (tag === '迅速崛起') { tagScore = 100; tagLabel = '最強利多'; }
+                        else if (tag === '穩中向好') { tagScore = 70; tagLabel = '穩定正向'; }
+                        else if (tag === '坊中傳聞') { tagScore = 40; tagLabel = '市場傳聞'; }
+                        else if (tag === '或有風險') { tagScore = -50; tagLabel = '風險消息'; }
+                        else if (tag === '一文不值') { tagScore = -100; tagLabel = '負面消息'; }
 
-                        // 風險
+                        // 風險權重
                         let riskMultiplier = 1.0;
                         if (p.risk === '險') riskMultiplier = 1.2;
                         else if (p.risk === '穩') riskMultiplier = 0.8;
@@ -1351,7 +1009,7 @@
                         const signals = this.generateSignals(p, gameState);
 
                         const reasons = [];
-                        if (tag) reasons.push(tag);
+                        if (tagLabel !== '消息普通') reasons.push(tagLabel);
                         if (priceAnalysis.trendText !== '盤整' && priceAnalysis.trendText !== '資料不足') {
                             reasons.push(`趨勢：${priceAnalysis.trendText}`);
                         }
@@ -1368,227 +1026,332 @@
                     }
 
                     scores.sort((a, b) => b.score - a.score);
+                    this.cachedScores = scores;
                     return scores;
                 },
 
-                selectTargetHoldings(gameState, scores) {
-                    const config = gameState.config;
-                    const threshold = config.selectionThreshold || 70;
-                    const maxHoldings = config.maxHoldings || 3;
-
-                    let candidates = scores.filter(s => s.score >= threshold && s.isTradable);
-                    if (candidates.length > maxHoldings) {
-                        candidates = candidates.slice(0, maxHoldings);
+                // ===== 價格歷史分析 =====
+                analyzePriceHistory(prices, currentPeriod) {
+                    const validPrices = [];
+                    for (let i = 1; i <= 12; i++) {
+                        if (prices[i] > 0) validPrices.push({ period: i, price: prices[i] });
                     }
 
-                    return candidates.map(s => ({
-                        name: s.name,
-                        score: s.score,
-                        price: s.price,
-                        currentShares: s.currentShares,
-                        reasons: s.reasons,
-                        signals: s.signals,
-                        risk: s.risk,
-                        tag: s.tag,
-                    }));
-                },
-
-                allocateCapital(gameState, selectedHoldings) {
-                    const availableFund = gameState.fund;
-                    if (selectedHoldings.length === 0 || availableFund <= 0) {
-                        return selectedHoldings.map(h => ({
-                            ...h,
-                            targetShares: 0,
-                            allocation: 0,
-                            amount: 0,
-                        }));
+                    if (validPrices.length < 3) {
+                        return {
+                            trend: 0,
+                            momentum: 0,
+                            trendText: '資料不足',
+                            momentumText: '資料不足',
+                            isLow: false,
+                            isHigh: false,
+                            consecutiveDown: 0,
+                            consecutiveUp: 0,
+                            sparklineData: validPrices.map(p => p.price)
+                        };
                     }
 
-                    const totalScore = selectedHoldings.reduce((sum, h) => sum + Math.max(0, h.score), 0);
-                    if (totalScore <= 0) {
-                        return selectedHoldings.map(h => ({
-                            ...h,
-                            targetShares: 0,
-                            allocation: 0,
-                            amount: 0,
-                        }));
+                    const currentPrice = validPrices[validPrices.length - 1].price;
+                    const recent4 = validPrices.slice(-4);
+                    let trend = 0;
+                    let trendText = '盤整';
+                    if (recent4.length >= 4) {
+                        const p1 = recent4[0].price;
+                        const p4 = recent4[3].price;
+                        trend = (p4 - p1) / p1 * 100;
+                        if (trend > 10) trendText = '強勢上漲';
+                        else if (trend > 3) trendText = '溫和上漲';
+                        else if (trend < -10) trendText = '強勢下跌';
+                        else if (trend < -3) trendText = '溫和下跌';
                     }
 
-                    const results = [];
-                    let remainingFund = availableFund;
-
-                    for (let i = 0; i < selectedHoldings.length; i++) {
-                        const h = selectedHoldings[i];
-                        const ratio = Math.max(0, h.score) / totalScore;
-                        let amount = Math.floor(availableFund * ratio);
-
-                        if (i === selectedHoldings.length - 1) {
-                            amount = remainingFund;
-                        }
-
-                        const price = h.price || 1;
-                        const targetShares = Math.floor(amount / price);
-                        const actualAmount = targetShares * price;
-
-                        remainingFund -= actualAmount;
-
-                        results.push({
-                            ...h,
-                            targetShares: targetShares,
-                            allocation: ratio,
-                            amount: actualAmount,
-                        });
+                    const recent3 = validPrices.slice(-3);
+                    let momentum = 0;
+                    let momentumText = '持平';
+                    if (recent3.length >= 3) {
+                        const p1 = recent3[0].price;
+                        const p3 = recent3[2].price;
+                        momentum = (p3 - p1) / p1 * 100;
+                        if (momentum > 10) momentumText = '動能強勁';
+                        else if (momentum > 3) momentumText = '動能正向';
+                        else if (momentum < -10) momentumText = '動能疲弱';
+                        else if (momentum < -3) momentumText = '動能偏弱';
                     }
 
-                    return results;
-                },
+                    let consecutiveDown = 0;
+                    let consecutiveUp = 0;
+                    for (let i = validPrices.length - 1; i >= 1; i--) {
+                        const prev = validPrices[i - 1].price;
+                        const curr = validPrices[i].price;
+                        if (curr < prev) consecutiveDown++;
+                        else break;
+                    }
+                    for (let i = validPrices.length - 1; i >= 1; i--) {
+                        const prev = validPrices[i - 1].price;
+                        const curr = validPrices[i].price;
+                        if (curr > prev) consecutiveUp++;
+                        else break;
+                    }
 
-                generateTargetPortfolio(gameState) {
-                    const scores = this.generateScores(gameState);
-                    const selected = this.selectTargetHoldings(gameState, scores);
-                    const allocated = this.allocateCapital(gameState, selected);
+                    const maxPrice = Math.max(...validPrices.map(p => p.price));
+                    const minPrice = Math.min(...validPrices.map(p => p.price));
+                    const isHigh = currentPrice >= maxPrice * 0.95;
+                    const isLow = currentPrice <= minPrice * 1.05;
 
                     return {
-                        period: gameState.period,
-                        holdings: allocated,
-                        scores: scores,
-                        summary: {
-                            count: allocated.filter(h => h.targetShares > 0).length,
-                        }
+                        trend: Math.round(trend * 10) / 10,
+                        momentum: Math.round(momentum * 10) / 10,
+                        trendText,
+                        momentumText,
+                        isHigh,
+                        isLow,
+                        consecutiveDown,
+                        consecutiveUp,
+                        sparklineData: validPrices.map(p => p.price)
                     };
                 },
 
-                diffPortfolio(gameState, targetPortfolio) {
-                    const hold = [];
-                    const sell = [];
-                    const buy = [];
+                // ===== 生成 Signals =====
+                generateSignals(product, gameState) {
+                    const signals = [];
+                    const period = gameState.period;
+                    const price = product.price;
+                    const tag = product.tag;
+                    const prevTag = product.tags[period - 1] || '';
+                    const prevPrice = product.prices[period - 1] || 0;
 
-                    const targetMap = {};
-                    for (let t of targetPortfolio.holdings) {
-                        targetMap[t.name] = t;
+                    const priceAnalysis = this.analyzePriceHistory(product.prices, period);
+
+                    if (priceAnalysis.trendText === '強勢下跌') {
+                        signals.push({ type: 'trend', level: 'negative', text: '近期趨勢強勢下跌' });
+                    } else if (priceAnalysis.trendText === '溫和下跌') {
+                        signals.push({ type: 'trend', level: 'negative', text: '近期趨勢持續走弱' });
+                    } else if (priceAnalysis.trendText === '強勢上漲') {
+                        signals.push({ type: 'trend', level: 'positive', text: '近期趨勢強勢上漲' });
+                    } else if (priceAnalysis.trendText === '溫和上漲') {
+                        signals.push({ type: 'trend', level: 'positive', text: '近期趨勢持續轉強' });
                     }
 
-                    for (let p of gameState.products) {
-                        const current = p.currentShares || 0;
-                        const target = targetMap[p.name] || null;
+                    if (priceAnalysis.consecutiveDown >= 2) {
+                        signals.push({ type: 'consecutive', level: 'negative', text: `已連續 ${priceAnalysis.consecutiveDown} 期下跌` });
+                    } else if (priceAnalysis.consecutiveUp >= 2) {
+                        signals.push({ type: 'consecutive', level: 'positive', text: `已連續 ${priceAnalysis.consecutiveUp} 期上漲` });
+                    }
 
-                        if (current > 0) {
-                            if (target && target.targetShares > 0) {
-                                const targetShares = target.targetShares;
-                                if (targetShares >= current) {
-                                    hold.push({
-                                        name: p.name,
-                                        shares: current,
-                                        targetShares: targetShares,
-                                        reason: target.reasons?.join('、') || '目標配置保留',
-                                        signals: target.signals || [],
-                                    });
-                                    if (targetShares > current) {
-                                        buy.push({
-                                            name: p.name,
-                                            buyShares: targetShares - current,
-                                            amount: (targetShares - current) * (target.price || p.price),
-                                            price: target.price || p.price,
-                                            signals: target.signals || [],
-                                        });
-                                    }
-                                } else {
-                                    const sellShares = current - targetShares;
-                                    const sellSignals = target.signals ? [...target.signals] : [];
-                                    sellSignals.push({ type: 'action', level: 'negative', text: '目標配置減少' });
-                                    sell.push({
-                                        name: p.name,
-                                        shares: sellShares,
-                                        revenue: sellShares * (target.price || p.price),
-                                        signals: sellSignals,
-                                    });
-                                    hold.push({
-                                        name: p.name,
-                                        shares: targetShares,
-                                        targetShares: targetShares,
-                                        reason: target.reasons?.join('、') || '目標配置保留',
-                                        signals: target.signals || [],
-                                    });
-                                }
+                    if (tag === '迅速崛起') {
+                        signals.push({ type: 'news', level: 'positive', text: '出現「迅速崛起」利多消息' });
+                    } else if (tag === '穩中向好') {
+                        signals.push({ type: 'news', level: 'positive', text: '出現「穩中向好」正向消息' });
+                    } else if (tag === '坊中傳聞') {
+                        signals.push({ type: 'news', level: 'neutral', text: '市場傳聞，影響待觀察' });
+                    } else if (tag === '或有風險') {
+                        signals.push({ type: 'news', level: 'negative', text: '出現「或有風險」警示' });
+                    } else if (tag === '一文不值') {
+                        signals.push({ type: 'news', level: 'negative', text: '出現「一文不值」負面消息' });
+                    }
+
+                    if (prevTag === '迅速崛起' || prevTag === '穩中向好') {
+                        if (prevPrice > 0 && price > 0) {
+                            const change = (price - prevPrice) / prevPrice * 100;
+                            if (change > 3) {
+                                signals.push({ type: 'validation', level: 'positive', text: `利多消息帶動價格上漲 ${change.toFixed(1)}%` });
+                            } else if (change < -3) {
+                                signals.push({ type: 'validation', level: 'negative', text: '利多消息公布後價格未回升，持續走弱' });
                             } else {
-                                const sellSignals = [
-                                    { type: 'action', level: 'negative', text: '未進入目標組合' }
-                                ];
-                                sell.push({
-                                    name: p.name,
-                                    shares: current,
-                                    revenue: current * p.price,
-                                    signals: sellSignals,
-                                });
-                            }
-                        } else {
-                            if (target && target.targetShares > 0) {
-                                buy.push({
-                                    name: p.name,
-                                    buyShares: target.targetShares,
-                                    amount: target.amount || 0,
-                                    price: target.price || 0,
-                                    signals: target.signals || [],
-                                });
+                                signals.push({ type: 'validation', level: 'neutral', text: '利多消息後價格持穩，等待進一步訊號' });
                             }
                         }
                     }
 
-                    for (let t of targetPortfolio.holdings) {
-                        if (t.targetShares > 0) {
-                            const exists = gameState.products.some(p => p.name === t.name && p.currentShares > 0);
-                            if (!exists) {
-                                const alreadyInBuy = buy.some(b => b.name === t.name);
-                                if (!alreadyInBuy) {
-                                    buy.push({
-                                        name: t.name,
-                                        buyShares: t.targetShares,
-                                        amount: t.amount || 0,
-                                        price: t.price || 0,
-                                        signals: t.signals || [],
-                                    });
-                                }
-                            }
-                        }
+                    if (priceAnalysis.isLow) {
+                        signals.push({ type: 'position', level: 'positive', text: '價格位於歷史低點，具備反彈潛力' });
+                    } else if (priceAnalysis.isHigh) {
+                        signals.push({ type: 'position', level: 'negative', text: '價格位於歷史高點，需留意追高風險' });
                     }
+
+                    return signals;
+                },
+
+                // =============================================================
+                // ===== 策略引擎（唯一決策來源） =============================
+                // =============================================================
+                buildGameState() {
+                    const period = this.currentPeriod;
+                    const prevPeriod = period - 1;
+
+                    const products = this.productList.map(p => ({
+                        name: p.name,
+                        price: p.prices[period] || 0,
+                        tag: p.tags[period] || p.tag || '暫無',
+                        risk: p.risk || '均',
+                        currentShares: p.sharesHistory[prevPeriod] || 0,
+                        avgCost: p.avgCost || 0,
+                        prices: p.prices,
+                        tags: p.tags,
+                        sharesHistory: p.sharesHistory,
+                        fundHistory: p.fundHistory,
+                    }));
 
                     return {
-                        hold: hold,
-                        sell: sell,
-                        buy: buy,
-                        summary: {
-                            totalSellRevenue: sell.reduce((sum, s) => sum + s.revenue, 0),
-                            totalBuyCost: buy.reduce((sum, b) => sum + b.amount, 0),
-                        }
+                        period: period,
+                        prevPeriod: prevPeriod,
+                        fund: this.fund,
+                        products: products,
+                        config: this.strategyConfig,
                     };
                 },
 
                 generateCompleteStrategy() {
                     const gameState = this.buildGameState();
-                    const targetPortfolio = this.generateTargetPortfolio(gameState);
-                    const diff = this.diffPortfolio(gameState, targetPortfolio);
+                    const scores = this.calculateStockScores(gameState);
+                    const period = gameState.period;
+                    const prevPeriod = gameState.prevPeriod;
 
-                    const finalFund = gameState.fund + diff.summary.totalSellRevenue - diff.summary.totalBuyCost;
+                    // ===== Step 1: 分析上一期持股，決定哪些賣 =====
+                    const sellCandidates = [];
+                    const holdCandidates = [];
+
+                    for (let p of gameState.products) {
+                        const shares = p.sharesHistory[prevPeriod] || 0;
+                        if (shares <= 0) continue;
+
+                        const price = p.prices[period] || 0;
+                        const avgCost = p.avgCost || 0;
+                        const profitPercent = avgCost > 0 ? (price - avgCost) / avgCost * 100 : 0;
+                        const scoreData = scores.find(s => s.name === p.name);
+
+                        // 判斷是否該賣出
+                        let shouldSell = false;
+                        let sellReason = '';
+
+                        // 條件1：消息轉弱
+                        const prevTag = p.tags[prevPeriod] || '';
+                        const currTag = p.tags[period] || '';
+                        if (prevTag === '迅速崛起' && currTag !== '迅速崛起') {
+                            shouldSell = true;
+                            sellReason = '強力利多已消退';
+                        }
+
+                        // 條件2：獲利了結（漲幅過大）
+                        if (profitPercent > 30) {
+                            shouldSell = true;
+                            sellReason = `漲幅已達 ${profitPercent.toFixed(1)}%，獲利了結`;
+                        }
+
+                        // 條件3：停損
+                        const stopLossThreshold = { '險': -25, '均': -20, '穩': -15 }[p.risk] || -20;
+                        if (profitPercent < stopLossThreshold) {
+                            shouldSell = true;
+                            sellReason = `虧損 ${Math.abs(profitPercent).toFixed(1)}%，達停損門檻`;
+                        }
+
+                        // 條件4：低分且沒有特殊理由
+                        if (scoreData && scoreData.score < 40 && !shouldSell) {
+                            shouldSell = true;
+                            sellReason = '評分偏低，目標配置調整';
+                        }
+
+                        if (shouldSell) {
+                            sellCandidates.push({
+                                name: p.name,
+                                shares: shares,
+                                price: price,
+                                revenue: shares * price,
+                                reason: sellReason,
+                                signals: scoreData?.signals || [],
+                                sparklineData: scoreData?.priceAnalysis?.sparklineData || [],
+                            });
+                        } else {
+                            holdCandidates.push({
+                                name: p.name,
+                                shares: shares,
+                                price: price,
+                                reason: scoreData?.reasons?.join('、') || '繼續持有',
+                                signals: scoreData?.signals || [],
+                            });
+                        }
+                    }
+
+                    // ===== Step 2: 計算可用資金 =====
+                    const sellRevenue = sellCandidates.reduce((sum, s) => sum + s.revenue, 0);
+                    const availableFund = gameState.fund + sellRevenue;
+
+                    // ===== Step 3: 決定買入標的 =====
+                    const buyCandidates = [];
+                    const threshold = gameState.config.selectionThreshold || 70;
+                    const maxHoldings = gameState.config.maxHoldings || 3;
+
+                    // 排除已持有的標的（避免重複買入）
+                    const heldNames = new Set();
+                    for (let p of gameState.products) {
+                        if ((p.sharesHistory[prevPeriod] || 0) > 0) {
+                            heldNames.add(p.name);
+                        }
+                    }
+
+                    let availableForBuy = availableFund;
+                    let selectedForBuy = [];
+
+                    // 從評分高的開始選
+                    for (let s of scores) {
+                        if (!s.isTradable || s.score < threshold) continue;
+                        if (heldNames.has(s.name)) continue; // 已持有不重複買
+                        if (selectedForBuy.length >= maxHoldings) break;
+
+                        const price = s.price || 1;
+                        const maxShares = Math.floor(availableForBuy / price);
+                        if (maxShares <= 0) break;
+
+                        const allocatedAmount = Math.min(availableForBuy * 0.3, maxShares * price);
+                        const shares = Math.floor(allocatedAmount / price);
+                        const amount = shares * price;
+
+                        if (shares > 0) {
+                            selectedForBuy.push({
+                                name: s.name,
+                                buyShares: shares,
+                                amount: amount,
+                                price: price,
+                                signals: s.signals || [],
+                                sparklineData: s.priceAnalysis?.sparklineData || [],
+                            });
+                            availableForBuy -= amount;
+                        }
+                    }
+
+                    // 如果還有剩餘資金，分配給最高分標的（ALL IN 邏輯）
+                    if (availableForBuy > 0 && selectedForBuy.length > 0) {
+                        const topBuy = selectedForBuy[0];
+                        const extraShares = Math.floor(availableForBuy / topBuy.price);
+                        if (extraShares > 0) {
+                            topBuy.buyShares += extraShares;
+                            topBuy.amount += extraShares * topBuy.price;
+                            availableForBuy -= extraShares * topBuy.price;
+                        }
+                    }
+
+                    // ===== Step 4: 產生最終策略 =====
+                    const finalFund = availableForBuy;
 
                     return {
-                        period: gameState.period,
-                        hold: diff.hold || [],
-                        sell: diff.sell || [],
-                        buy: diff.buy || [],
+                        period: period,
+                        sell: sellCandidates,
+                        hold: holdCandidates,
+                        buy: selectedForBuy,
                         summary: {
-                            totalSellRevenue: diff.summary.totalSellRevenue || 0,
-                            totalBuyCost: diff.summary.totalBuyCost || 0,
+                            totalSellRevenue: sellRevenue,
+                            totalBuyCost: selectedForBuy.reduce((sum, b) => sum + b.amount, 0),
                             finalFund: Math.max(0, finalFund),
                         }
                     };
                 },
 
                 // =============================================================
-                // ===== 策略快照（無彈窗，直接更新右側 + Toast） =============
+                // ===== 策略快照（單一決策來源） =============================
                 // =============================================================
                 generateStrategy() {
-                    if (!this.recommendations.length) {
-                        this.showToast('ℹ️ 目前沒有買入建議可以建立策略');
+                    if (!this.canGenerateStrategy) {
+                        this.showToast('⚠️ 請先輸入本期價格與小道消息');
                         return;
                     }
 
@@ -1601,15 +1364,15 @@
 
                     this.strategySnapshot = {
                         period: strategy.period,
-                        hold: strategy.hold || [],
                         sell: strategy.sell || [],
+                        hold: strategy.hold || [],
                         buy: strategy.buy || [],
                         summary: strategy.summary || {},
                     };
 
                     this.saveAllData();
 
-                    // 在 DOM 更新後繪製 Sparkline
+                    // 繪製 Sparkline
                     this.$nextTick(() => {
                         this.drawAllSparklines();
                     });
@@ -1618,163 +1381,6 @@
                     if (strategy.sell.length) msg += `，賣出 ${strategy.sell.length} 檔`;
                     if (strategy.buy.length) msg += `，買入 ${strategy.buy.length} 檔`;
                     this.showToast(msg);
-                },
-
-                // =============================================================
-                // ===== Sparkline 繪製 =======================================
-                // =============================================================
-                drawMiniSparkline(canvasId, prices, color) {
-                    const canvas = document.getElementById(canvasId);
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-                    const rect = canvas.getBoundingClientRect();
-                    const dpr = window.devicePixelRatio || 1;
-
-                    // 使用實際顯示尺寸
-                    const w = rect.width || 80;
-                    const h = rect.height || 30;
-
-                    canvas.width = w * dpr;
-                    canvas.height = h * dpr;
-                    canvas.style.width = w + 'px';
-                    canvas.style.height = h + 'px';
-                    ctx.scale(dpr, dpr);
-
-                    const validPrices = prices.filter(p => p > 0);
-                    if (validPrices.length < 2) {
-                        ctx.fillStyle = '#6B7280';
-                        ctx.font = '8px sans-serif';
-                        ctx.fillText('資料不足', 10, 18);
-                        return;
-                    }
-
-                    // 只取最近 12 期
-                    const displayPrices = validPrices.slice(-12);
-                    const max = Math.max(...displayPrices);
-                    const min = Math.min(...displayPrices);
-                    const range = max - min || 1;
-
-                    ctx.clearRect(0, 0, w, h);
-
-                    // 繪製走勢線
-                    const lineColor = color || '#6EE7B7';
-                    ctx.beginPath();
-                    ctx.strokeStyle = lineColor;
-                    ctx.lineWidth = 1.5;
-
-                    const padding = { top: 4, bottom: 4, left: 4, right: 4 };
-                    const drawW = w - padding.left - padding.right;
-                    const drawH = h - padding.top - padding.bottom;
-
-                    for (let i = 0; i < displayPrices.length; i++) {
-                        const x = padding.left + (i / (displayPrices.length - 1)) * drawW;
-                        const y = padding.top + drawH - ((displayPrices[i] - min) / range) * drawH;
-                        if (i === 0) ctx.moveTo(x, y);
-                        else ctx.lineTo(x, y);
-                    }
-                    ctx.stroke();
-
-                    // 最後一個點高亮
-                    const lastX = padding.left + ((displayPrices.length - 1) / (displayPrices.length - 1)) * drawW;
-                    const lastY = padding.top + drawH - ((displayPrices[displayPrices.length - 1] - min) / range) * drawH;
-                    ctx.beginPath();
-                    ctx.fillStyle = '#FCD34D';
-                    ctx.arc(lastX, lastY, 2.5, 0, 2 * Math.PI);
-                    ctx.fill();
-                },
-
-                drawAllSparklines() {
-                    if (!this.strategySnapshot) return;
-
-                    // 賣出 Top 1
-                    if (this.strategySnapshot.sell && this.strategySnapshot.sell.length) {
-                        const topSell = this.strategySnapshot.sell[0];
-                        const product = this.productList.find(p => p.name === topSell.name);
-                        if (product) {
-                            const prices = product.prices.filter(p => p > 0);
-                            this.drawMiniSparkline('sparkline_sell_' + topSell.name, prices, '#FCA5A5');
-                        }
-                    }
-
-                    // 買入 Top 1
-                    if (this.strategySnapshot.buy && this.strategySnapshot.buy.length) {
-                        const topBuy = this.strategySnapshot.buy[0];
-                        const product = this.productList.find(p => p.name === topBuy.name);
-                        if (product) {
-                            const prices = product.prices.filter(p => p > 0);
-                            this.drawMiniSparkline('sparkline_buy_' + topBuy.name, prices, '#6EE7B7');
-                        }
-                    }
-                },
-
-                // =============================================================
-                // ===== AI 判斷輔助方法 ======================================
-                // =============================================================
-                getObservations(item) {
-                    const obs = [];
-                    if (!item.signals || !item.signals.length) {
-                        return [{ icon: '📊', text: '綜合評分顯示為潛在標的' }];
-                    }
-
-                    // 取前 2-3 個最重要的信號
-                    const priority = { 'consecutive': 0, 'trend': 1, 'validation': 2, 'news': 3, 'position': 4, 'action': 5 };
-                    const sorted = [...item.signals].sort((a, b) => (priority[a.type] || 99) - (priority[b.type] || 99));
-
-                    const topSignals = sorted.slice(0, 3);
-
-                    const iconMap = {
-                        'consecutive': '📉',
-                        'trend': '📈',
-                        'validation': '📰',
-                        'news': '📰',
-                        'position': '📍',
-                        'action': '⚡'
-                    };
-
-                    for (let sig of topSignals) {
-                        const icon = iconMap[sig.type] || '•';
-                        obs.push({ icon, text: sig.text });
-                    }
-
-                    return obs;
-                },
-
-                getConclusion(item) {
-                    // 從 signals 推導結論
-                    if (!item.signals || !item.signals.length) {
-                        return '建議納入本期配置';
-                    }
-
-                    const hasNegative = item.signals.some(s => s.level === 'negative');
-                    const hasPositive = item.signals.some(s => s.level === 'positive');
-                    const hasValidationNegative = item.signals.some(s => s.type === 'validation' && s.level === 'negative');
-                    const hasConsecutiveDown = item.signals.some(s => s.type === 'consecutive' && s.level === 'negative');
-
-                    // 賣出情境
-                    if (item.revenue !== undefined) {
-                        if (hasValidationNegative) {
-                            return '利多未發酵，建議轉換至更強勢標的';
-                        }
-                        if (hasConsecutiveDown) {
-                            return '趨勢持續走弱，建議先退出持股';
-                        }
-                        if (hasNegative) {
-                            return '綜合評估轉弱，建議賣出';
-                        }
-                        return '目標配置調整，建議賣出';
-                    }
-
-                    // 買入情境
-                    if (hasPositive && hasValidationNegative) {
-                        return '利多出現但尚未發酵，可逢低布局';
-                    }
-                    if (hasPositive) {
-                        return '適合作為本期主力配置';
-                    }
-                    if (hasNegative) {
-                        return '風險較高，建議小量配置或觀察';
-                    }
-                    return '建議納入本期配置';
                 },
 
                 // =============================================================
@@ -1810,27 +1416,29 @@
                         }
                     }
 
-                    // 買入
-                    if (this.strategySnapshot.buy) {
-                        for (let item of this.strategySnapshot.buy) {
-                            const p = this.productList.find(p => p.name === item.name);
-                            if (p) {
-                                p.sharesHistory[period] = item.buyShares || 0;
-                                p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory);
-                                if (item.buyShares > 0) {
-                                    totalCost += item.buyShares * (item.price || 0);
-                                }
-                            }
-                        }
-                    }
-
-                    // 保留
+                    // 保留（確保保留的標的繼續持有）
                     if (this.strategySnapshot.hold) {
                         for (let item of this.strategySnapshot.hold) {
                             const p = this.productList.find(p => p.name === item.name);
                             if (p) {
                                 p.sharesHistory[period] = item.shares || 0;
                                 p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory);
+                            }
+                        }
+                    }
+
+                    // 買入
+                    if (this.strategySnapshot.buy) {
+                        for (let item of this.strategySnapshot.buy) {
+                            const p = this.productList.find(p => p.name === item.name);
+                            if (p) {
+                                // 如果該標的已經有持倉，累加
+                                const currentShares = p.sharesHistory[period] || 0;
+                                p.sharesHistory[period] = currentShares + (item.buyShares || 0);
+                                p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory);
+                                if (item.buyShares > 0) {
+                                    totalCost += item.buyShares * (item.price || 0);
+                                }
                             }
                         }
                     }
@@ -1845,6 +1453,7 @@
 
                     this.setWorkflow(period, 'executed');
                     this.strategySnapshot = null;
+                    this.cachedScores = null;
                     this.saveAllData();
 
                     this.showToast(`✅ 策略執行完成！剩餘資金 ${this.formatWithComma(this.fund)} 元`);
@@ -1858,10 +1467,153 @@
                         'confirm',
                         () => {
                             this.strategySnapshot = null;
+                            this.cachedScores = null;
                             this.saveAllData();
                             this.showToast('已取消策略');
                         }
                     );
+                },
+
+                // =============================================================
+                // ===== AI 判斷輔助方法 ======================================
+                // =============================================================
+                getObservations(item) {
+                    const obs = [];
+                    if (!item.signals || !item.signals.length) {
+                        return [{ icon: '📊', text: '綜合評分顯示為潛在標的' }];
+                    }
+
+                    const priority = { 'consecutive': 0, 'trend': 1, 'validation': 2, 'news': 3, 'position': 4, 'action': 5 };
+                    const sorted = [...item.signals].sort((a, b) => (priority[a.type] || 99) - (priority[b.type] || 99));
+
+                    const topSignals = sorted.slice(0, 3);
+                    const iconMap = {
+                        'consecutive': '📉',
+                        'trend': '📈',
+                        'validation': '📰',
+                        'news': '📰',
+                        'position': '📍',
+                        'action': '⚡'
+                    };
+
+                    for (let sig of topSignals) {
+                        const icon = iconMap[sig.type] || '•';
+                        obs.push({ icon, text: sig.text });
+                    }
+
+                    return obs;
+                },
+
+                getConclusion(item) {
+                    if (!item.signals || !item.signals.length) {
+                        return '建議納入本期配置';
+                    }
+
+                    const hasNegative = item.signals.some(s => s.level === 'negative');
+                    const hasPositive = item.signals.some(s => s.level === 'positive');
+                    const hasValidationNegative = item.signals.some(s => s.type === 'validation' && s.level === 'negative');
+                    const hasConsecutiveDown = item.signals.some(s => s.type === 'consecutive' && s.level === 'negative');
+
+                    if (item.revenue !== undefined) {
+                        if (hasValidationNegative) {
+                            return '利多未發酵，建議轉換至更強勢標的';
+                        }
+                        if (hasConsecutiveDown) {
+                            return '趨勢持續走弱，建議先退出持股';
+                        }
+                        if (hasNegative) {
+                            return '綜合評估轉弱，建議賣出';
+                        }
+                        return '目標配置調整，建議賣出';
+                    }
+
+                    if (hasPositive && hasValidationNegative) {
+                        return '利多出現但尚未發酵，可逢低布局';
+                    }
+                    if (hasPositive) {
+                        return '適合作為本期主力配置';
+                    }
+                    if (hasNegative) {
+                        return '風險較高，建議小量配置或觀察';
+                    }
+                    return '建議納入本期配置';
+                },
+
+                // =============================================================
+                // ===== Sparkline 繪製 =======================================
+                // =============================================================
+                drawMiniSparkline(canvasId, prices, color) {
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    const rect = canvas.getBoundingClientRect();
+                    const dpr = window.devicePixelRatio || 1;
+
+                    const w = rect.width || 80;
+                    const h = rect.height || 30;
+
+                    canvas.width = w * dpr;
+                    canvas.height = h * dpr;
+                    canvas.style.width = w + 'px';
+                    canvas.style.height = h + 'px';
+                    ctx.scale(dpr, dpr);
+
+                    const validPrices = prices.filter(p => p > 0);
+                    if (validPrices.length < 2) {
+                        ctx.fillStyle = '#6B7280';
+                        ctx.font = '8px sans-serif';
+                        ctx.fillText('資料不足', 10, 18);
+                        return;
+                    }
+
+                    const displayPrices = validPrices.slice(-12);
+                    const max = Math.max(...displayPrices);
+                    const min = Math.min(...displayPrices);
+                    const range = max - min || 1;
+
+                    ctx.clearRect(0, 0, w, h);
+
+                    const lineColor = color || '#6EE7B7';
+                    ctx.beginPath();
+                    ctx.strokeStyle = lineColor;
+                    ctx.lineWidth = 1.5;
+
+                    const padding = { top: 4, bottom: 4, left: 4, right: 4 };
+                    const drawW = w - padding.left - padding.right;
+                    const drawH = h - padding.top - padding.bottom;
+
+                    for (let i = 0; i < displayPrices.length; i++) {
+                        const x = padding.left + (i / (displayPrices.length - 1)) * drawW;
+                        const y = padding.top + drawH - ((displayPrices[i] - min) / range) * drawH;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+
+                    const lastX = padding.left + ((displayPrices.length - 1) / (displayPrices.length - 1)) * drawW;
+                    const lastY = padding.top + drawH - ((displayPrices[displayPrices.length - 1] - min) / range) * drawH;
+                    ctx.beginPath();
+                    ctx.fillStyle = '#FCD34D';
+                    ctx.arc(lastX, lastY, 2.5, 0, 2 * Math.PI);
+                    ctx.fill();
+                },
+
+                drawAllSparklines() {
+                    if (!this.strategySnapshot) return;
+
+                    if (this.strategySnapshot.sell && this.strategySnapshot.sell.length) {
+                        const topSell = this.strategySnapshot.sell[0];
+                        if (topSell.sparklineData && topSell.sparklineData.length) {
+                            this.drawMiniSparkline('sparkline_sell_' + topSell.name, topSell.sparklineData, '#FCA5A5');
+                        }
+                    }
+
+                    if (this.strategySnapshot.buy && this.strategySnapshot.buy.length) {
+                        const topBuy = this.strategySnapshot.buy[0];
+                        if (topBuy.sparklineData && topBuy.sparklineData.length) {
+                            this.drawMiniSparkline('sparkline_buy_' + topBuy.name, topBuy.sparklineData, '#6EE7B7');
+                        }
+                    }
                 },
 
                 // =============================================================
