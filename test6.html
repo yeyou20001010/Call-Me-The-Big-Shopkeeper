@@ -43,11 +43,12 @@
         .tag-risk { color: #8E24AA !important; }
         .tag-worthless { color: #4E5C35 !important; }
         .tag-none { color: #6B7280 !important; }
-        .transparent-select { position: relative; width: 100%; min-width: 70px; display: inline-block; }
-        .transparent-select select { color: transparent !important; background-color: transparent !important; padding: 4px; width: 100%; border: none !important; outline: none !important; cursor: pointer; text-align: center !important; text-align-last: center; }
-        .transparent-select select:focus { outline: none !important; background-color: transparent !important; color: transparent !important; }
-        .transparent-select select option { color: #6B7280 !important; background-color: white !important; text-align: center !important; }
-        .select-overlay-text { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); pointer-events: none; white-space: nowrap; font-weight: 700; text-align: center; width: 100%; }
+        /* 保留風險標籤樣式 */
+        .risk-badge { display: inline-block; padding: 2px 12px; border-radius: 9999px; font-weight: 900; font-size: 0.75rem; background: #F3F4F6; color: #6B7280; }
+        .risk-badge.risk-red { background: #FEE2E2; color: #DC2626; }
+        .risk-badge.risk-blue { background: #DBEAFE; color: #2563EB; }
+        .risk-badge.risk-green { background: #D1FAE5; color: #059669; }
+        .risk-badge.risk-missing { background: #F3F4F6; color: #9CA3AF; }
         .sort-btn { cursor: pointer; user-select: none; }
         .sort-btn:hover { opacity: 0.7; }
         .stop-loss-row { background-color: rgba(229, 57, 53, 0.1); }
@@ -431,13 +432,16 @@
                                     <th class="p-2" style="min-width: 65px;">漲跌幅</th>
                                     <th class="p-2 sort-btn" style="min-width: 90px;" @click="sortByTag">小道消息 ⬍</th>
                                     <th class="p-2 sort-btn" style="min-width: 85px;" @click="sortByShares">持倉張數 ⬍</th>
-                                    <th class="p-2">未實現損益</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="item in displayList" :key="item.originalIndex" class="border-b" :class="{'stop-loss-row': getStopLossTriggered(item)}">
                                     <td class="p-2 clickable-name" @click="openPriceHistoryModal(item)">{{ item.name }}</td>
-                                    <td class="p-2"><div :class="getRiskClass(item.risk)" class="transparent-select"><span class="select-overlay-text" :class="getRiskClass(item.risk)">{{ item.risk || '請選擇' }}</span><select v-model="item.risk" @change="updateRisk(item.originalIndex, item.risk)"><option value="">請選擇</option><option value="險">險</option><option value="均">均</option><option value="穩">穩</option></select></div></td>
+                                    <td class="p-2">
+                                        <span class="risk-badge" :class="getRiskClass(item.risk)">
+                                            {{ item.risk || '未選' }}
+                                        </span>
+                                    </td>
                                     <td class="font-mono">{{ formatPrice(item.price) }}</td>
                                     <td class="font-mono text-slate-500">{{ formatPrice(item.lastPrice) }}</td>
                                     <td class="font-black" :class="getPriceChangeClass(item)">{{ getPriceChangePercent(item) }}</td>
@@ -447,7 +451,6 @@
                                             {{ item.shares }}<span class="edit-hint"> ✎</span>
                                         </span>
                                     </td>
-                                    <td class="font-mono" :class="getUnrealizedClass(item)">{{ formatPrice(calculateUnrealized(item)) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -509,7 +512,7 @@
                             <span class="block text-gray-400 text-[10px]">第 {{ strategySnapshot.period }} 期</span>
                         </div>
 
-                        <div class="space-y-3 text-sm max-h-[420px] overflow-y-auto pr-1">
+                        <div class="space-y-3 text-sm">
 
                             <!-- 賣出清單 -->
                             <div v-if="strategySnapshot.sell && strategySnapshot.sell.length">
@@ -622,7 +625,33 @@
             return JSON.parse(JSON.stringify(obj));
         }
 
-        const DATA_VERSION = 9;
+        const DATA_VERSION = 10;
+
+        // =============================================================
+        // 固定風險對應表（寫死）
+        // =============================================================
+        const RISK_MAP = {
+            '千刻地政': '險',
+            '米和油店': '險',
+            '宋城閃送': '險',
+            '凝禮織造': '險',
+            '東南園林': '險',
+            '豬豬戲院': '險',
+            '神鹿茶坊': '險',
+            '藍海製衣': '險',
+            '朵朵縫紉': '均',
+            '朧湖水築': '均',
+            '雪人甜水': '均',
+            '禧上茶樓': '均',
+            '榮邸閣': '均',
+            '畢禮戲院': '均',
+            '二八劇場': '均',
+            '馬上成衣': '均',
+            '安行鞋業': '穩',
+            '衡動建築': '穩',
+            '嗨嗨邊爐': '穩',
+            '旭樂坊': '穩'
+        };
 
         const defaultProducts = [
             '千刻地政','米和油店','朵朵縫紉','安行鞋業','宋城閃送','凝禮織造','東南園林','朧湖水築','豬豬戲院','衡動建築',
@@ -648,10 +677,14 @@
                     exportVersion: '', activityStart: '', activityEnd: '',
                     presets: { 1: null, 2: null }, lastUsedPreset: null,
                     modalVisible: false, modalTitle: '', modalMsg: '', modalType: '', modalCallback: null,
-                    productList: defaultProducts.map((name, idx) => ({
-                        name, risk: '', tag: '', prices: Array(13).fill(0), tags: Array(13).fill(''),
-                        sharesHistory: Array(13).fill(0), fundHistory: Array(13).fill(0), avgCost: 0, originalIndex: idx
-                    })),
+                    productList: defaultProducts.map((name, idx) => {
+                        // 初始化時帶入固定風險
+                        const risk = RISK_MAP[name] || '均';
+                        return {
+                            name, risk: risk, tag: '', prices: Array(13).fill(0), tags: Array(13).fill(''),
+                            sharesHistory: Array(13).fill(0), fundHistory: Array(13).fill(0), avgCost: 0, originalIndex: idx
+                        };
+                    }),
                     importDataBuffer: null,
                     // CSV 相關
                     showDelimiterModal: false,
@@ -705,7 +738,6 @@
                     return this.getWorkflow(this.currentPeriod);
                 },
                 canGenerateStrategy() {
-                    // 至少有一些價格資料才能生成策略
                     const period = this.currentPeriod;
                     for (let p of this.productList) {
                         if (p.prices[period] > 0) return true;
@@ -825,7 +857,6 @@
                     if (newVal !== oldVal) {
                         this.getWorkflow(newVal);
                         this.saveAllData();
-                        // 清除緩存的評分
                         this.cachedScores = null;
                     }
                 }
@@ -886,11 +917,14 @@
                 },
                 getPriceChangePercent(item){ if(item?.lastPrice && item?.price) return ((item.price-item.lastPrice)/item.lastPrice*100).toFixed(1)+'%'; return '-'; },
                 getPriceChangeClass(item){ let chg = item?.lastPrice ? (item.price-item.lastPrice)/item.lastPrice : 0; return chg>0 ? 'text-gain' : chg<0 ? 'text-loss' : ''; },
-                getRiskClass(r){ if(r==='險') return 'risk-red'; if(r==='均') return 'risk-blue'; if(r==='穩') return 'risk-green'; return 'risk-missing'; },
+                getRiskClass(r){
+                    if(r==='險') return 'risk-red';
+                    if(r==='均') return 'risk-blue';
+                    if(r==='穩') return 'risk-green';
+                    return 'risk-missing';
+                },
                 getTagClass(t){ if(t==='迅速崛起') return 'tag-rapid'; if(t==='穩中向好') return 'tag-good'; if(t==='坊中傳聞') return 'tag-neutral'; if(t==='或有風險') return 'tag-risk'; if(t==='一文不值') return 'tag-worthless'; return 'tag-none'; },
                 getStopLossTriggered(item){ if(item?.shares && item?.avgCost && item?.price && item?.risk){ return item.profitPercent < (item.risk==='險'?-25:item.risk==='均'?-20:-15); } return false; },
-                calculateUnrealized(item){ return item?.shares && item?.avgCost && item?.price ? (item.price-item.avgCost)*item.shares : 0; },
-                getUnrealizedClass(item){ let v=this.calculateUnrealized(item); return v>0?'text-gain':v<0?'text-loss':''; },
                 updateRisk(i,v){ if(this.productList[i]) this.productList[i].risk=v; this.saveAllData(); },
                 updateTag(i,v){
                     if(this.productList[i]) {
@@ -929,7 +963,49 @@
                 },
 
                 // =============================================================
-                // ===== 共用評分函式（Single Source of Truth） ==============
+                // ===== 價格階段與趨勢辨識（V2） =============================
+                // =============================================================
+                getPricePhase(price, prices) {
+                    const validPrices = prices.filter(v => v > 0);
+                    if (validPrices.length < 3) return { phase: '中段', percentile: 0.5, label: '中段' };
+
+                    const min = Math.min(...validPrices);
+                    const max = Math.max(...validPrices);
+                    const range = max - min || 1;
+                    const percentile = (price - min) / range;
+
+                    let phase = '中段';
+                    let label = '中段';
+                    if (percentile < 0.2) { phase = '底部'; label = '底部'; }
+                    else if (percentile < 0.4) { phase = '低檔'; label = '低檔'; }
+                    else if (percentile < 0.6) { phase = '中段'; label = '中段'; }
+                    else if (percentile < 0.8) { phase = '高檔'; label = '高檔'; }
+                    else { phase = '頂部'; label = '頂部'; }
+
+                    return { phase, percentile, label };
+                },
+
+                getTrend(recentPrices) {
+                    if (!recentPrices || recentPrices.length < 3) return { trend: '盤整', label: '盤整' };
+
+                    const first = recentPrices[0];
+                    const last = recentPrices[recentPrices.length - 1];
+                    if (first <= 0) return { trend: '盤整', label: '盤整' };
+
+                    const change = (last - first) / first * 100;
+
+                    let trend = '盤整';
+                    let label = '盤整';
+                    if (change > 10) { trend = '強勢上漲'; label = '↑↑強勢上漲'; }
+                    else if (change > 3) { trend = '溫和上漲'; label = '↑溫和上漲'; }
+                    else if (change < -10) { trend = '強勢下跌'; label = '↓↓強勢下跌'; }
+                    else if (change < -3) { trend = '溫和下跌'; label = '↓溫和下跌'; }
+
+                    return { trend, label };
+                },
+
+                // =============================================================
+                // ===== 共用評分函式（多因子模型） ===========================
                 // =============================================================
                 calculateStockScores(gameState) {
                     if (this.cachedScores) return this.cachedScores;
@@ -946,81 +1022,121 @@
                                 reasons: ['價格為 0，無法交易'],
                                 isTradable: false,
                                 signals: [],
-                                priceAnalysis: null
+                                priceAnalysis: null,
+                                phase: { phase: '中段', label: '中段', percentile: 0.5 },
+                                trend: { trend: '盤整', label: '盤整' }
                             });
                             continue;
                         }
 
-                        // 價格歷史分析
-                        const priceAnalysis = this.analyzePriceHistory(p.prices, period);
+                        // 1. 價格階段（位置）
+                        const phase = this.getPricePhase(price, p.prices);
 
-                        // 小道消息
+                        // 2. 趨勢（最近5期）
+                        const recentPrices = p.prices.slice(period - 5, period + 1).filter(v => v > 0);
+                        const trend = this.getTrend(recentPrices);
+
+                        // 3. 小道消息
                         const tag = p.tag;
-                        let tagScore = 10;
+                        let tagBaseScore = 0;
                         let tagLabel = '消息普通';
-                        if (tag === '迅速崛起') { tagScore = 100; tagLabel = '最強利多'; }
-                        else if (tag === '穩中向好') { tagScore = 70; tagLabel = '穩定正向'; }
-                        else if (tag === '坊中傳聞') { tagScore = 40; tagLabel = '市場傳聞'; }
-                        else if (tag === '或有風險') { tagScore = -50; tagLabel = '風險消息'; }
-                        else if (tag === '一文不值') { tagScore = -100; tagLabel = '負面消息'; }
+                        if (tag === '迅速崛起') { tagBaseScore = 100; tagLabel = '最強利多'; }
+                        else if (tag === '穩中向好') { tagBaseScore = 70; tagLabel = '穩定正向'; }
+                        else if (tag === '坊中傳聞') { tagBaseScore = 40; tagLabel = '市場傳聞'; }
+                        else if (tag === '或有風險') { tagBaseScore = -50; tagLabel = '風險消息'; }
+                        else if (tag === '一文不值') { tagBaseScore = -100; tagLabel = '負面消息'; }
 
-                        // 風險權重
-                        let riskMultiplier = 1.0;
-                        if (p.risk === '險') riskMultiplier = 1.2;
-                        else if (p.risk === '穩') riskMultiplier = 0.8;
+                        // 4. 階段係數（位置 × 趨勢）
+                        let phaseMultiplier = 1.0;
+                        let phaseReason = '';
 
-                        // 價格因子
-                        let priceFactor = 1 + Math.max(0, (10 - price) / 50);
-
-                        // 趨勢加分
-                        let trendBonus = 0;
-                        if (priceAnalysis.trend > 10) trendBonus = 15;
-                        else if (priceAnalysis.trend > 3) trendBonus = 8;
-                        else if (priceAnalysis.trend < -10) trendBonus = -15;
-                        else if (priceAnalysis.trend < -3) trendBonus = -8;
-
-                        // 動能加分
-                        let momentumBonus = 0;
-                        if (priceAnalysis.momentum > 10) momentumBonus = 10;
-                        else if (priceAnalysis.momentum > 3) momentumBonus = 5;
-                        else if (priceAnalysis.momentum < -10) momentumBonus = -10;
-                        else if (priceAnalysis.momentum < -3) momentumBonus = -5;
-
-                        // 創新低加分
-                        let lowBonus = 0;
-                        if (priceAnalysis.isLow && tagScore > 30) {
-                            lowBonus = 12;
+                        // 底部：超跌機會大
+                        if (phase.phase === '底部') {
+                            if (trend.trend === '強勢下跌' || trend.trend === '溫和下跌') {
+                                phaseMultiplier = 0.6; // 還在跌，不接刀
+                                phaseReason = '底部但仍在下跌，觀望';
+                            } else if (trend.trend === '盤整') {
+                                phaseMultiplier = 1.3;
+                                phaseReason = '底部盤整，可能反彈';
+                            } else {
+                                phaseMultiplier = 1.8;
+                                phaseReason = '底部止跌，反彈機率高';
+                            }
+                        } else if (phase.phase === '低檔') {
+                            if (trend.trend === '強勢上漲') {
+                                phaseMultiplier = 1.5;
+                                phaseReason = '低檔起漲，動能強勁';
+                            } else {
+                                phaseMultiplier = 1.1;
+                                phaseReason = '低檔震盪';
+                            }
+                        } else if (phase.phase === '中段') {
+                            if (trend.trend === '強勢上漲') {
+                                phaseMultiplier = 1.2;
+                                phaseReason = '中段續漲，趨勢明確';
+                            } else {
+                                phaseMultiplier = 0.9;
+                                phaseReason = '中段整理';
+                            }
+                        } else if (phase.phase === '高檔') {
+                            if (trend.trend === '強勢上漲') {
+                                phaseMultiplier = 0.7;
+                                phaseReason = '高檔追高，風險增加';
+                            } else {
+                                phaseMultiplier = 0.5;
+                                phaseReason = '高檔轉弱，建議觀望';
+                            }
+                        } else if (phase.phase === '頂部') {
+                            phaseMultiplier = 0.3;
+                            phaseReason = '頂部風險極高';
                         }
 
-                        // 利多驗證
-                        let validationBonus = 0;
+                        // 5. 消息延遲驗證（價格背離）
+                        let divergencePenalty = 0;
                         const prevPeriod = period - 1;
                         const prevTag = p.tags[prevPeriod] || '';
                         const prevPrice = p.prices[prevPeriod] || 0;
-                        if ((prevTag === '迅速崛起' || prevTag === '穩中向好') && prevPrice > 0 && price > 0) {
-                            const change = (price - prevPrice) / prevPrice * 100;
-                            if (change > 5) validationBonus = 15;
-                            else if (change < -5) validationBonus = -20;
+
+                        // 如果上一期有利多，但價格繼續下跌 → 背離訊號
+                        if ((prevTag === '迅速崛起' || prevTag === '穩中向好') && prevPrice > 0 && price < prevPrice) {
+                            divergencePenalty = -15;
+                            // 如果同時價格在底部，可能是「利空最後一跌」，調整為 -5
+                            if (phase.phase === '底部') {
+                                divergencePenalty = -5;
+                            }
                         }
 
-                        let totalScore = (tagScore * riskMultiplier * priceFactor) + trendBonus + momentumBonus + lowBonus + validationBonus;
-                        totalScore = Math.max(-100, Math.min(200, totalScore));
+                        // 6. 計算最終分數
+                        let totalScore = tagBaseScore * phaseMultiplier + divergencePenalty;
 
-                        const signals = this.generateSignals(p, gameState);
+                        // 7. 生成 Signals
+                        const signals = [];
+                        if (phaseReason) signals.push({ type: 'phase', level: 'neutral', text: phaseReason });
+                        if (trend.label !== '盤整') {
+                            signals.push({ type: 'trend', level: trend.trend.includes('上漲') ? 'positive' : 'negative', text: `趨勢：${trend.label}` });
+                        }
+                        if (tagLabel !== '消息普通') {
+                            signals.push({ type: 'news', level: tagBaseScore > 0 ? 'positive' : 'negative', text: `消息：${tagLabel}` });
+                        }
+                        if (divergencePenalty < -10) {
+                            signals.push({ type: 'divergence', level: 'negative', text: '⚠️ 利多出現但價格續跌，可能背離' });
+                        }
+
+                        // 限制分數範圍
+                        totalScore = Math.max(-100, Math.min(200, Math.round(totalScore * 10) / 10));
 
                         const reasons = [];
+                        if (phaseReason) reasons.push(phaseReason);
+                        if (trend.label !== '盤整') reasons.push(trend.label);
                         if (tagLabel !== '消息普通') reasons.push(tagLabel);
-                        if (priceAnalysis.trendText !== '盤整' && priceAnalysis.trendText !== '資料不足') {
-                            reasons.push(`趨勢：${priceAnalysis.trendText}`);
-                        }
-                        if (priceAnalysis.isLow) reasons.push('位於歷史低點');
 
                         scores.push({
                             ...p,
-                            score: Math.round(totalScore * 10) / 10,
+                            score: totalScore,
                             reasons: reasons,
                             signals: signals,
-                            priceAnalysis: priceAnalysis,
+                            phase: phase,
+                            trend: trend,
                             isTradable: price > 0
                         });
                     }
@@ -1030,148 +1146,6 @@
                     return scores;
                 },
 
-                // ===== 價格歷史分析 =====
-                analyzePriceHistory(prices, currentPeriod) {
-                    const validPrices = [];
-                    for (let i = 1; i <= 12; i++) {
-                        if (prices[i] > 0) validPrices.push({ period: i, price: prices[i] });
-                    }
-
-                    if (validPrices.length < 3) {
-                        return {
-                            trend: 0,
-                            momentum: 0,
-                            trendText: '資料不足',
-                            momentumText: '資料不足',
-                            isLow: false,
-                            isHigh: false,
-                            consecutiveDown: 0,
-                            consecutiveUp: 0,
-                            sparklineData: validPrices.map(p => p.price)
-                        };
-                    }
-
-                    const currentPrice = validPrices[validPrices.length - 1].price;
-                    const recent4 = validPrices.slice(-4);
-                    let trend = 0;
-                    let trendText = '盤整';
-                    if (recent4.length >= 4) {
-                        const p1 = recent4[0].price;
-                        const p4 = recent4[3].price;
-                        trend = (p4 - p1) / p1 * 100;
-                        if (trend > 10) trendText = '強勢上漲';
-                        else if (trend > 3) trendText = '溫和上漲';
-                        else if (trend < -10) trendText = '強勢下跌';
-                        else if (trend < -3) trendText = '溫和下跌';
-                    }
-
-                    const recent3 = validPrices.slice(-3);
-                    let momentum = 0;
-                    let momentumText = '持平';
-                    if (recent3.length >= 3) {
-                        const p1 = recent3[0].price;
-                        const p3 = recent3[2].price;
-                        momentum = (p3 - p1) / p1 * 100;
-                        if (momentum > 10) momentumText = '動能強勁';
-                        else if (momentum > 3) momentumText = '動能正向';
-                        else if (momentum < -10) momentumText = '動能疲弱';
-                        else if (momentum < -3) momentumText = '動能偏弱';
-                    }
-
-                    let consecutiveDown = 0;
-                    let consecutiveUp = 0;
-                    for (let i = validPrices.length - 1; i >= 1; i--) {
-                        const prev = validPrices[i - 1].price;
-                        const curr = validPrices[i].price;
-                        if (curr < prev) consecutiveDown++;
-                        else break;
-                    }
-                    for (let i = validPrices.length - 1; i >= 1; i--) {
-                        const prev = validPrices[i - 1].price;
-                        const curr = validPrices[i].price;
-                        if (curr > prev) consecutiveUp++;
-                        else break;
-                    }
-
-                    const maxPrice = Math.max(...validPrices.map(p => p.price));
-                    const minPrice = Math.min(...validPrices.map(p => p.price));
-                    const isHigh = currentPrice >= maxPrice * 0.95;
-                    const isLow = currentPrice <= minPrice * 1.05;
-
-                    return {
-                        trend: Math.round(trend * 10) / 10,
-                        momentum: Math.round(momentum * 10) / 10,
-                        trendText,
-                        momentumText,
-                        isHigh,
-                        isLow,
-                        consecutiveDown,
-                        consecutiveUp,
-                        sparklineData: validPrices.map(p => p.price)
-                    };
-                },
-
-                // ===== 生成 Signals =====
-                generateSignals(product, gameState) {
-                    const signals = [];
-                    const period = gameState.period;
-                    const price = product.price;
-                    const tag = product.tag;
-                    const prevTag = product.tags[period - 1] || '';
-                    const prevPrice = product.prices[period - 1] || 0;
-
-                    const priceAnalysis = this.analyzePriceHistory(product.prices, period);
-
-                    if (priceAnalysis.trendText === '強勢下跌') {
-                        signals.push({ type: 'trend', level: 'negative', text: '近期趨勢強勢下跌' });
-                    } else if (priceAnalysis.trendText === '溫和下跌') {
-                        signals.push({ type: 'trend', level: 'negative', text: '近期趨勢持續走弱' });
-                    } else if (priceAnalysis.trendText === '強勢上漲') {
-                        signals.push({ type: 'trend', level: 'positive', text: '近期趨勢強勢上漲' });
-                    } else if (priceAnalysis.trendText === '溫和上漲') {
-                        signals.push({ type: 'trend', level: 'positive', text: '近期趨勢持續轉強' });
-                    }
-
-                    if (priceAnalysis.consecutiveDown >= 2) {
-                        signals.push({ type: 'consecutive', level: 'negative', text: `已連續 ${priceAnalysis.consecutiveDown} 期下跌` });
-                    } else if (priceAnalysis.consecutiveUp >= 2) {
-                        signals.push({ type: 'consecutive', level: 'positive', text: `已連續 ${priceAnalysis.consecutiveUp} 期上漲` });
-                    }
-
-                    if (tag === '迅速崛起') {
-                        signals.push({ type: 'news', level: 'positive', text: '出現「迅速崛起」利多消息' });
-                    } else if (tag === '穩中向好') {
-                        signals.push({ type: 'news', level: 'positive', text: '出現「穩中向好」正向消息' });
-                    } else if (tag === '坊中傳聞') {
-                        signals.push({ type: 'news', level: 'neutral', text: '市場傳聞，影響待觀察' });
-                    } else if (tag === '或有風險') {
-                        signals.push({ type: 'news', level: 'negative', text: '出現「或有風險」警示' });
-                    } else if (tag === '一文不值') {
-                        signals.push({ type: 'news', level: 'negative', text: '出現「一文不值」負面消息' });
-                    }
-
-                    if (prevTag === '迅速崛起' || prevTag === '穩中向好') {
-                        if (prevPrice > 0 && price > 0) {
-                            const change = (price - prevPrice) / prevPrice * 100;
-                            if (change > 3) {
-                                signals.push({ type: 'validation', level: 'positive', text: `利多消息帶動價格上漲 ${change.toFixed(1)}%` });
-                            } else if (change < -3) {
-                                signals.push({ type: 'validation', level: 'negative', text: '利多消息公布後價格未回升，持續走弱' });
-                            } else {
-                                signals.push({ type: 'validation', level: 'neutral', text: '利多消息後價格持穩，等待進一步訊號' });
-                            }
-                        }
-                    }
-
-                    if (priceAnalysis.isLow) {
-                        signals.push({ type: 'position', level: 'positive', text: '價格位於歷史低點，具備反彈潛力' });
-                    } else if (priceAnalysis.isHigh) {
-                        signals.push({ type: 'position', level: 'negative', text: '價格位於歷史高點，需留意追高風險' });
-                    }
-
-                    return signals;
-                },
-
                 // =============================================================
                 // ===== 策略引擎（唯一決策來源） =============================
                 // =============================================================
@@ -1179,18 +1153,23 @@
                     const period = this.currentPeriod;
                     const prevPeriod = period - 1;
 
-                    const products = this.productList.map(p => ({
-                        name: p.name,
-                        price: p.prices[period] || 0,
-                        tag: p.tags[period] || p.tag || '暫無',
-                        risk: p.risk || '均',
-                        currentShares: p.sharesHistory[prevPeriod] || 0,
-                        avgCost: p.avgCost || 0,
-                        prices: p.prices,
-                        tags: p.tags,
-                        sharesHistory: p.sharesHistory,
-                        fundHistory: p.fundHistory,
-                    }));
+                    const products = this.productList.map(p => {
+                        // 確保風險使用固定值
+                        const risk = RISK_MAP[p.name] || p.risk || '均';
+                        if (p.risk !== risk) p.risk = risk;
+                        return {
+                            name: p.name,
+                            price: p.prices[period] || 0,
+                            tag: p.tags[period] || p.tag || '暫無',
+                            risk: p.risk || '均',
+                            currentShares: p.sharesHistory[prevPeriod] || 0,
+                            avgCost: p.avgCost || 0,
+                            prices: p.prices,
+                            tags: p.tags,
+                            sharesHistory: p.sharesHistory,
+                            fundHistory: p.fundHistory,
+                        };
+                    });
 
                     return {
                         period: period,
@@ -1220,35 +1199,31 @@
                         const profitPercent = avgCost > 0 ? (price - avgCost) / avgCost * 100 : 0;
                         const scoreData = scores.find(s => s.name === p.name);
 
-                        // 判斷是否該賣出
                         let shouldSell = false;
                         let sellReason = '';
 
-                        // 條件1：消息轉弱
-                        const prevTag = p.tags[prevPeriod] || '';
-                        const currTag = p.tags[period] || '';
-                        if (prevTag === '迅速崛起' && currTag !== '迅速崛起') {
+                        // 條件1：分數過低（<30）
+                        if (scoreData && scoreData.score < 30) {
                             shouldSell = true;
-                            sellReason = '強力利多已消退';
+                            sellReason = '評分過低，目標配置調整';
                         }
 
-                        // 條件2：獲利了結（漲幅過大）
-                        if (profitPercent > 30) {
-                            shouldSell = true;
-                            sellReason = `漲幅已達 ${profitPercent.toFixed(1)}%，獲利了結`;
-                        }
-
-                        // 條件3：停損
+                        // 條件2：停損（依風險不同）
                         const stopLossThreshold = { '險': -25, '均': -20, '穩': -15 }[p.risk] || -20;
                         if (profitPercent < stopLossThreshold) {
                             shouldSell = true;
                             sellReason = `虧損 ${Math.abs(profitPercent).toFixed(1)}%，達停損門檻`;
                         }
 
-                        // 條件4：低分且沒有特殊理由
-                        if (scoreData && scoreData.score < 40 && !shouldSell) {
-                            shouldSell = true;
-                            sellReason = '評分偏低，目標配置調整';
+                        // 條件3：高檔利多降級
+                        const prevTag = p.tags[prevPeriod] || '';
+                        const currTag = p.tags[period] || '';
+                        if (prevTag === '迅速崛起' && currTag !== '迅速崛起') {
+                            const phase = scoreData?.phase;
+                            if (phase && (phase.phase === '高檔' || phase.phase === '頂部')) {
+                                shouldSell = true;
+                                sellReason = '高檔利多消退，獲利了結';
+                            }
                         }
 
                         if (shouldSell) {
@@ -1259,7 +1234,7 @@
                                 revenue: shares * price,
                                 reason: sellReason,
                                 signals: scoreData?.signals || [],
-                                sparklineData: scoreData?.priceAnalysis?.sparklineData || [],
+                                sparklineData: scoreData?.prices?.filter(v => v > 0) || [],
                             });
                         } else {
                             holdCandidates.push({
@@ -1281,7 +1256,6 @@
                     const threshold = gameState.config.selectionThreshold || 70;
                     const maxHoldings = gameState.config.maxHoldings || 3;
 
-                    // 排除已持有的標的（避免重複買入）
                     const heldNames = new Set();
                     for (let p of gameState.products) {
                         if ((p.sharesHistory[prevPeriod] || 0) > 0) {
@@ -1292,17 +1266,16 @@
                     let availableForBuy = availableFund;
                     let selectedForBuy = [];
 
-                    // 從評分高的開始選
                     for (let s of scores) {
                         if (!s.isTradable || s.score < threshold) continue;
-                        if (heldNames.has(s.name)) continue; // 已持有不重複買
+                        if (heldNames.has(s.name)) continue;
                         if (selectedForBuy.length >= maxHoldings) break;
 
                         const price = s.price || 1;
                         const maxShares = Math.floor(availableForBuy / price);
                         if (maxShares <= 0) break;
 
-                        const allocatedAmount = Math.min(availableForBuy * 0.3, maxShares * price);
+                        const allocatedAmount = Math.min(availableForBuy * 0.35, maxShares * price);
                         const shares = Math.floor(allocatedAmount / price);
                         const amount = shares * price;
 
@@ -1313,24 +1286,23 @@
                                 amount: amount,
                                 price: price,
                                 signals: s.signals || [],
-                                sparklineData: s.priceAnalysis?.sparklineData || [],
+                                sparklineData: s.prices?.filter(v => v > 0) || [],
                             });
                             availableForBuy -= amount;
                         }
                     }
 
-                    // 如果還有剩餘資金，分配給最高分標的（ALL IN 邏輯）
+                    // ALL IN 邏輯（如果剩餘資金仍多，集中投入第一名）
                     if (availableForBuy > 0 && selectedForBuy.length > 0) {
                         const topBuy = selectedForBuy[0];
                         const extraShares = Math.floor(availableForBuy / topBuy.price);
-                        if (extraShares > 0) {
+                        if (extraShares > 0 && selectedForBuy.length === 1) {
                             topBuy.buyShares += extraShares;
                             topBuy.amount += extraShares * topBuy.price;
                             availableForBuy -= extraShares * topBuy.price;
                         }
                     }
 
-                    // ===== Step 4: 產生最終策略 =====
                     const finalFund = availableForBuy;
 
                     return {
@@ -1372,7 +1344,6 @@
 
                     this.saveAllData();
 
-                    // 繪製 Sparkline
                     this.$nextTick(() => {
                         this.drawAllSparklines();
                     });
@@ -1404,7 +1375,6 @@
                     let sellRevenue = 0;
                     let totalCost = 0;
 
-                    // 賣出
                     if (this.strategySnapshot.sell) {
                         for (let item of this.strategySnapshot.sell) {
                             const p = this.productList.find(p => p.name === item.name);
@@ -1416,7 +1386,6 @@
                         }
                     }
 
-                    // 保留（確保保留的標的繼續持有）
                     if (this.strategySnapshot.hold) {
                         for (let item of this.strategySnapshot.hold) {
                             const p = this.productList.find(p => p.name === item.name);
@@ -1427,12 +1396,10 @@
                         }
                     }
 
-                    // 買入
                     if (this.strategySnapshot.buy) {
                         for (let item of this.strategySnapshot.buy) {
                             const p = this.productList.find(p => p.name === item.name);
                             if (p) {
-                                // 如果該標的已經有持倉，累加
                                 const currentShares = p.sharesHistory[period] || 0;
                                 p.sharesHistory[period] = currentShares + (item.buyShares || 0);
                                 p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory);
@@ -1483,17 +1450,15 @@
                         return [{ icon: '📊', text: '綜合評分顯示為潛在標的' }];
                     }
 
-                    const priority = { 'consecutive': 0, 'trend': 1, 'validation': 2, 'news': 3, 'position': 4, 'action': 5 };
+                    const priority = { 'phase': 0, 'divergence': 1, 'trend': 2, 'news': 3 };
                     const sorted = [...item.signals].sort((a, b) => (priority[a.type] || 99) - (priority[b.type] || 99));
 
                     const topSignals = sorted.slice(0, 3);
                     const iconMap = {
-                        'consecutive': '📉',
+                        'phase': '📍',
                         'trend': '📈',
-                        'validation': '📰',
                         'news': '📰',
-                        'position': '📍',
-                        'action': '⚡'
+                        'divergence': '⚠️'
                     };
 
                     for (let sig of topSignals) {
@@ -1511,15 +1476,11 @@
 
                     const hasNegative = item.signals.some(s => s.level === 'negative');
                     const hasPositive = item.signals.some(s => s.level === 'positive');
-                    const hasValidationNegative = item.signals.some(s => s.type === 'validation' && s.level === 'negative');
-                    const hasConsecutiveDown = item.signals.some(s => s.type === 'consecutive' && s.level === 'negative');
+                    const hasDivergence = item.signals.some(s => s.type === 'divergence');
 
                     if (item.revenue !== undefined) {
-                        if (hasValidationNegative) {
-                            return '利多未發酵，建議轉換至更強勢標的';
-                        }
-                        if (hasConsecutiveDown) {
-                            return '趨勢持續走弱，建議先退出持股';
+                        if (hasDivergence) {
+                            return '利多與價格背離，建議轉換至更強勢標的';
                         }
                         if (hasNegative) {
                             return '綜合評估轉弱，建議賣出';
@@ -1527,8 +1488,8 @@
                         return '目標配置調整，建議賣出';
                     }
 
-                    if (hasPositive && hasValidationNegative) {
-                        return '利多出現但尚未發酵，可逢低布局';
+                    if (hasDivergence) {
+                        return '價格背離中，建議小量布局或觀察';
                     }
                     if (hasPositive) {
                         return '適合作為本期主力配置';
@@ -1913,17 +1874,14 @@
                     return [headers, ...rows].map(r => r.join(delimiter)).join('\n');
                 },
                 generateFullHistoryCSV(delimiter, isMarkdown, start, end) {
-                    const headers = ['標的名稱', '風險', '期數', '價格', '小道消息', '持倉張數', '成本均價', '未實現損益', '交引幣金額'];
+                    const headers = ['標的名稱', '風險', '期數', '價格', '小道消息', '持倉張數', '成本均價'];
                     const rows = [];
-                    const fundHistory = this.productList[0]?.fundHistory || Array(13).fill(0);
                     for (let p of this.productList) {
                         for (let i = start; i <= end; i++) {
                             const price = p.prices[i] || 0;
                             const tag = p.tags[i] || '';
                             const shares = p.sharesHistory[i] || 0;
                             const avgCost = p.avgCost || 0;
-                            const unrealized = shares * (price - avgCost);
-                            const fund = fundHistory[i] || 0;
                             rows.push([
                                 p.name,
                                 p.risk || '未選',
@@ -1931,9 +1889,7 @@
                                 price.toFixed(2),
                                 tag || '暫無',
                                 shares,
-                                avgCost.toFixed(2),
-                                unrealized.toFixed(2),
-                                fund.toFixed(2)
+                                avgCost.toFixed(2)
                             ]);
                         }
                     }
@@ -2110,7 +2066,9 @@
                                 if(data.productList && data.productList.length) {
                                     for(let i = 0; i < this.productList.length; i++) {
                                         if(data.productList[i]) {
-                                            this.productList[i].risk = data.productList[i].risk || '';
+                                            // 載入時強制使用固定風險
+                                            const fixedRisk = RISK_MAP[data.productList[i].name] || data.productList[i].risk || '均';
+                                            this.productList[i].risk = fixedRisk;
                                             this.productList[i].tag = data.productList[i].tag || '';
                                             this.productList[i].prices = data.productList[i].prices || Array(13).fill(0);
                                             this.productList[i].tags = data.productList[i].tags || Array(13).fill('');
@@ -2120,7 +2078,11 @@
                                         }
                                     }
                                 }
-                                this.productList.forEach(p => { p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory); });
+                                this.productList.forEach(p => { 
+                                    p.avgCost = this.calculateAvgCost(p.prices, p.sharesHistory);
+                                    // 再次確保風險固定
+                                    p.risk = RISK_MAP[p.name] || p.risk || '均';
+                                });
                                 this.loadFundFromHistory();
                                 this.getWorkflow(this.currentPeriod);
                                 if (this.strategySnapshot && this.strategySnapshot.period !== this.currentPeriod) {
