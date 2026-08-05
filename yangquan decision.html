@@ -32,11 +32,6 @@
         .btn-red:hover { background: #C62828; transform: scale(1.02); }
         .table-wrapper { overflow-x: auto; }
         .gold-star { color: #FFD700; }
-        .z-high { z-index: 10000; }
-        @media (max-width: 1024px) {
-            .desktop-row { flex-direction: column; }
-            .desktop-col-left, .desktop-col-right { width: 100% !important; }
-        }
         .inline-group { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-start; }
         .inline-group > div { flex: 1; min-width: 150px; }
         .recharge-group { display: flex; flex-direction: column; gap: 2px; }
@@ -45,6 +40,9 @@
         .benchmark-diff { font-size: 12px; padding: 6px 10px; border-radius: 0.5rem; }
         .diff-positive { background: #02C87420; color: #02C874; }
         .diff-negative { background: #E5393520; color: #E53935; }
+        @media (max-width: 1024px) {
+            .inline-group { flex-direction: column; }
+        }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -224,7 +222,7 @@
                     <div class="text-xs text-gray-500 mt-3">💡 從全1等升至當前狀態累計花費：{{ formatNumber(simulationResult.totalCost) }} 幣</div>
                 </div>
 
-                <!-- 產線分析 -->
+                <!-- 產線分析（分層顯示） -->
                 <div class="card-std" :class="simulationResult.flow.safe ? 'border-green-300' : 'border-red-300 bg-red-50'">
                     <div class="font-black mb-2 text-[#5E548E]">⚠️ 產線分析</div>
                     <div class="grid grid-cols-5 gap-1 text-[10px] mb-2">
@@ -234,8 +232,17 @@
                         <div>教室:{{ simulationResult.flow.classroom }}s</div>
                         <div>瓶頸:{{ simulationResult.flow.bottleneck }}s</div>
                     </div>
-                    <div v-if="!simulationResult.flow.safe" class="danger-alert text-xs">🚨 {{ simulationResult.flow.reason }}</div>
-                    <div v-else class="text-green-700 text-xs">✅ 產線平衡，無流失風險。</div>
+                    <!-- 分層顯示 -->
+                    <div v-if="simulationResult.flow.safe">
+                        <div class="text-green-700 font-black text-sm">✅ 產線狀態：安全</div>
+                        <div class="text-xs text-gray-600 mt-1">目前各產線速度可正常銜接，沒有學徒流失風險。</div>
+                        <div class="text-xs text-gray-500 mt-1">瓶頸：{{ simulationResult.flow.bottleneckName }}（{{ simulationResult.flow.bottleneck }}秒/人）</div>
+                    </div>
+                    <div v-else>
+                        <div class="text-red-600 font-black text-sm">⚠️ 產線狀態：存在流失風險</div>
+                        <div class="text-xs text-red-600 mt-1">原因：{{ simulationResult.flow.warning }}</div>
+                        <div class="text-xs text-red-600 mt-1">建議優先提升：{{ simulationResult.flow.riskStage }}</div>
+                    </div>
                 </div>
 
                 <!-- 實時升級助手 -->
@@ -252,8 +259,9 @@
                         </div>
                         <div v-if="availableUpgrades.length === 0" class="text-gray-400 text-sm p-4 text-center bg-gray-50 rounded-xl">暫無可升級項目</div>
                     </div>
-                    <div v-if="simulationResult.recommendation.nextUpgrade" class="mt-3 text-xs text-orange-600 bg-orange-50 p-2 rounded-lg">
-                        💡 下一級推薦：{{ simulationResult.recommendation.nextUpgrade }} ｜機會成本約 {{ formatNumber(simulationResult.recommendation.opportunityCost) }} 幣
+                    <div v-if="simulationResult.recommendation && simulationResult.recommendation.nextUpgrade" class="mt-3 text-xs text-orange-600 bg-orange-50 p-2 rounded-lg">
+                        💡 策略推薦：{{ simulationResult.recommendation.nextUpgrade }}
+                        <span v-if="simulationResult.recommendation.score !== undefined">｜評分：{{ simulationResult.recommendation.score.toFixed(0) }}</span>
                     </div>
                 </div>
             </div>
@@ -287,22 +295,22 @@
                                 <div>📅 除招商外可領：74,200 幣（10:00 前）</div>
                                 <div class="text-yellow-600">💡 若需等待 10:00 招商任務，請預留足夠幣</div>
                             </div>
-                            <div v-if="targetWouldCauseLoss" class="mt-2 p-2 bg-red-50 rounded-lg text-xs text-red-600 border border-red-200">
-                                ⚠️ 此目標會導致學徒流失！需同時升級 <span class="font-black">{{ lossFixSuggestion }}</span> 才能平衡。
+                            <!-- 目標狀態的安全判斷（讀取 Target Simulation） -->
+                            <div v-if="targetSimulation && !targetSimulation.flow.safe" class="mt-2 p-2 bg-red-50 rounded-lg text-xs text-red-600 border border-red-200">
+                                ⚠️ 此目標會導致學徒流失！需同時升級 <span class="font-black">{{ targetSimulation.flow.riskStage }}</span> 才能平衡。
                             </div>
-                            <div v-else-if="targetCostDiff > 0" class="mt-2 p-2 bg-green-50 rounded-lg text-xs text-green-600 border border-green-200">
+                            <div v-else-if="targetCostDiff > 0 && targetSimulation && targetSimulation.flow.safe" class="mt-2 p-2 bg-green-50 rounded-lg text-xs text-green-600 border border-green-200">
                                 ✅ 此目標符合產線安全，不會流失學徒。
                             </div>
                         </div>
                     </div>
 
-                    <!-- 策略引導 + Benchmark -->
+                    <!-- 策略引導（完全讀取 simulationResult.recommendation） -->
                     <div class="card-std bg-gradient-to-r from-[#5E548E] to-[#7D6B9E] text-white">
                         <div class="text-center mb-4">
                             <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-black tracking-wider">⚡ 即時決策</span>
                         </div>
                         <div class="font-black text-lg mb-3 text-center">🧭 策略引導</div>
-                        <!-- 目標成就下拉 -->
                         <div class="mb-4">
                             <label class="text-xs font-black opacity-80">🎯 目標成就</label>
                             <select v-model="targetAchievement" class="achievement-select text-sm">
@@ -316,12 +324,14 @@
                         </div>
                         <div class="bg-white/10 rounded-xl p-4 text-sm">
                             <div class="font-black text-yellow-300 mb-2">📢 建議</div>
+                            <!-- 直接讀取 simulationResult.recommendation -->
                             <div v-if="!simulationResult.flow.safe" class="text-yellow-200">
                                 ⚠️ 目前產線有流失風險，請先解決產線問題再進行升級。
                             </div>
-                            <div v-else-if="simulationResult.recommendation.nextUpgrade" class="mt-1">
+                            <div v-else-if="simulationResult.recommendation && simulationResult.recommendation.nextUpgrade" class="mt-1">
                                 {{ simulationResult.recommendation.nextUpgrade }}
                                 <span class="ml-2 badge-safe" style="background:#02C87440;color:#02C874;">✅ 安全</span>
+                                <div v-if="simulationResult.recommendation.reason" class="text-xs text-white/70 mt-1">{{ simulationResult.recommendation.reason }}</div>
                             </div>
                             <div v-else class="text-white/60">請先確保各處室狀態正確</div>
                         </div>
@@ -380,7 +390,7 @@
     <script>
         const { createApp } = Vue;
 
-        // ======================= 遊戲資料層 (Data) =======================
+        // ======================= 資料層 =======================
         const CUM = {
             regUp: {1:0,2:1000,3:9250,4:23950,5:43850,6:71450,7:111450},
             regDown: {1:0,2:17250,3:61900},
@@ -400,113 +410,15 @@
             '⭐ 重點成就': [50,56,61,65,70,76,87,92],
             '普通成就': [10,20,30,35,40,46,51,53,54,58,63,81,90]
         };
+        // 模板定義（僅供參考）
+        const TEMPLATES = {
+            free_day1: '無課 Day1 參考：②考察上 5→6，上排 4633333，下排 1122222',
+            free_day2: '無課 Day2 參考：教室由後往前升，上排 4655566，下排 1122222',
+            free_day3: '無課 Day3 參考：先開下排 2233333，再補上排 6666666',
+            pay_day3: '有課 Day3 參考：無課 Day3 基礎上，②考察上排再升到7'
+        };
 
-        // ======================= Simulator 核心 =======================
-        function createSimulator(state) {
-            // state: { rooms, userCoin, userAchievement, targetState }
-            const rooms = state.rooms;
-            
-            // 計算速度
-            const recruitSec = DB.reg.up[rooms.find(r => r.id === 'reg').upLevel]?.sec || 999;
-            const processSec = DB.reg.down[rooms.find(r => r.id === 'reg').downPos]?.sec || 999;
-            const inspectSec = DB.ins.down[rooms.find(r => r.id === 'ins').downPos]?.sec || 999;
-            const classSec = Math.max(...rooms.filter(r => r.type === 'cls').map(r => DB.cls.down[r.downPos]?.sec || 999));
-            const bottleneck = Math.max(recruitSec, processSec, inspectSec, classSec);
-            
-            // 產線安全判斷（正確邏輯：前端速度 < 後端速度 才視為流失）
-            let safe = true;
-            let reason = '';
-            if (recruitSec < processSec) { safe = false; reason = `招募(${recruitSec}s) < 辦理(${processSec}s) → 招募太快，需升級辦理`; }
-            else if (processSec < inspectSec) { safe = false; reason = `辦理(${processSec}s) < 考察(${inspectSec}s) → 辦理太快，需升級考察`; }
-            else if (inspectSec < classSec) { safe = false; reason = `考察(${inspectSec}s) < 教室(${classSec}s) → 考察太快，需升級教室`; }
-            
-            // 收益計算
-            const insRoom = rooms.find(r => r.id === 'ins');
-            const insUp = DB.ins.up[insRoom.upLevel];
-            const range = insUp.range;
-            const chance = insUp.chance;
-            let classBonus = 0;
-            for (let r of rooms.filter(r => r.type === 'cls')) {
-                const up = DB.cls.up[r.upLevel];
-                classBonus += (up.range[0] + up.range[1]) / 2;
-            }
-            const minF = range[0] + classBonus;
-            const maxF = range[1] + classBonus;
-            
-            // Worst: 最低烹調 + 0% 雙生
-            const worstCoin = integrateCoin(minF, minF);
-            // Average: 平均烹調 + 機率加權
-            const avgSingle = integrateCoin(minF, maxF);
-            const avgCoin = avgSingle * (1 - chance) + avgSingle * 2 * chance;
-            // Best: 最高烹調 + 100% 雙生
-            const bestSingle = integrateCoin(maxF, maxF);
-            const bestCoin = bestSingle * 2;
-            
-            const peoplePerHour = 3600 / bottleneck;
-            const incomeWorst = peoplePerHour * worstCoin;
-            const incomeAverage = peoplePerHour * avgCoin;
-            const incomeBest = peoplePerHour * bestCoin;
-            
-            // 總花費
-            let totalCost = 0;
-            for (let r of rooms) {
-                if (r.type === 'reg') totalCost += (CUM.regUp[r.upLevel] || 0) + (CUM.regDown[r.downPos] || 0);
-                else if (r.type === 'ins') totalCost += (CUM.insUp[r.upLevel] || 0) + (CUM.insDown[r.downPos] || 0);
-                else totalCost += (CUM.clsUp[r.upLevel] || 0) + (CUM.clsDown[r.downPos] || 0);
-            }
-            
-            // 推薦升級（簡單版：找成本最低且安全的下一個升級）
-            let nextUpgrade = null;
-            let opportunityCost = 0;
-            if (safe) {
-                let candidates = [];
-                for (let r of rooms) {
-                    if (r.upLevel < (r.type === 'reg' ? 7 : (r.type === 'ins' ? 8 : 7))) {
-                        let cost = getUpgradeCost(r, 'up');
-                        if (cost !== null) candidates.push({ name: r.name, type: '上排', cost, current: r.upLevel, next: r.upLevel + 1, room: r, isUp: true });
-                    }
-                    if (r.downPos < (r.type === 'cls' ? 5 : 3)) {
-                        let cost = getUpgradeCost(r, 'down');
-                        if (cost !== null) candidates.push({ name: r.name, type: '下排', cost, current: r.downPos, next: r.downPos + 1, room: r, isUp: false });
-                    }
-                }
-                candidates.sort((a,b) => a.cost - b.cost);
-                // 過濾掉會造成流失的方案（模擬升級後檢查）
-                let safeCandidates = candidates.filter(u => {
-                    let tempRoom = u.room;
-                    let oldUp = tempRoom.upLevel, oldDown = tempRoom.downPos;
-                    if (u.isUp) tempRoom.upLevel = u.next;
-                    else tempRoom.downPos = u.next;
-                    let tempRecruit = DB.reg.up[rooms.find(r => r.id === 'reg').upLevel]?.sec || 999;
-                    let tempProcess = DB.reg.down[rooms.find(r => r.id === 'reg').downPos]?.sec || 999;
-                    let tempInspect = DB.ins.down[rooms.find(r => r.id === 'ins').downPos]?.sec || 999;
-                    let tempClass = Math.max(...rooms.filter(r => r.type === 'cls').map(r => DB.cls.down[r.downPos]?.sec || 999));
-                    let tempSafe = !(tempRecruit < tempProcess || tempProcess < tempInspect || tempInspect < tempClass);
-                    if (u.isUp) tempRoom.upLevel = oldUp;
-                    else tempRoom.downPos = oldDown;
-                    return tempSafe;
-                });
-                if (safeCandidates.length > 0) {
-                    let best = safeCandidates[0];
-                    nextUpgrade = `${best.name} ${best.type}：${best.current} → ${best.next}`;
-                    // 機會成本：如果有第二個選擇，計算延遲損失
-                    if (safeCandidates.length > 1) {
-                        let second = safeCandidates[1];
-                        let timeDiff = (second.cost - best.cost) / incomeAverage;
-                        opportunityCost = timeDiff * incomeAverage * 0.5; // 簡化版
-                    }
-                }
-            }
-            
-            return {
-                flow: { recruit: recruitSec, process: processSec, inspect: inspectSec, classroom: classSec, bottleneck, safe, reason },
-                income: { worst: Math.floor(incomeWorst), average: Math.floor(incomeAverage), best: Math.floor(incomeBest) },
-                throughput: { peoplePerHour: Math.floor(peoplePerHour) },
-                totalCost: Math.floor(totalCost),
-                recommendation: { nextUpgrade, opportunityCost: Math.floor(opportunityCost) }
-            };
-        }
-
+        // ======================= Simulator =======================
         function getUpgradeCost(r, type) {
             if (type === 'up') {
                 let next = r.upLevel + 1;
@@ -529,6 +441,160 @@
                 if (chef) { total += chef[2]; count++; }
             }
             return count ? total / count : 0;
+        }
+
+        function createSimulator(state) {
+            const rooms = state.rooms;
+            const recruitSec = DB.reg.up[rooms.find(r => r.id === 'reg').upLevel]?.sec || 999;
+            const processSec = DB.reg.down[rooms.find(r => r.id === 'reg').downPos]?.sec || 999;
+            const inspectSec = DB.ins.down[rooms.find(r => r.id === 'ins').downPos]?.sec || 999;
+            const classSec = Math.max(...rooms.filter(r => r.type === 'cls').map(r => DB.cls.down[r.downPos]?.sec || 999));
+            const bottleneck = Math.max(recruitSec, processSec, inspectSec, classSec);
+            
+            // 瓶頸名稱
+            let bottleneckName = '';
+            if (bottleneck === recruitSec) bottleneckName = '招募';
+            else if (bottleneck === processSec) bottleneckName = '辦理';
+            else if (bottleneck === inspectSec) bottleneckName = '考察';
+            else if (bottleneck === classSec) bottleneckName = '教室';
+            
+            // Flow 安全判斷（正確邏輯：前端速度 < 後端速度 才視為流失）
+            let safe = true;
+            let riskStage = '';
+            let warning = '';
+            if (recruitSec < processSec) {
+                safe = false;
+                riskStage = '登記處下排';
+                warning = `招募(${recruitSec}s) 快於 辦理(${processSec}s)，需升級登記處下排`;
+            } else if (processSec < inspectSec) {
+                safe = false;
+                riskStage = '考察處下排';
+                warning = `辦理(${processSec}s) 快於 考察(${inspectSec}s)，需升級考察處下排`;
+            } else if (inspectSec < classSec) {
+                safe = false;
+                riskStage = '教室下排';
+                warning = `考察(${inspectSec}s) 快於 教室(${classSec}s)，需升級教室下排`;
+            }
+            
+            // 收益計算
+            const insRoom = rooms.find(r => r.id === 'ins');
+            const insUp = DB.ins.up[insRoom.upLevel];
+            const range = insUp.range;
+            const chance = insUp.chance;
+            let classBonus = 0;
+            for (let r of rooms.filter(r => r.type === 'cls')) {
+                const up = DB.cls.up[r.upLevel];
+                classBonus += (up.range[0] + up.range[1]) / 2;
+            }
+            const minF = range[0] + classBonus;
+            const maxF = range[1] + classBonus;
+            
+            const worstCoin = integrateCoin(minF, minF);
+            const avgSingle = integrateCoin(minF, maxF);
+            const avgCoin = avgSingle * (1 - chance) + avgSingle * 2 * chance;
+            const bestSingle = integrateCoin(maxF, maxF);
+            const bestCoin = bestSingle * 2;
+            
+            const peoplePerHour = 3600 / bottleneck;
+            const incomeWorst = peoplePerHour * worstCoin;
+            const incomeAverage = peoplePerHour * avgCoin;
+            const incomeBest = peoplePerHour * bestCoin;
+            
+            let totalCost = 0;
+            for (let r of rooms) {
+                if (r.type === 'reg') totalCost += (CUM.regUp[r.upLevel] || 0) + (CUM.regDown[r.downPos] || 0);
+                else if (r.type === 'ins') totalCost += (CUM.insUp[r.upLevel] || 0) + (CUM.insDown[r.downPos] || 0);
+                else totalCost += (CUM.clsUp[r.upLevel] || 0) + (CUM.clsDown[r.downPos] || 0);
+            }
+            
+            // ===== Optimizer：產生 Recommendation =====
+            let nextUpgrade = null;
+            let reason = '';
+            let score = 0;
+            let delayPenalty = 0;
+            let missionPenalty = 0;
+            
+            if (safe) {
+                let candidates = [];
+                for (let r of rooms) {
+                    if (r.upLevel < (r.type === 'reg' ? 7 : (r.type === 'ins' ? 8 : 7))) {
+                        let cost = getUpgradeCost(r, 'up');
+                        if (cost !== null && cost <= state.userCoin) {
+                            candidates.push({ name: r.name, type: '上排', cost, current: r.upLevel, next: r.upLevel + 1, room: r, isUp: true });
+                        }
+                    }
+                    if (r.downPos < (r.type === 'cls' ? 5 : 3)) {
+                        let cost = getUpgradeCost(r, 'down');
+                        if (cost !== null && cost <= state.userCoin) {
+                            candidates.push({ name: r.name, type: '下排', cost, current: r.downPos, next: r.downPos + 1, room: r, isUp: false });
+                        }
+                    }
+                }
+                // 過濾掉會造成流失的方案
+                let safeCandidates = candidates.filter(u => {
+                    let tempRooms = rooms.map(r => ({ ...r }));
+                    let targetRoom = tempRooms.find(r => r.id === u.room.id);
+                    if (u.isUp) targetRoom.upLevel = u.next;
+                    else targetRoom.downPos = u.next;
+                    let tempSim = createSimulator({ rooms: tempRooms, userCoin: state.userCoin });
+                    return tempSim.flow.safe;
+                });
+                if (safeCandidates.length > 0) {
+                    // 計算 ROI 分數：ΔIncome / cost
+                    let scored = safeCandidates.map(u => {
+                        let tempRooms = rooms.map(r => ({ ...r }));
+                        let targetRoom = tempRooms.find(r => r.id === u.room.id);
+                        if (u.isUp) targetRoom.upLevel = u.next;
+                        else targetRoom.downPos = u.next;
+                        let tempSim = createSimulator({ rooms: tempRooms, userCoin: state.userCoin });
+                        let delta = tempSim.income.average - incomeAverage;
+                        let roi = delta / u.cost;
+                        // 簡化版機會成本：若會延後關鍵節點則扣分
+                        let delayPenalty = 0;
+                        // 檢查是否會影響 10:00 開位（簡單版）
+                        let missionPenalty = 0;
+                        if (state.userCoin - u.cost < 154200) {
+                            missionPenalty = 3000;
+                        }
+                        return { ...u, delta, roi, score: roi * 1000 - delayPenalty - missionPenalty };
+                    });
+                    scored.sort((a,b) => b.score - a.score);
+                    let best = scored[0];
+                    nextUpgrade = `${best.name} ${best.type}：${best.current} → ${best.next}`;
+                    reason = `ROI 評分 ${best.score.toFixed(0)}，每小時收益增加 ${Math.floor(best.delta)} 幣`;
+                    score = best.score;
+                    delayPenalty = 0;
+                    missionPenalty = (state.userCoin - best.cost < 154200) ? 3000 : 0;
+                }
+            }
+            
+            return {
+                flow: {
+                    recruit: recruitSec,
+                    process: processSec,
+                    inspect: inspectSec,
+                    classroom: classSec,
+                    bottleneck: bottleneck,
+                    bottleneckName: bottleneckName,
+                    safe: safe,
+                    riskStage: riskStage,
+                    warning: warning
+                },
+                income: {
+                    worst: Math.floor(incomeWorst),
+                    average: Math.floor(incomeAverage),
+                    best: Math.floor(incomeBest)
+                },
+                throughput: { peoplePerHour: Math.floor(peoplePerHour) },
+                totalCost: Math.floor(totalCost),
+                recommendation: {
+                    nextUpgrade: nextUpgrade,
+                    reason: reason,
+                    score: score,
+                    delayPenalty: delayPenalty,
+                    missionPenalty: missionPenalty
+                }
+            };
         }
 
         // ======================= Vue App =======================
@@ -581,10 +647,18 @@
                     }
                     return total;
                 },
-                // 統一使用 Simulator
+                // 當前 Simulation
                 simulationResult() {
-                    const state = { rooms: this.rooms, userCoin: this.userCoin, userAchievement: this.userAchievement, targetState: this.targetState };
+                    const state = { rooms: this.rooms, userCoin: this.userCoin };
                     return createSimulator(state);
+                },
+                // 目標 Simulation（用於目標計算機）
+                targetSimulation() {
+                    const targetRooms = this.rooms.map(r => {
+                        let t = this.targetState[r.id];
+                        return { ...r, upLevel: t.up, downPos: t.down };
+                    });
+                    return createSimulator({ rooms: targetRooms, userCoin: this.userCoin });
                 },
                 targetCostDiff() {
                     let total = 0;
@@ -602,31 +676,6 @@
                     let diff = this.targetCostDiff - this.userCoin;
                     if (diff <= 0) return '0.0 (錢包已足夠)';
                     return (diff / this.simulationResult.income.average).toFixed(1);
-                },
-                targetWouldCauseLoss() {
-                    let tReg = this.targetState.reg, tIns = this.targetState.ins;
-                    let tCls = [this.targetState.c1, this.targetState.c2, this.targetState.c3, this.targetState.c4, this.targetState.c5];
-                    let tRecruit = DB.reg.up[tReg.up]?.sec || 999;
-                    let tProcess = DB.reg.down[tReg.down]?.sec || 999;
-                    let tInspect = DB.ins.down[tIns.down]?.sec || 999;
-                    let tClass = Math.max(...tCls.map(c => DB.cls.down[c.down]?.sec || 999));
-                    if (tRecruit < tProcess) return true;
-                    if (tProcess < tInspect) return true;
-                    if (tInspect < tClass) return true;
-                    return false;
-                },
-                lossFixSuggestion() {
-                    let fixes = [];
-                    let tReg = this.targetState.reg, tIns = this.targetState.ins;
-                    let tCls = [this.targetState.c1, this.targetState.c2, this.targetState.c3, this.targetState.c4, this.targetState.c5];
-                    let tRecruit = DB.reg.up[tReg.up]?.sec || 999;
-                    let tProcess = DB.reg.down[tReg.down]?.sec || 999;
-                    let tInspect = DB.ins.down[tIns.down]?.sec || 999;
-                    let tClass = Math.max(...tCls.map(c => DB.cls.down[c.down]?.sec || 999));
-                    if (tRecruit < tProcess) fixes.push('登記處下排');
-                    if (tProcess < tInspect) fixes.push('考察處下排');
-                    if (tInspect < tClass) fixes.push('教室下排');
-                    return fixes.join('、') || '請調整下排位置';
                 },
                 availableUpgrades() {
                     let list = [];
@@ -703,10 +752,7 @@
                     );
                 },
                 showTemplate(t) {
-                    if (t === 'free_day1') this.templateMsg = '無課 Day1 參考：②考察上 5→6，上排 4633333，下排 1122222';
-                    else if (t === 'free_day2') this.templateMsg = '無課 Day2 參考：教室由後往前升，上排 4655566，下排 1122222';
-                    else if (t === 'free_day3') this.templateMsg = '無課 Day3 參考：先開下排 2233333，再補上排 6666666';
-                    else if (t === 'pay_day3') this.templateMsg = '有課 Day3 參考：無課 Day3 基礎上，②考察上排再升到7';
+                    this.templateMsg = TEMPLATES[t] || '';
                 },
                 calcRechargeNeeded(shortage) {
                     let levels = [
@@ -756,21 +802,21 @@
                             dailyRechargeValue: this.dailyRechargeValue,
                             rooms: this.rooms, targetState: this.targetState
                         };
-                        localStorage.setItem('yqjg_v11', JSON.stringify(data));
+                        localStorage.setItem('yqjg_v12', JSON.stringify(data));
                         localStorage.setItem('yqjg_model', JSON.stringify(data));
                         this.showAlert('✅ 儲存成功', '進度已儲存。');
                     } catch(e) { console.error(e); }
                 },
                 clearAllData() {
                     this.showConfirm('⚠️ 重置全部', '確定要清除所有資料嗎？', () => {
-                        localStorage.removeItem('yqjg_v11');
+                        localStorage.removeItem('yqjg_v12');
                         localStorage.removeItem('yqjg_model');
                         location.reload();
                     });
                 },
                 loadData() {
                     try {
-                        let saved = localStorage.getItem('yqjg_v11') || localStorage.getItem('yqjg_model');
+                        let saved = localStorage.getItem('yqjg_v12') || localStorage.getItem('yqjg_model');
                         if (saved) {
                             let d = JSON.parse(saved);
                             this.userCoin = d.userCoin || 0;
