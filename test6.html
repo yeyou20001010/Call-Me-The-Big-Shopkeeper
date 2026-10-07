@@ -43,6 +43,12 @@
         .tag-risk { color: #8E24AA !important; }
         .tag-worthless { color: #4E5C35 !important; }
         .tag-none { color: #6B7280 !important; }
+        /* 小道消息透明下拉選單：原生 select 負責操作，overlay 顯示彩色文字 */
+        .transparent-select { position: relative; width: 100%; min-width: 70px; display: inline-block; }
+        .transparent-select select { color: transparent !important; background-color: transparent !important; padding: 4px; width: 100%; border: none !important; outline: none !important; cursor: pointer; text-align: center !important; text-align-last: center; }
+        .transparent-select select:focus { outline: none !important; background-color: transparent !important; color: transparent !important; }
+        .transparent-select select option { color: #6B7280 !important; background-color: white !important; text-align: center !important; }
+        .select-overlay-text { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); pointer-events: none; white-space: nowrap; font-weight: 700; text-align: center; width: 100%; }
         /* 保留風險標籤樣式 */
         .risk-badge { display: inline-block; padding: 2px 12px; border-radius: 9999px; font-weight: 900; font-size: 0.75rem; background: #F3F4F6; color: #6B7280; }
         .risk-badge.risk-red { background: #FEE2E2; color: #DC2626; }
@@ -231,9 +237,11 @@
                     <input type="date" v-model="activityEnd" class="input-inline">
                 </div>
             </div>
-            <div class="flex gap-4">
+            <div class="flex gap-4 flex-wrap">
                 <button @click="closeExportModal" class="flex-1 bg-gray-200 text-gray-600 py-3 rounded-xl font-black">取消</button>
                 <button @click="doExport" class="flex-1 btn-primary py-3 rounded-xl font-black">確認匯出</button>
+                <button @click="exportResearchLogs" class="flex-1 bg-[#6B7280] text-white py-3 rounded-xl font-black">📊 匯出模型研究紀錄</button>
+                <button @click="clearResearchLogs" class="flex-1 bg-[#B45309] text-white py-3 rounded-xl font-black">🗑️ 清除研究紀錄</button>
             </div>
         </div>
 
@@ -625,7 +633,7 @@
             return JSON.parse(JSON.stringify(obj));
         }
 
-        const DATA_VERSION = 10;
+        const DATA_VERSION = 12;
 
         // =============================================================
         // 固定風險對應表（寫死）
@@ -663,6 +671,11 @@
             data() {
                 return {
                     fund: 0, displayFund: '0', periodMode: 'auto', manualPeriod: 1,
+                    // ===== 資金鏈：操作起點／期初／期末／是否執行 =====
+                    initialFund: 0,
+                    initialFundPeriod: 0,
+                    fundBeforeHistory: Array(13).fill(0),
+                    strategyExecuted: {},
                     fundStatus: '',
                     showPriceHistoryModal: false, currentProduct: null, currentProductIdx: -1,
                     selectedPricePeriod: 1, modalPrice: 0, modalTag: '', priceModalData: Array(13).fill(0), tagModalData: Array(13).fill(''),
@@ -719,6 +732,9 @@
                     toastTimer: null,
                     // ===== 共用的股票評分快取 =====
                     cachedScores: null,
+                    // ===== 模型研究紀錄（決策與驗證分離） =====
+                    decisionLogs: [],
+                    modelVersion: 'V2',
                 }
             },
             computed: {
@@ -858,6 +874,7 @@
                         this.getWorkflow(newVal);
                         this.saveAllData();
                         this.cachedScores = null;
+                        this.updateResearchOutcomes();
                     }
                 }
             },
@@ -887,7 +904,12 @@
                     this.displayFund = this.formatWithComma(this.fund);
                     const period = this.currentPeriod;
                     if (period >= 1 && period <= 12) {
-                        this.productList[0].fundHistory[period] = this.fund;
+                        // 手動輸入代表「本期策略執行前」可用資金，不再寫入期末 fundHistory。
+                        this.fundBeforeHistory[period] = this.fund;
+                        if (!this.initialFundPeriod) {
+                            this.initialFundPeriod = period;
+                            this.initialFund = this.fund;
+                        }
                         this.saveAllData();
                     }
                     this.fundStatus = '✏️ 手動編輯';
@@ -898,19 +920,45 @@
                     this.fund = Math.max(0, num);
                     this.displayFund = raw;
                 },
-                loadFundFromHistory() {
-                    const period = this.currentPeriod;
-                    let fundValue = 0;
-                    for (let p of this.productList) {
-                        if (p.fundHistory && p.fundHistory[period] && p.fundHistory[period] > 0) {
-                            fundValue = p.fundHistory[period];
-                            break;
+                getPeriodStartFund(period) {
+                    if (period === this.initialFundPeriod && this.initialFundPeriod >= 1) {
+                        return Math.max(0, Number(this.initialFund) || 0);
+                    }
+
+                    // 往前找最近一次「已執行策略」的期末資金。
+                    // 不用 > 0 判斷，因為合法的期末資金也可能是 0。
+                    for (let i = period - 1; i >= 1; i--) {
+                        if (this.strategyExecuted[i]) {
+                            return Math.max(0, Number(this.productList[0]?.fundHistory?.[i]) || 0);
                         }
                     }
-                    if (fundValue > 0) {
+
+                    // 尚未建立完整資金鏈時，優先使用本期手動輸入的期初資金。
+                    if (this.fundBeforeHistory[period] !== undefined && this.fundBeforeHistory[period] !== null) {
+                        const value = Number(this.fundBeforeHistory[period]) || 0;
+                        if (value > 0 || period === this.initialFundPeriod) return value;
+                    }
+
+                    return 0;
+                },
+                loadFundFromHistory() {
+                    const period = this.currentPeriod;
+                    let fundValue = this.getPeriodStartFund(period);
+
+                    // 舊版資料沒有期初資金紀錄時，暫時回退到既有期末紀錄，避免舊資料突然歸零。
+                    if (fundValue <= 0) {
+                        for (let p of this.productList) {
+                            if (p.fundHistory && p.fundHistory[period] !== undefined && p.fundHistory[period] > 0) {
+                                fundValue = p.fundHistory[period];
+                                break;
+                            }
+                        }
+                    }
+
+                    if (fundValue > 0 || (this.initialFundPeriod === period && this.initialFund >= 0)) {
                         this.fund = fundValue;
                         this.displayFund = this.formatWithComma(fundValue);
-                        this.fundStatus = '📂 歷史記錄';
+                        this.fundStatus = this.strategyExecuted[period] ? '📂 期初資金' : '📂 歷史記錄';
                     } else {
                         this.fundStatus = '';
                     }
@@ -939,9 +987,10 @@
                 sortByRisk(){ if(this.sortKey === 'risk') this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc'; else { this.sortKey = 'risk'; this.sortOrder = 'asc'; } },
                 sortByTag(){ if(this.sortKey === 'tag') this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc'; else { this.sortKey = 'tag'; this.sortOrder = 'asc'; } },
                 sortByShares(){ if(this.sortKey === 'shares') this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc'; else { this.sortKey = 'shares'; this.sortOrder = 'asc'; } },
-                calculateAvgCost(prices, sharesHistory) {
+                calculateAvgCost(prices, sharesHistory, endPeriod = 12) {
                     let totalCost = 0, totalShares = 0;
-                    for (let i = 1; i <= 12; i++) {
+                    const lastPeriod = Math.max(1, Math.min(12, Number(endPeriod) || 12));
+                    for (let i = 1; i <= lastPeriod; i++) {
                         let shares = sharesHistory[i] || 0;
                         let price = prices[i] || 0;
                         if (shares > totalShares) { totalCost += (shares - totalShares) * price; totalShares = shares; }
@@ -965,8 +1014,10 @@
                 // =============================================================
                 // ===== 價格階段與趨勢辨識（V2） =============================
                 // =============================================================
-                getPricePhase(price, prices) {
-                    const validPrices = prices.filter(v => v > 0);
+                getPricePhase(price, prices, period) {
+                    // 模型只能使用截至決策當期的價格，絕不讀取未來期數。
+                    const endPeriod = Math.max(1, Math.min(12, Number(period) || 1));
+                    const validPrices = prices.slice(1, endPeriod + 1).filter(v => v > 0);
                     if (validPrices.length < 3) return { phase: '中段', percentile: 0.5, label: '中段' };
 
                     const min = Math.min(...validPrices);
@@ -1030,7 +1081,7 @@
                         }
 
                         // 1. 價格階段（位置）
-                        const phase = this.getPricePhase(price, p.prices);
+                        const phase = this.getPricePhase(price, p.prices, period);
 
                         // 2. 趨勢（最近5期）
                         const recentPrices = p.prices.slice(period - 5, period + 1).filter(v => v > 0);
@@ -1163,11 +1214,11 @@
                             tag: p.tags[period] || p.tag || '暫無',
                             risk: p.risk || '均',
                             currentShares: p.sharesHistory[prevPeriod] || 0,
-                            avgCost: p.avgCost || 0,
-                            prices: p.prices,
+                            avgCost: this.calculateAvgCost(p.prices, p.sharesHistory, period),
+                            prices: p.prices.slice(0, period + 1),
                             tags: p.tags,
-                            sharesHistory: p.sharesHistory,
-                            fundHistory: p.fundHistory,
+                            sharesHistory: p.sharesHistory.slice(0, period + 1),
+                            fundHistory: p.fundHistory.slice(0, period + 1),
                         };
                     });
 
@@ -1334,13 +1385,17 @@
                         return;
                     }
 
+                    const decisionSnapshot = this.createDecisionSnapshot(strategy);
                     this.strategySnapshot = {
                         period: strategy.period,
                         sell: strategy.sell || [],
                         hold: strategy.hold || [],
                         buy: strategy.buy || [],
                         summary: strategy.summary || {},
+                        decisionSnapshotId: decisionSnapshot.id
                     };
+                    this.decisionLogs.push(decisionSnapshot);
+                    this.updateResearchOutcomes();
 
                     this.saveAllData();
 
@@ -1352,6 +1407,125 @@
                     if (strategy.sell.length) msg += `，賣出 ${strategy.sell.length} 檔`;
                     if (strategy.buy.length) msg += `，買入 ${strategy.buy.length} 檔`;
                     this.showToast(msg);
+                },
+
+                // =============================================================
+                // ===== 模型研究紀錄：決策快照 / 實際結果 ===================
+                // =============================================================
+                createDecisionSnapshot(strategy) {
+                    const period = strategy.period;
+                    const scores = this.cachedScores || [];
+                    const products = this.productList.map(p => {
+                        const score = scores.find(s => s.name === p.name);
+                        return {
+                            name: p.name,
+                            price: p.prices[period] || 0,
+                            tag: p.tags[period] || p.tag || '',
+                            risk: p.risk || '均',
+                            priceHistoryKnown: p.prices.slice(1, period + 1),
+                            tagHistoryKnown: p.tags.slice(1, period + 1),
+                            phase: score?.phase || null,
+                            trend: score?.trend || null,
+                            score: score?.score ?? 0,
+                            reasons: deepClone(score?.reasons || []),
+                            signals: deepClone(score?.signals || []),
+                            avgCostAtDecision: this.calculateAvgCost(p.prices, p.sharesHistory, period)
+                        };
+                    });
+
+                    return {
+                        id: `D-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                        modelVersion: this.modelVersion,
+                        createdAt: new Date().toISOString(),
+                        period,
+                        fundBefore: this.getPeriodStartFund(period) || this.fund,
+                        inputs: { products },
+                        modelOutput: {
+                            sell: deepClone(strategy.sell || []),
+                            hold: deepClone(strategy.hold || []),
+                            buy: deepClone(strategy.buy || []),
+                            summary: deepClone(strategy.summary || {})
+                        },
+                        playerAction: { executed: false, executedAt: null, fundAfter: null },
+                        outcome: null
+                    };
+                },
+
+                updateDecisionExecutionLog(period, fundAfter) {
+                    const id = this.strategySnapshot?.decisionSnapshotId;
+                    if (!id) return;
+                    const log = this.decisionLogs.find(x => x.id === id);
+                    if (!log) return;
+                    log.playerAction = {
+                        executed: true,
+                        executedAt: new Date().toISOString(),
+                        fundAfter: Number(fundAfter) || 0
+                    };
+                },
+
+                updateResearchOutcomes() {
+                    if (!Array.isArray(this.decisionLogs)) return;
+                    for (const log of this.decisionLogs) {
+                        const nextPeriod = Number(log.period) + 1;
+                        if (nextPeriod > 12) continue;
+
+                        if (log.outcome) continue;
+                        const outcomes = [];
+                        for (const item of (log.inputs?.products || [])) {
+                            const p = this.productList.find(x => x.name === item.name);
+                            if (!p) continue;
+                            const currentPrice = Number(item.price) || 0;
+                            const nextPrice = Number(p.prices[nextPeriod]) || 0;
+                            if (currentPrice <= 0 || nextPrice <= 0) continue;
+                            outcomes.push({
+                                name: item.name,
+                                period: log.period,
+                                nextPeriod,
+                                price: currentPrice,
+                                nextPrice,
+                                nextReturn: Math.round(((nextPrice - currentPrice) / currentPrice) * 10000) / 100,
+                                tag: item.tag,
+                                phase: item.phase?.phase || '',
+                                trend: item.trend?.trend || '',
+                                modelScore: item.score
+                            });
+                        }
+
+                        if (outcomes.length) {
+                            log.outcome = {
+                                evaluatedAt: new Date().toISOString(),
+                                nextPeriod,
+                                products: outcomes
+                            };
+                        }
+                    }
+                },
+
+                exportResearchLogs() {
+                    this.updateResearchOutcomes();
+                    const exportData = {
+                        version: '1.0',
+                        exportType: 'modelResearchLogs',
+                        exportedAt: new Date().toISOString(),
+                        modelVersion: this.modelVersion,
+                        records: deepClone(this.decisionLogs || [])
+                    };
+                    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `model_research_${new Date().toISOString().slice(0,10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    this.saveAllData();
+                    this.showToast(`📊 已匯出 ${exportData.records.length} 筆模型研究紀錄`);
+                },
+
+                clearResearchLogs() {
+                    this.showModalMessage('⚠️ 清除模型研究紀錄', '這會刪除所有決策快照與研究結果，但不會刪除價格、持倉與資金資料。確定嗎？', 'confirm', () => {
+                        this.decisionLogs = [];
+                        this.saveAllData();
+                        this.showToast('🗑️ 模型研究紀錄已清除');
+                    });
                 },
 
                 // =============================================================
@@ -1372,6 +1546,13 @@
 
                 applyStrategy() {
                     const period = this.strategySnapshot.period;
+                    // 鎖定本期策略執行前資金，形成期初／期末完整資金鏈。
+                    const periodStartFund = this.getPeriodStartFund(period) || this.fund;
+                    if (!this.initialFundPeriod) {
+                        this.initialFundPeriod = period;
+                        this.initialFund = periodStartFund;
+                    }
+                    this.fundBeforeHistory[period] = periodStartFund;
                     let sellRevenue = 0;
                     let totalCost = 0;
 
@@ -1417,6 +1598,8 @@
                     for (let p of this.productList) {
                         p.fundHistory[period] = this.fund;
                     }
+                    this.strategyExecuted[period] = true;
+                    this.updateDecisionExecutionLog(period, this.fund);
 
                     this.setWorkflow(period, 'executed');
                     this.strategySnapshot = null;
@@ -1975,7 +2158,11 @@
                             }
                         }
                     }
-                    if(this.importOptions.fund && data.fund) this.fund = data.fund;
+                    if(this.importOptions.fund && data.fund !== undefined) this.fund = data.fund;
+                    if(this.importOptions.fund && data.initialFund !== undefined) this.initialFund = Number(data.initialFund) || 0;
+                    if(this.importOptions.fund && data.initialFundPeriod !== undefined) this.initialFundPeriod = Number(data.initialFundPeriod) || 0;
+                    if(this.importOptions.fund && Array.isArray(data.fundBeforeHistory)) this.fundBeforeHistory = deepClone(data.fundBeforeHistory);
+                    if(this.importOptions.fund && data.strategyExecuted) this.strategyExecuted = deepClone(data.strategyExecuted);
                     if(this.importOptions.fund && data.fundHistory) {
                         for(let i=0;i<this.productList.length && i<data.productList.length;i++) {
                             if(data.productList[i]?.fundHistory) {
@@ -1993,6 +2180,11 @@
                         activityStart: this.activityStart,
                         activityEnd: this.activityEnd,
                         fund: this.fund,
+                        initialFund: this.initialFund,
+                        initialFundPeriod: this.initialFundPeriod,
+                        fundBeforeHistory: this.fundBeforeHistory,
+                        strategyExecuted: this.strategyExecuted,
+                        decisionLogCount: this.decisionLogs.length,
                         fundHistory: this.productList[0]?.fundHistory || Array(13).fill(0),
                         productList: this.productList.map(p => ({
                             name: p.name,
@@ -2029,10 +2221,16 @@
                     const dataToSave = {
                         version: DATA_VERSION,
                         fund: this.fund,
+                        initialFund: this.initialFund,
+                        initialFundPeriod: this.initialFundPeriod,
+                        fundBeforeHistory: this.fundBeforeHistory,
+                        strategyExecuted: this.strategyExecuted,
                         periodMode: this.periodMode,
                         manualPeriod: this.manualPeriod,
                         periodWorkflow: this.periodWorkflow,
                         strategySnapshot: this.strategySnapshot,
+                        decisionLogs: this.decisionLogs,
+                        modelVersion: this.modelVersion,
                         strategyConfig: this.strategyConfig,
                         productList: this.productList.map(p => ({
                             name: p.name,
@@ -2055,11 +2253,17 @@
                             let version = data.version || 0;
                             if (version <= DATA_VERSION) {
                                 this.fund = data.fund || 0;
+                                this.initialFund = Number(data.initialFund) || 0;
+                                this.initialFundPeriod = Number(data.initialFundPeriod) || 0;
+                                this.fundBeforeHistory = Array.isArray(data.fundBeforeHistory) ? data.fundBeforeHistory : Array(13).fill(0);
+                                this.strategyExecuted = data.strategyExecuted || {};
                                 this.displayFund = this.formatWithComma(this.fund);
                                 this.periodMode = data.periodMode || 'auto';
                                 this.manualPeriod = data.manualPeriod || 1;
                                 this.periodWorkflow = data.periodWorkflow || {};
                                 this.strategySnapshot = data.strategySnapshot || null;
+                                this.decisionLogs = Array.isArray(data.decisionLogs) ? data.decisionLogs : [];
+                                this.modelVersion = data.modelVersion || 'V2';
                                 if (data.strategyConfig) {
                                     this.strategyConfig = { ...this.strategyConfig, ...data.strategyConfig };
                                 }
@@ -2076,6 +2280,12 @@
                                             this.productList[i].fundHistory = data.productList[i].fundHistory || Array(13).fill(0);
                                             this.productList[i].avgCost = data.productList[i].avgCost || 0;
                                         }
+                                    }
+                                }
+                                // 舊資料相容：若沒有 strategyExecuted，依既有 workflow 的 executed 狀態補建。
+                                if (!data.strategyExecuted) {
+                                    for (let i = 1; i <= 12; i++) {
+                                        if (this.periodWorkflow[i] === 'executed') this.strategyExecuted[i] = true;
                                     }
                                 }
                                 this.productList.forEach(p => { 
