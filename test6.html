@@ -84,6 +84,7 @@
         .workflow-badge.pending { background: #92400E; color: #FCD34D; }
         .workflow-badge.settled { background: #1E3A5F; color: #93C5FD; }
         .workflow-badge.executed { background: #064E3B; color: #6EE7B7; }
+        .workflow-badge.not_executed { background: #374151; color: #D1D5DB; }
         .toast { position: fixed; top: 20px; right: 20px; background: #065F46; color: white; padding: 12px 24px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 999; font-weight: 700; transition: all 0.3s ease; transform: translateY(-20px); opacity: 0; pointer-events: none; max-width: 90%; }
         .toast.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
         .sparkline-container { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
@@ -317,29 +318,51 @@
         <!-- 歷史推算用資金彈窗                                            -->
         <!-- ============================================================ -->
         <div v-if="showFundHistoryModal" class="modal-overlay" @click="closeFundHistoryModal"></div>
-        <div v-if="showFundHistoryModal" class="custom-modal modal-narrow">
+        <div v-if="showFundHistoryModal" class="custom-modal modal-wide">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-black text-[#5E548E]">📊 歷史推算用資金</h3>
+                <h3 class="text-2xl font-black text-[#5E548E]">📊 歷史資金鏈</h3>
                 <button @click="closeFundHistoryModal" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
             </div>
-            <div class="text-xs text-gray-500 mb-3 bg-blue-50 p-2 rounded-lg">💡 每期金額為該期「開始交易前」的可用交引幣，用於回測與模型推算</div>
-            <div class="overflow-y-auto max-h-80">
+            <div class="text-xs text-gray-500 mb-3 bg-blue-50 p-3 rounded-lg">
+                💡 <b>期初現金</b>＝本期開始執行任何買賣前，玩家實際可用的交引幣。<br>
+                賣出收入與買入支出屬於「策略執行內的交易現金流」，不應預先塞進期初現金。<br>
+                沒有額外任務／儲值資金時，期初現金自然可以直接承接上期期末現金。
+            </div>
+            <div class="overflow-y-auto max-h-96">
                 <table class="w-full text-sm">
                     <thead class="sticky top-0 bg-white">
                         <tr class="border-b-2">
                             <th class="p-2">期數</th>
-                            <th class="p-2">可用交引幣</th>
-                         </tr>
+                            <th class="p-2">期初現金</th>
+                            <th class="p-2">賣出回收</th>
+                            <th class="p-2">買入支出</th>
+                            <th class="p-2">期末現金</th>
+                            <th class="p-2">狀態</th>
+                        </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="n in 12" :key="n">
+                        <tr v-for="n in 12" :key="n" class="border-b">
                             <td class="p-2 font-bold">第 {{ n }} 期</td>
-                            <td class="p-2"><input type="number" step="0.01" v-model.number="fundHistoryModalData[n]" class="input-inline !w-32 !text-center" min="0"></td>
+                            <td class="p-2"><input type="number" step="0.01" v-model.number="fundHistoryModalData[n].before" class="input-inline !w-28 !text-center" min="0"></td>
+                            <td class="p-2 text-red-600">{{ formatWithComma(sellRevenueHistory[n] || 0) }}</td>
+                            <td class="p-2 text-blue-600">{{ formatWithComma(buyCostHistory[n] || 0) }}</td>
+                            <td class="p-2"><input type="number" step="0.01" v-model.number="fundHistoryModalData[n].after" class="input-inline !w-28 !text-center" min="0"></td>
+                            <td class="p-2">
+                                <select v-model="fundHistoryModalData[n].status" class="border rounded-lg px-2 py-1 text-xs font-bold">
+                                    <option value="pending">⏳ 待處理</option>
+                                    <option value="not_executed">📝 已記錄，未執行</option>
+                                    <option value="settled">📋 已結算</option>
+                                    <option value="executed">✅ 已執行</option>
+                                </select>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <button @click="saveFundHistory" class="mt-4 w-full btn-primary py-2 rounded-xl font-black">💾 儲存</button>
+            <div class="mt-4 text-xs text-gray-500">
+                「已記錄，未執行」適用於：該期遊戲實際有操作，但模型當時沒有參與。這不會把模型策略冒充成玩家實際操作。
+            </div>
+            <button @click="saveFundHistory" class="mt-4 w-full btn-primary py-2 rounded-xl font-black">💾 儲存歷史資金與流程狀態</button>
         </div>
 
         <!-- ============================================================ -->
@@ -423,7 +446,8 @@
                             </select>
                             <input v-if="periodMode === 'manual'" type="number" v-model.number="manualPeriod" min="1" max="12" class="input-inline !w-20">
                             <div class="flex items-center gap-2 fund-input-area">
-                                <input type="text" v-model="displayFund" @focus="onFundFocus" @blur="onFundBlur" @input="onFundInput" class="input-inline !w-32 !text-xl !text-orange-600 border-2 border-orange-200" placeholder="交引幣金額(元)">
+                                <div class="text-xs font-black text-gray-500 whitespace-nowrap">第 {{ currentPeriod }} 期{{ strategyExecuted[currentPeriod] ? '期末現金' : '期初現金' }}</div>
+                                <input type="text" v-model="displayFund" @focus="onFundFocus" @blur="onFundBlur" @input="onFundInput" :readonly="!!strategyExecuted[currentPeriod]" class="input-inline !w-32 !text-xl !text-orange-600 border-2 border-orange-200" :class="{ 'bg-gray-100 cursor-not-allowed': !!strategyExecuted[currentPeriod] }" :placeholder="strategyExecuted[currentPeriod] ? '本期期末現金' : '本期期初現金'">
                                 <div class="bg-slate-100 px-3 py-2 rounded-xl whitespace-nowrap"><span class="font-black text-indigo-600">{{ formatWan(fund) }}</span></div>
                                 <span class="fund-status">{{ fundStatus }}</span>
                             </div>
@@ -619,7 +643,7 @@
                     <div class="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center text-xs text-gray-500">
                         <span>流程狀態</span>
                         <span class="workflow-badge" :class="workflowStatus">
-                            {{ { pending: '⏳ 待處理', settled: '📋 已結算', executed: '✅ 已完成' }[workflowStatus] || '未知' }}
+                            {{ { pending: '⏳ 待處理', settled: '📋 已結算', not_executed: '📝 已記錄，未執行', executed: '✅ 已完成' }[workflowStatus] || '未知' }}
                         </span>
                     </div>
                 </div>
@@ -633,7 +657,7 @@
             return JSON.parse(JSON.stringify(obj));
         }
 
-        const DATA_VERSION = 12;
+        const DATA_VERSION = 13;
 
         // =============================================================
         // 固定風險對應表（寫死）
@@ -676,11 +700,14 @@
                     initialFundPeriod: 0,
                     fundBeforeHistory: Array(13).fill(0),
                     strategyExecuted: {},
+                    sellRevenueHistory: Array(13).fill(0),
+                    buyCostHistory: Array(13).fill(0),
+                    periodResearchStatus: {},
                     fundStatus: '',
                     showPriceHistoryModal: false, currentProduct: null, currentProductIdx: -1,
                     selectedPricePeriod: 1, modalPrice: 0, modalTag: '', priceModalData: Array(13).fill(0), tagModalData: Array(13).fill(''),
                     showSharesHistoryModal: false, sharesModalData: Array(13).fill(0),
-                    showFundHistoryModal: false, fundHistoryModalData: Array(13).fill(0),
+                    showFundHistoryModal: false, fundHistoryModalData: Array.from({length: 13}, () => ({ before: 0, after: 0, status: 'pending' })),
                     showSettlementModal: false,
                     portfolioReview: [],
                     sortKey: null, sortOrder: 'asc',
@@ -925,11 +952,13 @@
                         return Math.max(0, Number(this.initialFund) || 0);
                     }
 
-                    // 往前找最近一次「已執行策略」的期末資金。
-                    // 不用 > 0 判斷，因為合法的期末資金也可能是 0。
+                    // 往前找最近一期「已記錄的期末資金」。
+                    // 注意：期末資金代表玩家／模型在該期結束時的實際現金，
+                    // 不應要求 strategyExecuted === true；否則「玩家有操作、模型未執行」的期數會斷掉資金鏈。
                     for (let i = period - 1; i >= 1; i--) {
-                        if (this.strategyExecuted[i]) {
-                            return Math.max(0, Number(this.productList[0]?.fundHistory?.[i]) || 0);
+                        const recordedEnd = Number(this.productList[0]?.fundHistory?.[i]);
+                        if (Number.isFinite(recordedEnd) && (recordedEnd > 0 || this.fundBeforeHistory[i] > 0 || this.strategyExecuted[i] || this.periodWorkflow[i] === 'not_executed')) {
+                            return Math.max(0, recordedEnd || 0);
                         }
                     }
 
@@ -943,22 +972,28 @@
                 },
                 loadFundFromHistory() {
                     const period = this.currentPeriod;
-                    let fundValue = this.getPeriodStartFund(period);
+                    const executed = !!this.strategyExecuted[period];
+                    let fundValue = 0;
 
-                    // 舊版資料沒有期初資金紀錄時，暫時回退到既有期末紀錄，避免舊資料突然歸零。
-                    if (fundValue <= 0) {
-                        for (let p of this.productList) {
-                            if (p.fundHistory && p.fundHistory[period] !== undefined && p.fundHistory[period] > 0) {
-                                fundValue = p.fundHistory[period];
-                                break;
-                            }
-                        }
+                    if (executed) {
+                        // 已執行期：主畫面顯示期末現金；期初現金保留在 fundBeforeHistory。
+                        fundValue = Number(this.productList[0]?.fundHistory?.[period]) || 0;
+                        this.fund = Math.max(0, fundValue);
+                        this.displayFund = this.formatWithComma(this.fund);
+                        this.fundStatus = '📂 本期期末現金';
+                        return;
+                    }
+
+                    // 未執行期：主畫面顯示本期策略執行前現金，可由玩家手動輸入。
+                    fundValue = this.getPeriodStartFund(period);
+                    if (fundValue <= 0 && this.fundBeforeHistory[period] > 0) {
+                        fundValue = Number(this.fundBeforeHistory[period]) || 0;
                     }
 
                     if (fundValue > 0 || (this.initialFundPeriod === period && this.initialFund >= 0)) {
-                        this.fund = fundValue;
-                        this.displayFund = this.formatWithComma(fundValue);
-                        this.fundStatus = this.strategyExecuted[period] ? '📂 期初資金' : '📂 歷史記錄';
+                        this.fund = Math.max(0, fundValue);
+                        this.displayFund = this.formatWithComma(this.fund);
+                        this.fundStatus = this.periodWorkflow[period] === 'not_executed' ? '📂 實際操作期初' : '📂 期初資金';
                     } else {
                         this.fundStatus = '';
                     }
@@ -1547,7 +1582,8 @@
                 applyStrategy() {
                     const period = this.strategySnapshot.period;
                     // 鎖定本期策略執行前資金，形成期初／期末完整資金鏈。
-                    const periodStartFund = this.getPeriodStartFund(period) || this.fund;
+                    const calculatedStartFund = this.getPeriodStartFund(period);
+                    const periodStartFund = (calculatedStartFund !== undefined && calculatedStartFund !== null) ? calculatedStartFund : this.fund;
                     if (!this.initialFundPeriod) {
                         this.initialFundPeriod = period;
                         this.initialFund = periodStartFund;
@@ -1591,7 +1627,9 @@
                         }
                     }
 
-                    this.fund = Math.max(0, this.fund + sellRevenue - totalCost);
+                    this.sellRevenueHistory[period] = sellRevenue;
+                    this.buyCostHistory[period] = totalCost;
+                    this.fund = Math.max(0, periodStartFund + sellRevenue - totalCost);
                     this.displayFund = this.formatWithComma(this.fund);
                     this.fundStatus = '✅ 策略執行完成';
 
@@ -1599,6 +1637,11 @@
                         p.fundHistory[period] = this.fund;
                     }
                     this.strategyExecuted[period] = true;
+                    this.periodResearchStatus[period] = {
+                        status: 'executed',
+                        recordedAt: new Date().toISOString(),
+                        reason: '模型策略已實際執行'
+                    };
                     this.updateDecisionExecutionLog(period, this.fund);
 
                     this.setWorkflow(period, 'executed');
@@ -1930,35 +1973,59 @@
                 // ===== 歷史資金 =============================================
                 // =============================================================
                 openFundHistoryModal() {
-                    const period = this.currentPeriod;
                     for (let i = 1; i <= 12; i++) {
-                        let val = 0;
-                        for (let p of this.productList) {
-                            if (p.fundHistory && p.fundHistory[i] > 0) {
-                                val = p.fundHistory[i];
-                                break;
-                            }
-                        }
-                        this.fundHistoryModalData[i] = val;
+                        const legacyAfter = this.productList[0]?.fundHistory?.[i] || 0;
+                        this.fundHistoryModalData[i] = {
+                            before: Number(this.fundBeforeHistory[i] || 0),
+                            after: Number(legacyAfter || 0),
+                            status: this.strategyExecuted[i] ? 'executed' : (this.periodWorkflow[i] || 'pending')
+                        };
                     }
                     this.showFundHistoryModal = true;
                 },
                 closeFundHistoryModal() { this.showFundHistoryModal = false; },
                 saveFundHistory() {
                     for (let i = 1; i <= 12; i++) {
-                        for (let p of this.productList) {
-                            p.fundHistory[i] = this.fundHistoryModalData[i] || 0;
+                        const row = this.fundHistoryModalData[i] || {};
+                        const before = Math.max(0, Number(row.before) || 0);
+                        const after = Math.max(0, Number(row.after) || 0);
+                        this.fundBeforeHistory[i] = before;
+                        for (let p of this.productList) p.fundHistory[i] = after;
+
+                        if (row.status === 'executed') {
+                            this.strategyExecuted[i] = true;
+                            this.periodWorkflow[i] = 'executed';
+                        } else if (row.status === 'not_executed') {
+                            delete this.strategyExecuted[i];
+                            this.periodWorkflow[i] = 'not_executed';
+                            this.periodResearchStatus[i] = {
+                                status: 'not_executed',
+                                recordedAt: new Date().toISOString(),
+                                reason: '本期有實際遊戲操作，但模型未使用／未執行'
+                            };
+                        } else {
+                            delete this.strategyExecuted[i];
+                            this.periodWorkflow[i] = row.status || 'pending';
                         }
                     }
                     this.saveAllData();
                     const period = this.currentPeriod;
-                    if (this.fundHistoryModalData[period] > 0) {
-                        this.fund = this.fundHistoryModalData[period];
-                        this.displayFund = this.formatWithComma(this.fund);
-                        this.fundStatus = '📂 歷史記錄';
-                    }
+                    const currentRow = this.fundHistoryModalData[period] || {};
+                    this.fund = Math.max(0, Number(currentRow.before) || 0);
+                    this.displayFund = this.formatWithComma(this.fund);
+                    this.fundStatus = '📂 歷史期初資金';
                     this.showFundHistoryModal = false;
-                    this.showToast('✅ 歷史推算用資金已更新');
+                    this.showToast('✅ 歷史資金鏈與流程狀態已更新');
+                },
+                markPeriodNotExecuted(period) {
+                    this.strategyExecuted[period] = false;
+                    this.periodWorkflow[period] = 'not_executed';
+                    this.periodResearchStatus[period] = {
+                        status: 'not_executed',
+                        recordedAt: new Date().toISOString(),
+                        reason: '本期有實際遊戲操作，但模型未使用／未執行'
+                    };
+                    this.saveAllData();
                 },
 
                 // =============================================================
@@ -1969,6 +2036,18 @@
                         version: '1.0',
                         exportType: 'historyReport',
                         timestamp: new Date().toISOString(),
+                        accountHistory: {
+                            initialFund: this.initialFund,
+                            initialFundPeriod: this.initialFundPeriod,
+                            fundBeforeHistory: this.fundBeforeHistory,
+                            fundHistory: this.productList[0]?.fundHistory || Array(13).fill(0),
+                            sellRevenueHistory: this.sellRevenueHistory,
+                            buyCostHistory: this.buyCostHistory,
+                            strategyExecuted: this.strategyExecuted,
+                            periodWorkflow: this.periodWorkflow,
+                            periodResearchStatus: this.periodResearchStatus
+                        },
+                        decisionLogs: deepClone(this.decisionLogs || []),
                         productList: this.productList.map(p => ({
                             name: p.name,
                             sharesHistory: p.sharesHistory,
@@ -2163,6 +2242,9 @@
                     if(this.importOptions.fund && data.initialFundPeriod !== undefined) this.initialFundPeriod = Number(data.initialFundPeriod) || 0;
                     if(this.importOptions.fund && Array.isArray(data.fundBeforeHistory)) this.fundBeforeHistory = deepClone(data.fundBeforeHistory);
                     if(this.importOptions.fund && data.strategyExecuted) this.strategyExecuted = deepClone(data.strategyExecuted);
+                    if(this.importOptions.fund && Array.isArray(data.sellRevenueHistory)) this.sellRevenueHistory = deepClone(data.sellRevenueHistory);
+                    if(this.importOptions.fund && Array.isArray(data.buyCostHistory)) this.buyCostHistory = deepClone(data.buyCostHistory);
+                    if(this.importOptions.fund && data.periodResearchStatus) this.periodResearchStatus = deepClone(data.periodResearchStatus);
                     if(this.importOptions.fund && data.fundHistory) {
                         for(let i=0;i<this.productList.length && i<data.productList.length;i++) {
                             if(data.productList[i]?.fundHistory) {
@@ -2184,6 +2266,9 @@
                         initialFundPeriod: this.initialFundPeriod,
                         fundBeforeHistory: this.fundBeforeHistory,
                         strategyExecuted: this.strategyExecuted,
+                        sellRevenueHistory: this.sellRevenueHistory,
+                        buyCostHistory: this.buyCostHistory,
+                        periodResearchStatus: this.periodResearchStatus,
                         decisionLogCount: this.decisionLogs.length,
                         fundHistory: this.productList[0]?.fundHistory || Array(13).fill(0),
                         productList: this.productList.map(p => ({
@@ -2257,6 +2342,9 @@
                                 this.initialFundPeriod = Number(data.initialFundPeriod) || 0;
                                 this.fundBeforeHistory = Array.isArray(data.fundBeforeHistory) ? data.fundBeforeHistory : Array(13).fill(0);
                                 this.strategyExecuted = data.strategyExecuted || {};
+                                this.sellRevenueHistory = Array.isArray(data.sellRevenueHistory) ? data.sellRevenueHistory : Array(13).fill(0);
+                                this.buyCostHistory = Array.isArray(data.buyCostHistory) ? data.buyCostHistory : Array(13).fill(0);
+                                this.periodResearchStatus = data.periodResearchStatus || {};
                                 this.displayFund = this.formatWithComma(this.fund);
                                 this.periodMode = data.periodMode || 'auto';
                                 this.manualPeriod = data.manualPeriod || 1;
